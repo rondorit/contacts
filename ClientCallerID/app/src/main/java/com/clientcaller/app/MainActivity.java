@@ -111,13 +111,13 @@ public class MainActivity extends Activity {
             status.setText(n + " clients loaded.\nName column: " + s.headers.get(s.nameCol)
                     + "\nPhone column(s): " + (cols.length() == 0 ? "NONE FOUND - check the file" : cols));
         }
-        bImport.setText((n > 0 ? "✓ " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
-        bPerms.setText((hasPermissions() ? "✓ " : "2. ") + "Allow phone, calendar & notification access");
-        bOverlay.setText((Settings.canDrawOverlays(this) ? "✓ " : "3. ") + "Allow showing over other apps");
+        bImport.setText((n > 0 ? "? " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
+        bPerms.setText((hasPermissions() ? "? " : "2. ") + "Allow phone, calendar & notification access");
+        bOverlay.setText((Settings.canDrawOverlays(this) ? "? " : "3. ") + "Allow showing over other apps");
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager rm = getSystemService(RoleManager.class);
             boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
-            bRole.setText((held ? "✓ " : "4. ") + "Set as Caller ID app");
+            bRole.setText((held ? "? " : "4. ") + "Set as Caller ID app");
         } else {
             bRole.setVisibility(View.GONE);
         }
@@ -165,7 +165,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_FILE && resultCode == RESULT_OK && data != null && data.getData() != null) {
             final Uri uri = data.getData();
-            Toast.makeText(this, "Reading file…", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Reading file?", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 try {
                     byte[] bytes;
