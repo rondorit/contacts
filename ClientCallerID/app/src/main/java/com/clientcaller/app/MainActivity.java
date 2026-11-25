@@ -2,8 +2,10 @@ package com.clientcaller.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.role.RoleManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -34,7 +36,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMS = 3;
 
     private TextView status;
-    private Button bImport, bPerms, bOverlay, bRole, bTest;
+    private Button bImport, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest;
     private EditText search;
     private ArrayAdapter<String> adapter;
     private final List<Integer> shown = new ArrayList<>();
@@ -62,6 +64,12 @@ public class MainActivity extends Activity {
         bOverlay = addButton(root, v -> startActivity(new Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))));
         bRole = addButton(root, v -> askCallerIdRole());
+        bCalendar = addButton(root, v -> chooseCalendar());
+        bUnknown = addButton(root, v -> {
+            SharedPreferences sp = CallLogger.prefs(this);
+            sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !sp.getBoolean(CallLogger.KEY_UNKNOWN, false)).apply();
+            refresh();
+        });
         bTest = addButton(root, v -> testPopup());
 
         search = new EditText(this);
@@ -104,7 +112,7 @@ public class MainActivity extends Activity {
                     + "\nPhone column(s): " + (cols.length() == 0 ? "NONE FOUND - check the file" : cols));
         }
         bImport.setText((n > 0 ? "✓ " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
-        bPerms.setText((hasPermissions() ? "✓ " : "2. ") + "Allow phone & notification access");
+        bPerms.setText((hasPermissions() ? "✓ " : "2. ") + "Allow phone, calendar & notification access");
         bOverlay.setText((Settings.canDrawOverlays(this) ? "✓ " : "3. ") + "Allow showing over other apps");
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager rm = getSystemService(RoleManager.class);
@@ -113,6 +121,13 @@ public class MainActivity extends Activity {
         } else {
             bRole.setVisibility(View.GONE);
         }
+        SharedPreferences sp = CallLogger.prefs(this);
+        long calId = sp.getLong(CallLogger.KEY_CAL_ID, 0);
+        String calText = calId < 0 ? "OFF"
+                : calId == 0 ? "main calendar" : sp.getString(CallLogger.KEY_CAL_NAME, "chosen calendar");
+        bCalendar.setText("5. Log calls in calendar: " + calText);
+        bUnknown.setText("Also log calls from unknown numbers: "
+                + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "ON" : "OFF"));
         bTest.setText("Test: show popup for first client");
         refreshList();
     }
@@ -183,9 +198,11 @@ public class MainActivity extends Activity {
     private String[] neededPermissions() {
         if (Build.VERSION.SDK_INT >= 33) {
             return new String[]{Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.READ_CALL_LOG, Manifest.permission.POST_NOTIFICATIONS};
+                    Manifest.permission.READ_CALL_LOG, Manifest.permission.POST_NOTIFICATIONS,
+                    Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR};
         }
-        return new String[]{Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG};
+        return new String[]{Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG,
+                Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR};
     }
 
     private boolean hasPermissions() {
@@ -233,6 +250,30 @@ public class MainActivity extends Activity {
             return;
         }
         startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), REQ_ROLE);
+    }
+
+    private void chooseCalendar() {
+        if (!CallLogger.hasPermissions(this)) {
+            Toast.makeText(this, "Do step 2 first (allow calendar access)", Toast.LENGTH_LONG).show();
+            return;
+        }
+        final List<Long> ids = new ArrayList<>();
+        final List<String> labels = new ArrayList<>();
+        ids.add(-1L);
+        labels.add("Off - don't log calls");
+        ids.add(0L);
+        labels.add("Automatic - main calendar");
+        CallLogger.listCalendars(this, ids, labels);
+        new AlertDialog.Builder(this)
+                .setTitle("Calendar for call log")
+                .setItems(labels.toArray(new String[0]), (dialog, which) -> {
+                    CallLogger.prefs(this).edit()
+                            .putLong(CallLogger.KEY_CAL_ID, ids.get(which))
+                            .putString(CallLogger.KEY_CAL_NAME, labels.get(which))
+                            .apply();
+                    refresh();
+                })
+                .show();
     }
 
     private void testPopup() {
