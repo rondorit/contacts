@@ -43,7 +43,8 @@ public class ClientStore {
 
     private static final String[] PHONE_WORDS = {
             "phone", "tel", "mobile", "cell",
-            "\u05D8\u05DC\u05E4\u05D5\u05DF", "\u05D8\u05DC.", "\u05D8\u05DC'", "\u05E0\u05D9\u05D9\u05D3", "\u05E4\u05DC\u05D0\u05E4\u05D5\u05DF", "\u05E1\u05DC\u05D5\u05DC\u05E8"
+            "\u05D8\u05DC\u05E4\u05D5\u05DF", "\u05D8\u05DC.", "\u05D8\u05DC'", "\u05E0\u05D9\u05D9\u05D3", "\u05E4\u05DC\u05D0\u05E4\u05D5\u05DF", "\u05E1\u05DC\u05D5\u05DC\u05E8", "\u05E1\u05DC\u05D5\u05DC\u05D0\u05E8",
+            "\u05E4\u05DC\u05E4\u05D5\u05DF", "\u05E0\u05D9\u05D9\u05D7"
     };
     private static final String[] NAME_WORDS = {
             "name", "\u05E9\u05DD", "client", "customer", "\u05DC\u05E7\u05D5\u05D7", "company", "\u05D7\u05D1\u05E8\u05D4", "\u05E2\u05E1\u05E7"
@@ -184,6 +185,16 @@ public class ClientStore {
         if (!v.isEmpty()) return v;
         String p = firstPhone(r);
         return p.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7" : p;
+    }
+
+    /** Uses the given columns as phone columns (chosen by the user). */
+    public void setPhoneColumns(List<Integer> cols) {
+        phoneCols.clear();
+        for (int c : cols) if (c >= 0 && c < headers.size()) phoneCols.add(c);
+        if (phoneCols.contains(nameCol)) {
+            for (int c = 0; c < headers.size(); c++) if (!phoneCols.contains(c)) { nameCol = c; break; }
+        }
+        index();
     }
 
     /** Comparison keys of all phone numbers of a client. */
