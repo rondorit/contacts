@@ -68,6 +68,11 @@ public class TicketsActivity extends Activity {
         prov.setText("\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA");
         prov.setOnClickListener(v -> startActivity(new Intent(this, ProvidersActivity.class)));
         addRow.addView(prov, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Button tpls = new Button(this);
+        tpls.setAllCaps(false);
+        tpls.setText("\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA");
+        tpls.setOnClickListener(v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        addRow.addView(tpls, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         root.addView(addRow);
 
         search = new EditText(this);
@@ -85,7 +90,16 @@ public class TicketsActivity extends Activity {
         root.addView(empty);
 
         ListView list = new ListView(this);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<>()) {
+            @Override
+            public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
+                android.view.View v = super.getView(position, convertView, parent);
+                v.setPadding(dp(8), dp(14), dp(8), dp(14));
+                return v;
+            }
+        };
+        list.setDivider(new android.graphics.drawable.ColorDrawable(0xFF9E9E9E));
+        list.setDividerHeight(Math.max(2, dp(1)));
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, pos, id) -> startActivity(
                 new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, shown.get(pos))));

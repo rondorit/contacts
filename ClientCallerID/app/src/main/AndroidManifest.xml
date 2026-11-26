@@ -42,6 +42,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".TemplatesActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ProvidersActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

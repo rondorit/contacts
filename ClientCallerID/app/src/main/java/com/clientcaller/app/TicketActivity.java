@@ -287,7 +287,28 @@ public class TicketActivity extends Activity {
             toast("\u05D0\u05D9\u05DF \u05DE\u05D9\u05D9\u05DC \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA - \u05D4\u05D5\u05E1\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1'\u05E0\u05D9\u05D4\u05D5\u05DC'");
             return;
         }
-        askProviderFollowup(() -> doSend(whatsapp, phone, email));
+        chooseTemplate(tpl -> askProviderFollowup(() -> doSend(whatsapp, phone, email, tpl)));
+    }
+
+    private interface TplChoice {
+        void chosen(Templates.Tpl tpl);
+    }
+
+    /** Lets the user pick a message template (or the standard summary). */
+    private void chooseTemplate(final TplChoice next) {
+        final java.util.List<Templates.Tpl> tpls = Templates.list(this);
+        if (tpls.isEmpty()) {
+            next.chosen(null);
+            return;
+        }
+        String[] names = new String[tpls.size() + 1];
+        names[0] = "\u05E1\u05D9\u05DB\u05D5\u05DD \u05E7\u05E8\u05D9\u05D0\u05D4 \u05E8\u05D2\u05D9\u05DC (\u05D1\u05DC\u05D9 \u05EA\u05D1\u05E0\u05D9\u05EA)";
+        for (int i = 0; i < tpls.size(); i++) names[i + 1] = tpls.get(i).name;
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D0\u05D9\u05D6\u05D5 \u05EA\u05D1\u05E0\u05D9\u05EA \u05DC\u05E9\u05DC\u05D5\u05D7?")
+                .setItems(names, (d, w) -> next.chosen(w == 0 ? null : tpls.get(w - 1)))
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
     }
 
     /** Asks when to check back with the provider; sets the ticket's follow-up. */
@@ -314,7 +335,7 @@ public class TicketActivity extends Activity {
                 .show();
     }
 
-    private void doSend(boolean whatsapp, String phone, String email) {
+    private void doSend(boolean whatsapp, String phone, String email, Templates.Tpl tpl) {
         readForm();
         if (!"Closed".equals(t.status) && !"Waiting for outsourcing".equals(t.status)) {
             t.status = "Waiting for outsourcing";
@@ -324,14 +345,16 @@ public class TicketActivity extends Activity {
         db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + (whatsapp ? " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : " \u05D1\u05DE\u05D9\u05D9\u05DC")
                 + (t.followupAt > 0 ? " | \u05DE\u05E2\u05E7\u05D1 \u05DE\u05D5\u05DC\u05D5: " + TicketDb.fmt(t.followupAt) : ""));
         showHistory();
-        String text = db.summary(t);
+        String text = tpl == null ? db.summary(t) : Templates.fill(this, t, tpl.body);
+        String subject = tpl == null || tpl.subject.trim().isEmpty()
+                ? "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title : Templates.fill(this, t, tpl.subject);
         if (whatsapp) {
             open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
                     + DetailActivity.whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
         } else {
             Intent send = new Intent(Intent.ACTION_SEND)
                     .putExtra(Intent.EXTRA_EMAIL, new String[]{email})
-                    .putExtra(Intent.EXTRA_SUBJECT, "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title)
+                    .putExtra(Intent.EXTRA_SUBJECT, subject)
                     .putExtra(Intent.EXTRA_TEXT, text);
             send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
             open(Intent.createChooser(send, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05DE\u05D9\u05D9\u05DC"));
