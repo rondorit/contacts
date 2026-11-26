@@ -125,7 +125,7 @@ public class TicketsActivity extends Activity {
             if (!ok) continue;
             if (!q.isEmpty()) {
                 String hay = (t.clientName + " " + t.clientPhone + " " + t.title + " " + t.description + " "
-                        + t.equipment + " " + t.outsource + " " + t.provider + " #" + t.id).toLowerCase(Locale.ROOT);
+                        + t.equipment + " " + t.mac + " " + t.outsource + " " + t.provider + " #" + t.id).toLowerCase(Locale.ROOT);
                 if (!hay.contains(q)) continue;
             }
             sel.add(t);

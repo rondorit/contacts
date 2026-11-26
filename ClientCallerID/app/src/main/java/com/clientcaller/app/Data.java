@@ -10,6 +10,7 @@ import java.util.List;
 final class Data {
     static final String FILE = "clients.tsv";
     static final String KEY_PHONE_COLS = "phone_cols";  // header names, tab separated
+    static final String KEY_NAME_COL = "name_col";      // header name
     private static ClientStore cache;
 
     private Data() { }
@@ -33,6 +34,8 @@ final class Data {
 
     /** If the user chose the phone columns by hand, use those (matched by column title). */
     static void applyPhoneColumns(Context ctx, ClientStore s) {
+        String nameCol = CallLogger.prefs(ctx).getString(KEY_NAME_COL, "");
+        if (!nameCol.isEmpty() && s.headers.indexOf(nameCol) >= 0) s.setNameColumn(s.headers.indexOf(nameCol));
         String saved = CallLogger.prefs(ctx).getString(KEY_PHONE_COLS, "");
         if (saved.isEmpty()) return;
         List<Integer> cols = new ArrayList<>();
@@ -41,6 +44,12 @@ final class Data {
             if (i >= 0) cols.add(i);
         }
         if (!cols.isEmpty()) s.setPhoneColumns(cols);
+        if (!nameCol.isEmpty() && s.headers.indexOf(nameCol) >= 0) s.setNameColumn(s.headers.indexOf(nameCol));
+    }
+
+    static synchronized void saveNameColumn(Context ctx, String name) {
+        CallLogger.prefs(ctx).edit().putString(KEY_NAME_COL, name).apply();
+        if (cache != null) applyPhoneColumns(ctx, cache);
     }
 
     static synchronized void savePhoneColumns(Context ctx, List<String> names) {

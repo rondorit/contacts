@@ -30,7 +30,7 @@ public class TicketActivity extends Activity {
     private TicketDb db;
     private TicketDb.Ticket t;
     private String oldStatus;
-    private EditText eClient, ePhone, eTitle, eDesc, eEquip, eOutsource, eNote;
+    private EditText eClient, ePhone, eTitle, eDesc, eEquip, eMac, eOutsource, eNote;
     private Spinner sStatus, sPriority, sCategory;
     private TextView tFollow, history;
     private Spinner sProvider;
@@ -83,6 +83,19 @@ public class TicketActivity extends Activity {
         loadCategories(He.category(t.category));
         eEquip = field(box, "\u05E6\u05D9\u05D5\u05D3 (\u05E9\u05DD \u05DE\u05D7\u05E9\u05D1, \u05D3\u05D2\u05DD, \u05DE\u05E1\u05E4\u05E8 \u05E1\u05D9\u05D3\u05D5\u05E8\u05D9)", t.equipment,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        label(box, "\u05DB\u05EA\u05D5\u05D1\u05EA MAC \u05E9\u05DC \u05D4\u05E6\u05D9\u05D5\u05D3");
+        LinearLayout mRow = row(box);
+        eMac = new EditText(this);
+        eMac.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        eMac.setHint("AA:BB:CC:DD:EE:FF");
+        eMac.setText(t.mac);
+        eMac.setTextDirection(android.view.View.TEXT_DIRECTION_LTR);
+        eMac.setOnFocusChangeListener((v, has) -> {
+            if (!has) eMac.setText(TicketDb.formatMac(eMac.getText().toString()));
+        });
+        mRow.addView(eMac, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(mRow, "\u05D1\u05D7\u05E8", v -> chooseMac());
         label(box, "\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA (\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5)");
         LinearLayout pRow = row(box);
         sProvider = new Spinner(this);
@@ -174,6 +187,7 @@ public class TicketActivity extends Activity {
         t.priority = TicketDb.PRIORITIES[sPriority.getSelectedItemPosition()];
         t.category = String.valueOf(sCategory.getSelectedItem());
         t.equipment = eEquip.getText().toString().trim();
+        t.mac = TicketDb.formatMac(eMac.getText().toString());
         t.outsource = eOutsource.getText().toString().trim();
         int pi = sProvider.getSelectedItemPosition();
         t.provider = pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1);
@@ -188,6 +202,29 @@ public class TicketActivity extends Activity {
             loadProviders(pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1));
             loadCategories(String.valueOf(sCategory.getSelectedItem()));
         }
+    }
+
+    /** Pick a MAC address already used in this client's earlier tickets. */
+    private void chooseMac() {
+        final java.util.List<String[]> macs = db.macsForClient(
+                eClient.getText().toString().trim(), ePhone.getText().toString().trim());
+        if (macs.isEmpty()) {
+            toast("\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05D5\u05EA MAC \u05E7\u05D5\u05D3\u05DE\u05D5\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4 - \u05D4\u05E7\u05DC\u05D3 \u05D9\u05D3\u05E0\u05D9\u05EA");
+            return;
+        }
+        String[] labels = new String[macs.size()];
+        for (int i = 0; i < macs.size(); i++) {
+            String eq = macs.get(i)[1];
+            labels[i] = macs.get(i)[0] + (eq.isEmpty() ? "" : "\n" + eq);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("\u05DB\u05EA\u05D5\u05D1\u05D5\u05EA MAC \u05E9\u05DC \u05D4\u05DC\u05E7\u05D5\u05D7")
+                .setItems(labels, (d, w) -> {
+                    eMac.setText(macs.get(w)[0]);
+                    if (eEquip.getText().toString().trim().isEmpty()) eEquip.setText(macs.get(w)[1]);
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
     }
 
     private void loadCategories(String selected) {
@@ -296,6 +333,10 @@ public class TicketActivity extends Activity {
 
     /** Saves the form; returns false if the ticket has no subject yet. */
     private boolean persist() {
+        if (!t.mac.isEmpty() && !TicketDb.isValidMac(t.mac)) {
+            toast("\u05DB\u05EA\u05D5\u05D1\u05EA MAC \u05DC\u05D0 \u05EA\u05E7\u05D9\u05E0\u05D4 - \u05E6\u05E8\u05D9\u05DB\u05D9\u05DD \u05DC\u05D4\u05D9\u05D5\u05EA 12 \u05EA\u05D5\u05D5\u05D9\u05DD (0-9, A-F)");
+            return false;
+        }
         if (t.title.isEmpty()) {
             if (t.description.isEmpty()) {
                 toast("\u05DB\u05EA\u05D5\u05D1 \u05E0\u05D5\u05E9\u05D0 \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4");

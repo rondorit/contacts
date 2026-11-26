@@ -102,6 +102,11 @@ public class ClientStore {
             }
         }
         nameCol = -1;
+        // A column titled exactly "sp" holds the client name.
+        for (int c = 0; c < headers.size(); c++) {
+            if (!phoneCols.contains(c) && headers.get(c).trim().equalsIgnoreCase("sp")) { nameCol = c; break; }
+        }
+        if (nameCol >= 0) return;
         outer:
         for (String w : NAME_WORDS) {
             for (int c = 0; c < headers.size(); c++) {
@@ -188,6 +193,11 @@ public class ClientStore {
     }
 
     /** Uses the given columns as phone columns (chosen by the user). */
+    /** Uses the given column as the client name (chosen by the user). */
+    public void setNameColumn(int c) {
+        if (c >= 0 && c < headers.size()) nameCol = c;
+    }
+
     public void setPhoneColumns(List<Integer> cols) {
         phoneCols.clear();
         for (int c : cols) if (c >= 0 && c < headers.size()) phoneCols.add(c);

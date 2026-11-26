@@ -36,7 +36,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMS = 3;
 
     private TextView status;
-    private Button bImport, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
+    private Button bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
     private ArrayAdapter<String> adapter;
     private final List<Integer> shown = new ArrayList<>();
@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
         root.addView(ticketRow);
 
         bImport = addButton(root, v -> pickFile());
+        bNameCol = addButton(root, v -> chooseNameColumn());
         bCols = addButton(root, v -> choosePhoneColumns());
         bPerms = addButton(root, v -> askPermissions());
         bOverlay = addButton(root, v -> startActivity(new Intent(
@@ -136,6 +137,7 @@ public class MainActivity extends Activity {
                     + "\n\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF: " + (cols.length() == 0 ? "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 - \u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5" : cols));
         }
         bImport.setText((n > 0 ? "\u2713 " : "1. ") + "\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D0\u05E7\u05E1\u05DC" + (n > 0 ? " (\u05DC\u05D7\u05E5 \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF)" : ""));
+        bNameCol.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7");
         bCols.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF (\u05D0\u05DD \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D6\u05D5\u05D4\u05D9\u05DD)");
         bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
         bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA \u05D0\u05D7\u05E8\u05D5\u05EA");
@@ -298,6 +300,24 @@ public class MainActivity extends Activity {
                             .apply();
                     refresh();
                 })
+                .show();
+    }
+
+    private void chooseNameColumn() {
+        final ClientStore s = Data.get(this);
+        if (s.headers.isEmpty()) {
+            Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String[] names = s.headers.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05E2\u05DE\u05D5\u05D3\u05D4 \u05E0\u05DE\u05E6\u05D0 \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7?")
+                .setSingleChoiceItems(names, s.nameCol, (d, which) -> {
+                    Data.saveNameColumn(this, names[which]);
+                    d.dismiss();
+                    refresh();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                 .show();
     }
 
