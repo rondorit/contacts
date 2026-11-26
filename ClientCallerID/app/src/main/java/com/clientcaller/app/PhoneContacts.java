@@ -18,6 +18,21 @@ final class PhoneContacts {
                 && c.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED;
     }
 
+    /** Phone numbers saved for a contact with exactly this name. */
+    static java.util.List<String> numbersForName(Context c, String name) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        if (name == null || name.trim().isEmpty() || !enabled(c)) return out;
+        try (Cursor cur = c.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = ?", new String[]{name.trim()}, null)) {
+            while (cur != null && cur.moveToNext()) {
+                String n = cur.getString(0);
+                if (n != null && !out.contains(n)) out.add(n);
+            }
+        } catch (Exception ignored) { }
+        return out;
+    }
+
     /** Contact name for this number, or null. */
     static String name(Context c, String number) {
         if (number == null || number.trim().isEmpty() || !enabled(c)) return null;

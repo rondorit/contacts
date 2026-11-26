@@ -352,6 +352,9 @@ public class MainActivity extends Activity {
             refresh();
         }));
         calls.add(Ui.tile(this, "\uD83E\uDDEA", "\u05D1\u05D3\u05D9\u05E7\u05EA \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA", "\u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF", info, v -> testPopup()));
+        String enabledListeners = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+        final boolean waOn = enabledListeners != null && enabledListeners.contains(getPackageName());
+        calls.add(Ui.tile(this, "\uD83D\uDCAC", "\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", waOn ? "\u2713 \u05E4\u05E2\u05D9\u05DC" : "\u05DC\u05D0 \u05DE\u05D5\u05E4\u05E2\u05DC", waOn ? ok : info, v -> whatsAppSetup(waOn)));
         Ui.grid(this, p, calls, 3);
 
         p.addView(Ui.sectionTitle(this, "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA"));
@@ -633,6 +636,30 @@ public class MainActivity extends Activity {
                             .apply();
                     refresh();
                 })
+                .show();
+    }
+
+    /** Guide for turning on notification access (needed to see WhatsApp calls). */
+    private void whatsAppSetup(boolean on) {
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05EA\u05E7\u05E9\u05E8\u05D9\u05DD \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
+                .setMessage((on ? "\u05D4\u05D6\u05D9\u05D4\u05D5\u05D9 \u05E4\u05E2\u05D9\u05DC.\n\n" : "")
+                        + "\u05DB\u05D3\u05D9 \u05DC\u05D6\u05D4\u05D5\u05EA \u05E9\u05D9\u05D7\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4, \u05D4\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05E7\u05D5\u05E8\u05D0\u05EA \u05D0\u05EA \u05D4\u05D4\u05EA\u05E8\u05D0\u05D4 \"\u05E9\u05D9\u05D7\u05D4 \u05E0\u05DB\u05E0\u05E1\u05EA\" \u05E9\u05DC \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4.\n\n"
+                        + "\u05D4\u05E4\u05E2\u05DC\u05D4 (\u05E4\u05E2\u05DD \u05D0\u05D7\u05EA):\n"
+                        + "1. \u05DC\u05D7\u05E5 \"\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D4\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4\" \u2190 \u05EA\u05E4\u05E8\u05D9\u05D8 \u22EE \u05DC\u05DE\u05E2\u05DC\u05D4 \u2190 \"\u05D0\u05E4\u05E9\u05E8 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05DE\u05D5\u05D2\u05D1\u05DC\u05D5\u05EA\" (\u05D0\u05DD \u05DE\u05D5\u05E4\u05D9\u05E2).\n"
+                        + "2. \u05D7\u05D6\u05D5\u05E8 \u05D5\u05DC\u05D7\u05E5 \"\u05D2\u05D9\u05E9\u05D4 \u05DC\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA\" \u05D5\u05D4\u05E4\u05E2\u05DC \u05D0\u05EA \"\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA\".\n\n"
+                        + "\u05D4\u05D6\u05D9\u05D4\u05D5\u05D9 \u05E2\u05D5\u05D1\u05D3 \u05DB\u05E9\u05D4\u05E9\u05DD \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05D6\u05D4\u05D4 \u05DC\u05E9\u05DD \u05D1\u05D0\u05E7\u05E1\u05DC, \u05DB\u05E9\u05D4\u05DE\u05E1\u05E4\u05E8 \u05DC\u05D0 \u05E9\u05DE\u05D5\u05E8 (\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DE\u05E6\u05D9\u05D2 \u05DE\u05E1\u05E4\u05E8), "
+                        + "\u05D0\u05D5 \u05D3\u05E8\u05DA \u05D4\u05DE\u05E1\u05E4\u05E8 \u05D4\u05E9\u05DE\u05D5\u05E8 \u05D1\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8.")
+                .setPositiveButton("\u05D2\u05D9\u05E9\u05D4 \u05DC\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA", (d, w) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                    } catch (Exception e) {
+                        Toast.makeText(this, "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0 \u05DE\u05E1\u05DA \u05D4\u05D4\u05D2\u05D3\u05E8\u05D4", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNeutralButton("\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D4\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4", (d, w) -> startActivity(new Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()))))
+                .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
                 .show();
     }
 

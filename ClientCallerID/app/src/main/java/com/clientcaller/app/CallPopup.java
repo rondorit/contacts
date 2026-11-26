@@ -28,6 +28,7 @@ final class CallPopup {
     private static final String CHANNEL = "client_calls";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static View overlay;
+    private static String tagOverride;
     private static String lastKey = "";
     private static long lastTime;
 
@@ -48,6 +49,50 @@ final class CallPopup {
             lastTime = now;
             if (row >= 0) show(app, row);
             else if (Settings.canDrawOverlays(app)) showContactOverlay(app, contact, number);
+        });
+    }
+
+    /**
+     * WhatsApp call: we only get the name WhatsApp shows (contact name, or the number if not saved).
+     * Find the client by number, by Excel name, or through the phone contact's numbers.
+     */
+    static void onWhatsApp(Context ctx, final String shown) {
+        final Context app = ctx.getApplicationContext();
+        MAIN.post(() -> {
+            ClientStore s = Data.get(app);
+            int row = -1;
+            String number = null;
+            String digits = shown.replaceAll("[^0-9]", "");
+            if (digits.length() >= 8) {
+                number = shown;
+                row = s.find(shown);
+            }
+            if (row < 0) {
+                for (int r = 0; r < s.rows.size(); r++) {
+                    if (s.name(r).trim().equalsIgnoreCase(shown)) { row = r; break; }
+                }
+            }
+            if (row < 0) {
+                for (String ph : PhoneContacts.numbersForName(app, shown)) {
+                    int r = s.find(ph);
+                    if (r >= 0) { row = r; break; }
+                    if (number == null) number = ph;
+                }
+            }
+            String key = "wa:" + shown;
+            long now = System.currentTimeMillis();
+            if (key.equals(lastKey) && now - lastTime < 30000) return;
+            if (row >= 0) {
+                lastKey = key;
+                lastTime = now;
+                tagOverride = "\uD83D\uDCAC \u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
+                show(app, row);
+            } else if (number != null && Settings.canDrawOverlays(app)) {
+                lastKey = key;
+                lastTime = now;
+                tagOverride = "\uD83D\uDCAC \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
+                showContactOverlay(app, digits.length() >= 8 ? "" + shown : shown, number);
+            }
         });
     }
 
@@ -87,7 +132,8 @@ final class CallPopup {
         box.setElevation(12 * d);
 
         TextView tag = new TextView(app);
-        tag.setText("\u05DE\u05EA\u05E7\u05E9\u05E8 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF");
+        tag.setText(tagOverride != null ? tagOverride : "\u05DE\u05EA\u05E7\u05E9\u05E8 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF");
+        tagOverride = null;
         tag.setTextColor(0xFF43A047);
         tag.setTextSize(13);
         box.addView(tag);
@@ -183,7 +229,8 @@ final class CallPopup {
         box.setElevation(12 * d);
 
         TextView tag = new TextView(app);
-        tag.setText("\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8");
+        tag.setText(tagOverride != null ? tagOverride : "\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8");
+        tagOverride = null;
         tag.setTextColor(0xFF1E88E5);
         tag.setTextSize(13);
         box.addView(tag);
