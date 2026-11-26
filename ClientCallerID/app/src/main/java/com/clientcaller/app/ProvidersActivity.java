@@ -41,7 +41,16 @@ public class ProvidersActivity extends Activity {
         root.addView(add);
 
         ListView lv = new ListView(this);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<>()) {
+            @Override
+            public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
+                android.view.View v = super.getView(position, convertView, parent);
+                v.setPadding(dp(8), dp(14), dp(8), dp(14));
+                return v;
+            }
+        };
+        lv.setDivider(new android.graphics.drawable.ColorDrawable(0xFF9E9E9E));
+        lv.setDividerHeight(Math.max(2, dp(1)));
         lv.setAdapter(adapter);
         lv.setOnItemClickListener((parent, view, pos, id) -> edit(list.get(pos)));
         root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
