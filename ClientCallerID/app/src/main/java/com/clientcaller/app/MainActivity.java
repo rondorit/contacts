@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -38,126 +39,322 @@ public class MainActivity extends Activity {
     private static final int REQ_RESTORE = 5;
     private static final int REQ_EXPORT = 6;
 
-    private TextView status;
-    private Button bAsk, bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
+    private static final String[] TAB_ICONS = {"\uD83C\uDFE0", "\uD83D\uDC65", "\uD83C\uDFAB", "\u2699\uFE0F"};
+    private static final String[] TAB_NAMES = {"\u05E8\u05D0\u05E9\u05D9", "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "\u05E0\u05D9\u05D4\u05D5\u05DC"};
+
+    private int tab = 0;
+    private final LinearLayout[] pages = new LinearLayout[4];
+    private final android.widget.ScrollView[] scrolls = new android.widget.ScrollView[4];
+    private final LinearLayout[] tabButtons = new LinearLayout[4];
+    private TextView headerSub;
     private EditText search;
-    private LinearLayout settingsBox, listBox;
-    private final List<Integer> shown = new ArrayList<>();
+    private LinearLayout listBox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(Ui.PRIMARY_DARK);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        int p = dp(16);
-        root.setPadding(p, p, p, p);
+        root.setBackgroundColor(Ui.BG);
 
-        TextView title = new TextView(this);
-        title.setText("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA");
-        title.setTextSize(22);
-        title.setTypeface(null, Typeface.BOLD);
-        root.addView(title);
+        // Header
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        android.graphics.drawable.GradientDrawable hg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{Ui.PRIMARY_DARK, Ui.PRIMARY});
+        header.setBackground(hg);
+        header.setPadding(dp(20), dp(16), dp(20), dp(16));
+        header.addView(Ui.text(this, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA", 22, 0xFFFFFFFF, true));
+        headerSub = Ui.text(this, "", 13, 0xCCFFFFFF, false);
+        header.addView(headerSub);
+        root.addView(header);
 
-        status = new TextView(this);
-        status.setPadding(0, dp(4), 0, dp(8));
-        root.addView(status);
-
-        // Service tickets
-        LinearLayout ticketRow = new LinearLayout(this);
-        bTickets = new Button(this);
-        bTickets.setAllCaps(false);
-        bTickets.setTextSize(17);
-        bTickets.setOnClickListener(v -> startActivity(new Intent(this, TicketsActivity.class)));
-        bOverdue = new Button(this);
-        bOverdue.setAllCaps(false);
-        bOverdue.setTextSize(17);
-        bOverdue.setOnClickListener(v -> startActivity(new Intent(this, TicketsActivity.class)
-                .putExtra(TicketsActivity.EXTRA_FILTER, TicketsActivity.OVERDUE)));
-        ticketRow.addView(bTickets, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 3f));
-        ticketRow.addView(bOverdue, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
-        root.addView(ticketRow);
-
-        // Templates and lists
-        LinearLayout toolsRow = new LinearLayout(this);
-        String[] toolNames = {"\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA"};
-        Class<?>[] toolScreens = {ReportActivity.class, TemplatesActivity.class, ProvidersActivity.class, CategoriesActivity.class};
-        for (int i = 0; i < toolNames.length; i++) {
-            final Class<?> screen = toolScreens[i];
-            Button b = new Button(this);
-            b.setAllCaps(false);
-            b.setText(toolNames[i]);
-            b.setOnClickListener(v -> startActivity(new Intent(this, screen)));
-            toolsRow.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        // Pages
+        android.widget.FrameLayout content = new android.widget.FrameLayout(this);
+        for (int i = 0; i < 4; i++) {
+            pages[i] = new LinearLayout(this);
+            pages[i].setOrientation(LinearLayout.VERTICAL);
+            pages[i].setPadding(dp(10), dp(6), dp(10), dp(16));
+            scrolls[i] = new android.widget.ScrollView(this);
+            scrolls[i].addView(pages[i]);
+            content.addView(scrolls[i]);
         }
-        root.addView(toolsRow);
+        root.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        // Client data: add, import, export
-        section(root, "\u05E0\u05D9\u05D4\u05D5\u05DC \u05E0\u05EA\u05D5\u05E0\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
-        LinearLayout clientRow = new LinearLayout(this);
-        Button bAdd = new Button(this);
-        bAdd.setAllCaps(false);
-        bAdd.setText("+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9");
-        bAdd.setOnClickListener(v -> startActivity(new Intent(this, ClientEditActivity.class)));
-        bImport = new Button(this);
-        bImport.setAllCaps(false);
-        bImport.setOnClickListener(v -> pickFile());
-        Button bExport = new Button(this);
-        bExport.setAllCaps(false);
-        bExport.setText("\u05D9\u05D9\u05E6\u05D5\u05D0 \u05DC\u05D0\u05E7\u05E1\u05DC");
-        bExport.setOnClickListener(v -> startExport());
-        clientRow.addView(bAdd, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        clientRow.addView(bImport, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        clientRow.addView(bExport, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        root.addView(clientRow);
-        TextView editHint = new TextView(this);
-        editHint.setText("\u05DC\u05E2\u05E8\u05D9\u05DB\u05EA \u05DC\u05E7\u05D5\u05D7: \u05DC\u05D7\u05E5 \u05E2\u05DC\u05D9\u05D5 \u05D1\u05E8\u05E9\u05D9\u05DE\u05D4 \u05D5\u05D0\u05D6 \"\u05E2\u05E8\u05D9\u05DB\u05EA \u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7\", \u05D0\u05D5 \u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4 \u05E2\u05DC\u05D9\u05D5.");
-        editHint.setTextSize(12);
-        editHint.setTextColor(0xFF777777);
-        root.addView(editHint);
+        // Clients page: search box stays, list below it
+        search = new EditText(this);
+        search.setHint("\uD83D\uDD0D  \u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD, \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D7\u05DC\u05E7\u05D4\u2026");
+        search.setSingleLine(true);
+        search.setBackground(Ui.rounded(0xFFFFFFFF, 12, this));
+        search.setPadding(dp(14), dp(12), dp(14), dp(12));
+        search.setElevation(dp(1));
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(Editable e) { refreshList(); }
+        });
+        LinearLayout.LayoutParams slp = Ui.cardParams(this);
+        slp.topMargin = dp(10);
+        pages[1].addView(search, slp);
+        List<View> clientActions = new ArrayList<>();
+        clientActions.add(Ui.tile(this, "\u2795", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
+        clientActions.add(Ui.tile(this, "\uD83D\uDCE5", "\u05D9\u05D9\u05D1\u05D5\u05D0", "\u05D0\u05E7\u05E1\u05DC / Access", Ui.MUTED, v -> pickFile()));
+        clientActions.add(Ui.tile(this, "\uD83D\uDCE4", "\u05D9\u05D9\u05E6\u05D5\u05D0", "\u05DC\u05D0\u05E7\u05E1\u05DC", Ui.MUTED, v -> startExport()));
+        Ui.grid(this, pages[1], clientActions, 3);
+        pages[1].addView(Ui.text(this, "  \u05DC\u05D7\u05D9\u05E6\u05D4 \u05E2\u05DC \u05DC\u05E7\u05D5\u05D7 \u05E4\u05D5\u05EA\u05D7\u05EA \u05D0\u05EA \u05D4\u05DB\u05E8\u05D8\u05D9\u05E1, \u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4 - \u05E2\u05E8\u05D9\u05DB\u05D4", 12, Ui.MUTED, false));
+        listBox = new LinearLayout(this);
+        listBox.setOrientation(LinearLayout.VERTICAL);
+        pages[1].addView(listBox);
 
-        // Settings (collapsible)
-        final Button bSettings = new Button(this);
-        bSettings.setAllCaps(false);
-        root.addView(bSettings);
-        settingsBox = new LinearLayout(this);
-        settingsBox.setOrientation(LinearLayout.VERTICAL);
-        root.addView(settingsBox);
-        bSettings.setOnClickListener(v -> {
-            boolean show = settingsBox.getVisibility() != android.view.View.VISIBLE;
-            settingsBox.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
-            bSettings.setText(show ? "\u25B2 \u05D4\u05E1\u05EA\u05E8 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA" : "\u2699 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA, \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D5\u05D2\u05D9\u05D1\u05D5\u05D9");
+        // Bottom tabs
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setBackgroundColor(0xFFFFFFFF);
+        tabs.setElevation(dp(8));
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            LinearLayout tb = new LinearLayout(this);
+            tb.setOrientation(LinearLayout.VERTICAL);
+            tb.setGravity(android.view.Gravity.CENTER);
+            tb.setPadding(0, dp(6), 0, dp(6));
+            TextView ic = Ui.text(this, TAB_ICONS[i], 22, Ui.TEXT, false);
+            ic.setGravity(android.view.Gravity.CENTER);
+            TextView nm = Ui.text(this, TAB_NAMES[i], 12, Ui.MUTED, false);
+            nm.setGravity(android.view.Gravity.CENTER);
+            tb.addView(ic);
+            tb.addView(nm);
+            tb.setOnClickListener(v -> showTab(idx));
+            tabButtons[i] = tb;
+            tabs.addView(tb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+        root.addView(tabs);
+
+        setContentView(root);
+        He.rtl(this);
+        Backup.scheduleReminder(this);
+        showTab(0);
+        if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
+    }
+
+    private void showTab(int i) {
+        tab = i;
+        for (int k = 0; k < 4; k++) {
+            scrolls[k].setVisibility(k == i ? View.VISIBLE : View.GONE);
+            tabButtons[k].setBackground(k == i ? Ui.rounded(0xFFE3EDFB, 12, this) : null);
+            ((TextView) tabButtons[k].getChildAt(1)).setTextColor(k == i ? Ui.PRIMARY : Ui.MUTED);
+            ((TextView) tabButtons[k].getChildAt(1)).setTypeface(null, k == i ? Typeface.BOLD : Typeface.NORMAL);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refresh();
+    }
+
+    private boolean setupDone() {
+        boolean role = true;
+        if (Build.VERSION.SDK_INT >= 29) {
+            RoleManager rm = getSystemService(RoleManager.class);
+            role = rm == null || !rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)
+                    || rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
+        }
+        return !Data.get(this).rows.isEmpty() && hasPermissions() && Settings.canDrawOverlays(this) && role;
+    }
+
+    private void refresh() {
+        ClientStore s = Data.get(this);
+        List<TicketDb.Ticket> all = TicketDb.get(this).all();
+        int open = 0, late = 0, today = 0;
+        Calendar endOfDay = Calendar.getInstance();
+        endOfDay.set(Calendar.HOUR_OF_DAY, 23);
+        endOfDay.set(Calendar.MINUTE, 59);
+        List<TicketDb.Ticket> upcoming = new ArrayList<>();
+        for (TicketDb.Ticket t : all) {
+            if (!t.isOpen()) continue;
+            open++;
+            if (t.isOverdue()) late++;
+            if (t.followupAt > 0 && t.followupAt <= endOfDay.getTimeInMillis()) today++;
+            upcoming.add(t);
+        }
+        java.util.Collections.sort(upcoming, (a, b) -> {
+            long fa = a.followupAt == 0 ? Long.MAX_VALUE : a.followupAt;
+            long fb = b.followupAt == 0 ? Long.MAX_VALUE : b.followupAt;
+            return Long.compare(fa, fb);
         });
-        bNameCol = addButton(settingsBox, v -> chooseNameColumn());
-        bCols = addButton(settingsBox, v -> choosePhoneColumns());
-        bPerms = addButton(settingsBox, v -> askPermissions());
-        bOverlay = addButton(settingsBox, v -> startActivity(new Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))));
-        bRole = addButton(settingsBox, v -> askCallerIdRole());
-        bCalendar = addButton(settingsBox, v -> chooseCalendar());
-        bAsk = addButton(settingsBox, v -> {
-            SharedPreferences sp = CallLogger.prefs(this);
-            sp.edit().putBoolean(CallLogger.KEY_ASK, !sp.getBoolean(CallLogger.KEY_ASK, true)).apply();
+        headerSub.setText(s.rows.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA  \u2022  " + open + " \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA" + (late > 0 ? "  \u2022  " + late + " \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8" : ""));
+
+        buildHome(s, open, late, today, upcoming);
+        buildTickets(all, open, late, upcoming);
+        buildManage(s);
+        refreshList();
+    }
+
+    // ------------------------------------------------------------------ Home
+
+    private void buildHome(ClientStore s, int open, int late, int today, List<TicketDb.Ticket> upcoming) {
+        LinearLayout p = pages[0];
+        p.removeAllViews();
+        if (!setupDone()) {
+            LinearLayout warn = Ui.rowCard(this, "\u26A0\uFE0F  \u05D4\u05D4\u05D2\u05D3\u05E8\u05D4 \u05DC\u05D0 \u05D4\u05D5\u05E9\u05DC\u05DE\u05D4",
+                    "\u05DC\u05D7\u05E5 \u05DB\u05D0\u05DF \u05DB\u05D3\u05D9 \u05DC\u05D4\u05E9\u05DC\u05D9\u05DD \u05D9\u05D9\u05D1\u05D5\u05D0 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05E0\u05D9\u05D4\u05D5\u05DC", "", 0, v -> showTab(3));
+            warn.setBackground(Ui.rounded(0xFFFFF4E5, 14, this));
+            p.addView(warn, Ui.cardParams(this));
+        }
+        p.addView(Ui.sectionTitle(this, "\u05DE\u05D1\u05D8 \u05DE\u05D4\u05D9\u05E8"));
+        List<View> stats = new ArrayList<>();
+        stats.add(Ui.stat(this, "\uD83C\uDFAB", String.valueOf(open), "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", Ui.PRIMARY, v -> openTickets(TicketsActivity.OPEN)));
+        stats.add(Ui.stat(this, "\u23F0", String.valueOf(late), "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8", late > 0 ? Ui.RED : Ui.GREEN, v -> openTickets(TicketsActivity.OVERDUE)));
+        stats.add(Ui.stat(this, "\uD83D\uDCC5", String.valueOf(today), "\u05DE\u05E2\u05E7\u05D1\u05D9\u05DD \u05DC\u05D4\u05D9\u05D5\u05DD", Ui.ORANGE, v -> openTickets(TicketsActivity.OPEN)));
+        stats.add(Ui.stat(this, "\uD83D\uDC65", String.valueOf(s.rows.size()), "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", Ui.PRIMARY_DARK, v -> showTab(1)));
+        Ui.grid(this, p, stats, 2);
+
+        p.addView(Ui.sectionTitle(this, "\u05E4\u05E2\u05D5\u05DC\u05D5\u05EA \u05DE\u05D4\u05D9\u05E8\u05D5\u05EA"));
+        List<View> quick = new ArrayList<>();
+        quick.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, TicketActivity.class))));
+        quick.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
+        quick.add(Ui.tile(this, "\uD83D\uDD0D", "\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7", "", 0, v -> {
+            showTab(1);
+            search.requestFocus();
+        }));
+        quick.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        Ui.grid(this, p, quick, 4);
+
+        p.addView(Ui.sectionTitle(this, "\u05DE\u05E2\u05E7\u05D1\u05D9\u05DD \u05E7\u05E8\u05D5\u05D1\u05D9\u05DD"));
+        int shownCount = 0;
+        for (TicketDb.Ticket t : upcoming) {
+            if (t.followupAt == 0 || shownCount >= 5) break;
+            p.addView(ticketCard(t), Ui.cardParams(this));
+            shownCount++;
+        }
+        if (shownCount == 0) p.addView(Ui.text(this, "   \u05D0\u05D9\u05DF \u05DE\u05E2\u05E7\u05D1\u05D9\u05DD \u05E4\u05EA\u05D5\u05D7\u05D9\u05DD \uD83D\uDC4D", 14, Ui.MUTED, false));
+    }
+
+    private void openTickets(int filter) {
+        startActivity(new Intent(this, TicketsActivity.class).putExtra(TicketsActivity.EXTRA_FILTER, filter));
+    }
+
+    private LinearLayout ticketCard(final TicketDb.Ticket t) {
+        String badge;
+        int color;
+        if (t.isOverdue()) { badge = "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8"; color = Ui.RED; }
+        else if ("Urgent".equals(t.priority)) { badge = "\u05D3\u05D7\u05D5\u05E3"; color = Ui.ORANGE; }
+        else if (!t.isOpen()) { badge = "\u05E1\u05D2\u05D5\u05E8\u05D4"; color = Ui.MUTED; }
+        else { badge = He.status(t.status); color = Ui.PRIMARY; }
+        String sub = "#" + t.id + "  \u2022  " + (t.clientName.isEmpty() ? "\u05DC\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7" : t.clientName)
+                + (t.followupAt > 0 && t.isOpen() ? "\n\u05DE\u05E2\u05E7\u05D1: " + TicketDb.fmt(t.followupAt) : "")
+                + (t.provider.isEmpty() ? "" : "\n\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA: " + t.provider);
+        return Ui.rowCard(this, t.title, sub, badge, color, v -> startActivity(
+                new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, t.id)));
+    }
+
+    // ------------------------------------------------------------------ Tickets
+
+    private void buildTickets(List<TicketDb.Ticket> all, int open, int late, List<TicketDb.Ticket> openSorted) {
+        LinearLayout p = pages[2];
+        p.removeAllViews();
+        int closed = 0;
+        for (TicketDb.Ticket t : all) if (!t.isOpen()) closed++;
+        p.addView(Ui.sectionTitle(this, "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA"));
+        List<View> tiles = new ArrayList<>();
+        tiles.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, TicketActivity.class))));
+        tiles.add(Ui.tile(this, "\uD83D\uDCC2", "\u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", String.valueOf(open), Ui.PRIMARY, v -> openTickets(TicketsActivity.OPEN)));
+        tiles.add(Ui.tile(this, "\u23F0", "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8", String.valueOf(late), late > 0 ? Ui.RED : Ui.MUTED, v -> openTickets(TicketsActivity.OVERDUE)));
+        tiles.add(Ui.tile(this, "\u2705", "\u05E1\u05D2\u05D5\u05E8\u05D5\u05EA", String.valueOf(closed), Ui.MUTED, v -> openTickets(TicketsActivity.CLOSED)));
+        tiles.add(Ui.tile(this, "\uD83D\uDDC2\uFE0F", "\u05D4\u05DB\u05DC", String.valueOf(all.size()), Ui.MUTED, v -> openTickets(TicketsActivity.ALL)));
+        tiles.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        Ui.grid(this, p, tiles, 3);
+        p.addView(Ui.sectionTitle(this, "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA"));
+        int n = 0;
+        for (TicketDb.Ticket t : openSorted) {
+            if (n++ >= 30) break;
+            p.addView(ticketCard(t), Ui.cardParams(this));
+        }
+        if (openSorted.isEmpty()) p.addView(Ui.text(this, "   \u05D0\u05D9\u05DF \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA \uD83D\uDC4D", 14, Ui.MUTED, false));
+    }
+
+    // ------------------------------------------------------------------ Manage
+
+    private void buildManage(ClientStore s) {
+        LinearLayout p = pages[3];
+        p.removeAllViews();
+        SharedPreferences sp = CallLogger.prefs(this);
+        final int ok = Ui.GREEN, need = Ui.RED, info = Ui.MUTED;
+
+        StringBuilder cols = new StringBuilder();
+        for (int c : s.phoneCols) {
+            if (cols.length() > 0) cols.append(", ");
+            cols.append(s.headers.get(c));
+        }
+        LinearLayout status = Ui.card(this);
+        status.addView(Ui.text(this, s.rows.isEmpty() ? "\u05E2\u05D3\u05D9\u05D9\u05DF \u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA - \u05D4\u05EA\u05D7\u05DC \u05D1\u05D9\u05D9\u05D1\u05D5\u05D0" : s.rows.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", 16, Ui.TEXT, true));
+        if (!s.rows.isEmpty()) {
+            status.addView(Ui.text(this, "\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD: " + s.headers.get(s.nameCol)
+                    + "   \u2022   \u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF: " + (cols.length() == 0 ? "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5" : cols), 13, Ui.MUTED, false));
+        }
+        p.addView(status, Ui.cardParams(this));
+
+        p.addView(Ui.sectionTitle(this, "\u05E0\u05EA\u05D5\u05E0\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA"));
+        List<View> data = new ArrayList<>();
+        data.add(Ui.tile(this, "\uD83D\uDCE5", "\u05D9\u05D9\u05D1\u05D5\u05D0", "\u05D0\u05E7\u05E1\u05DC / Access", info, v -> pickFile()));
+        data.add(Ui.tile(this, "\uD83D\uDCE4", "\u05D9\u05D9\u05E6\u05D5\u05D0 \u05DC\u05D0\u05E7\u05E1\u05DC", "", 0, v -> startExport()));
+        data.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
+        data.add(Ui.tile(this, "\uD83D\uDD24", "\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD", s.headers.isEmpty() ? "" : s.headers.get(s.nameCol), info, v -> chooseNameColumn()));
+        data.add(Ui.tile(this, "\uD83D\uDCDE", "\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF", cols.toString(), info, v -> choosePhoneColumns()));
+        Ui.grid(this, p, data, 3);
+
+        p.addView(Ui.sectionTitle(this, "\u05E9\u05D9\u05E8\u05D5\u05EA \u05D5\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5"));
+        List<View> svc = new ArrayList<>();
+        svc.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        svc.add(Ui.tile(this, "\u2709\uFE0F", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "", 0, v -> startActivity(new Intent(this, TemplatesActivity.class))));
+        svc.add(Ui.tile(this, "\uD83C\uDFE2", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ProvidersActivity.class))));
+        svc.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, CategoriesActivity.class))));
+        Ui.grid(this, p, svc, 3);
+
+        p.addView(Ui.sectionTitle(this, "\u05E9\u05D9\u05D7\u05D5\u05EA \u05D5\u05D9\u05D5\u05DE\u05DF"));
+        long calId = sp.getLong(CallLogger.KEY_CAL_ID, 0);
+        String calText = calId < 0 ? "\u05DB\u05D1\u05D5\u05D9" : calId == 0 ? "\u05D9\u05D5\u05DE\u05DF \u05E8\u05D0\u05E9\u05D9" : sp.getString(CallLogger.KEY_CAL_NAME, "\u05D9\u05D5\u05DE\u05DF \u05E9\u05E0\u05D1\u05D7\u05E8");
+        boolean ask = sp.getBoolean(CallLogger.KEY_ASK, true);
+        boolean unknown = sp.getBoolean(CallLogger.KEY_UNKNOWN, false);
+        boolean contacts = sp.getBoolean(PhoneContacts.KEY_ENABLED, true);
+        List<View> calls = new ArrayList<>();
+        calls.add(Ui.tile(this, "\uD83D\uDCC5", "\u05D9\u05D5\u05DE\u05DF \u05DC\u05E9\u05D9\u05D7\u05D5\u05EA", calText, calId < 0 ? info : ok, v -> chooseCalendar()));
+        calls.add(Ui.tile(this, "\uD83D\uDCAC", "\u05E9\u05DE\u05D9\u05E8\u05EA \u05E9\u05D9\u05D7\u05D4", ask ? "\u05DC\u05E9\u05D0\u05D5\u05DC \u05DB\u05DC \u05E4\u05E2\u05DD" : "\u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA", info, v -> {
+            sp.edit().putBoolean(CallLogger.KEY_ASK, !ask).apply();
             refresh();
-        });
-        bUnknown = addButton(settingsBox, v -> {
-            SharedPreferences sp = CallLogger.prefs(this);
-            sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !sp.getBoolean(CallLogger.KEY_UNKNOWN, false)).apply();
+        }));
+        calls.add(Ui.tile(this, "\u2753", "\u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD", unknown ? "\u05E0\u05E8\u05E9\u05DE\u05D9\u05DD" : "\u05DC\u05D0 \u05E0\u05E8\u05E9\u05DE\u05D9\u05DD", info, v -> {
+            sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !unknown).apply();
             refresh();
-        });
-        bContacts = addButton(settingsBox, v -> {
-            SharedPreferences sp = CallLogger.prefs(this);
-            sp.edit().putBoolean(PhoneContacts.KEY_ENABLED, !sp.getBoolean(PhoneContacts.KEY_ENABLED, true)).apply();
+        }));
+        calls.add(Ui.tile(this, "\uD83D\uDCC7", "\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8", contacts ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9", contacts ? ok : info, v -> {
+            sp.edit().putBoolean(PhoneContacts.KEY_ENABLED, !contacts).apply();
             refresh();
-        });
-        bTest = addButton(settingsBox, v -> testPopup());
-        LinearLayout bkRow = new LinearLayout(this);
-        bBackup = new Button(this);
-        bBackup.setAllCaps(false);
-        bBackup.setOnClickListener(v -> startBackup());
-        bRestore = new Button(this);
-        bRestore.setAllCaps(false);
-        bRestore.setText("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9");
-        bRestore.setOnClickListener(v -> new AlertDialog.Builder(this)
+        }));
+        calls.add(Ui.tile(this, "\uD83E\uDDEA", "\u05D1\u05D3\u05D9\u05E7\u05EA \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA", "\u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF", info, v -> testPopup()));
+        Ui.grid(this, p, calls, 3);
+
+        p.addView(Ui.sectionTitle(this, "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA"));
+        List<View> perms = new ArrayList<>();
+        boolean hp = hasPermissions();
+        perms.add(Ui.tile(this, "\uD83D\uDD10", "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA", hp ? "\u2713 \u05D0\u05D5\u05E9\u05E8\u05D5" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", hp ? ok : need, v -> askPermissions()));
+        boolean ov = Settings.canDrawOverlays(this);
+        perms.add(Ui.tile(this, "\uD83E\uDE9F", "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA", ov ? "\u2713 \u05DE\u05D0\u05D5\u05E9\u05E8" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", ov ? ok : need,
+                v -> startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName())))));
+        if (Build.VERSION.SDK_INT >= 29) {
+            RoleManager rm = getSystemService(RoleManager.class);
+            boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
+            perms.add(Ui.tile(this, "\uD83C\uDD94", "\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05EA\u05E7\u05E9\u05E8", held ? "\u2713 \u05DE\u05D5\u05D2\u05D3\u05E8" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", held ? ok : need, v -> askCallerIdRole()));
+        }
+        Ui.grid(this, p, perms, 3);
+
+        p.addView(Ui.sectionTitle(this, "\u05D2\u05D9\u05D1\u05D5\u05D9"));
+        long lastBk = sp.getLong(Backup.KEY_LAST, 0);
+        boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
+        List<View> bk = new ArrayList<>();
+        bk.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : "\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10),
+                oldBk ? need : ok, v -> startBackup()));
+        bk.add(Ui.tile(this, "\u267B\uFE0F", "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9", "", 0, v -> new AlertDialog.Builder(this)
                 .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
                 .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
                 .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> {
@@ -167,103 +364,11 @@ public class MainActivity extends Activity {
                     startActivityForResult(i, REQ_RESTORE);
                 })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                .show());
-        bkRow.addView(bBackup, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        bkRow.addView(bRestore, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        settingsBox.addView(bkRow);
-        boolean setupDone = !Data.get(this).rows.isEmpty() && hasPermissions() && Settings.canDrawOverlays(this);
-        settingsBox.setVisibility(setupDone ? android.view.View.GONE : android.view.View.VISIBLE);
-        bSettings.setText(setupDone ? "\u2699 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA, \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D5\u05D2\u05D9\u05D1\u05D5\u05D9" : "\u25B2 \u05D4\u05E1\u05EA\u05E8 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA");
-
-        // Clients list
-        section(root, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
-        search = new EditText(this);
-        search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD \u05D0\u05D5 \u05D8\u05DC\u05E4\u05D5\u05DF");
-        search.setSingleLine(true);
-        search.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
-            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
-            @Override public void afterTextChanged(Editable e) { refreshList(); }
-        });
-        root.addView(search);
-        listBox = new LinearLayout(this);
-        listBox.setOrientation(LinearLayout.VERTICAL);
-        root.addView(listBox);
-
-        android.widget.ScrollView sv = new android.widget.ScrollView(this);
-        sv.addView(root);
-        setContentView(sv);
-        He.rtl(this);
-        Backup.scheduleReminder(this);
-        if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
+                .show()));
+        Ui.grid(this, p, bk, 3);
     }
 
-    private void section(LinearLayout root, String text) {
-        TextView t = new TextView(this);
-        t.setText(text);
-        t.setTextSize(14);
-        t.setTypeface(null, Typeface.BOLD);
-        t.setTextColor(0xFF1E88E5);
-        t.setPadding(0, dp(14), 0, dp(2));
-        root.addView(t);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        refresh();
-    }
-
-    private void refresh() {
-        int openT = 0, lateT = 0;
-        for (TicketDb.Ticket t : TicketDb.get(this).all()) {
-            if (t.isOpen()) openT++;
-            if (t.isOverdue()) lateT++;
-        }
-        bTickets.setText("\uD83C\uDFAB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA (" + openT + " \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA)");
-        bOverdue.setText("\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8: " + lateT);
-        bOverdue.setTextColor(lateT > 0 ? 0xFFD32F2F : 0xFF444444);
-        ClientStore s = Data.get(this);
-        int n = s.rows.size();
-        if (n == 0) {
-            status.setText("\u05E2\u05D3\u05D9\u05D9\u05DF \u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA. \u05D4\u05EA\u05D7\u05DC \u05D1\u05E9\u05DC\u05D1 1.");
-        } else {
-            StringBuilder cols = new StringBuilder();
-            for (int c : s.phoneCols) {
-                if (cols.length() > 0) cols.append(", ");
-                cols.append(s.headers.get(c));
-            }
-            status.setText(n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D8\u05E2\u05E0\u05D5.\n\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD: " + s.headers.get(s.nameCol)
-                    + "\n\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF: " + (cols.length() == 0 ? "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 - \u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5" : cols));
-        }
-        bImport.setText("\u05D9\u05D9\u05D1\u05D5\u05D0 \u05D0\u05E7\u05E1\u05DC / Access");
-        bNameCol.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7");
-        bCols.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF (\u05D0\u05DD \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D6\u05D5\u05D4\u05D9\u05DD)");
-        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF, \u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8 \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
-        bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA \u05D0\u05D7\u05E8\u05D5\u05EA");
-        if (Build.VERSION.SDK_INT >= 29) {
-            RoleManager rm = getSystemService(RoleManager.class);
-            boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
-            bRole.setText((held ? "\u2713 " : "4. ") + "\u05D4\u05D2\u05D3\u05E8\u05D4 \u05DB\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D9\u05EA \u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05EA\u05E7\u05E9\u05E8");
-        } else {
-            bRole.setVisibility(View.GONE);
-        }
-        SharedPreferences sp = CallLogger.prefs(this);
-        long calId = sp.getLong(CallLogger.KEY_CAL_ID, 0);
-        String calText = calId < 0 ? "\u05DB\u05D1\u05D5\u05D9"
-                : calId == 0 ? "\u05D9\u05D5\u05DE\u05DF \u05E8\u05D0\u05E9\u05D9" : sp.getString(CallLogger.KEY_CAL_NAME, "\u05D9\u05D5\u05DE\u05DF \u05E9\u05E0\u05D1\u05D7\u05E8");
-        bCalendar.setText("5. \u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF: " + calText);
-        bAsk.setText("\u05E9\u05DE\u05D9\u05E8\u05EA \u05E9\u05D9\u05D7\u05D4 \u05D1\u05D9\u05D5\u05DE\u05DF: " + (CallLogger.prefs(this).getBoolean(CallLogger.KEY_ASK, true)
-                ? "\u05DC\u05E9\u05D0\u05D5\u05DC \u05D0\u05D7\u05E8\u05D9 \u05DB\u05DC \u05E9\u05D9\u05D7\u05D4" : "\u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA, \u05D1\u05DC\u05D9 \u05DC\u05E9\u05D0\u05D5\u05DC"));
-        bUnknown.setText("\u05E8\u05D9\u05E9\u05D5\u05DD \u05D2\u05DD \u05E9\u05DC \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD: "
-                + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
-        bContacts.setText("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D2\u05DD \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF: "
-                + (CallLogger.prefs(this).getBoolean(PhoneContacts.KEY_ENABLED, true) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
-        long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
-        bBackup.setText("\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD" + (lastBk == 0 ? " (\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2)" : "\n(\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10) + ")"));
-        bTest.setText("\u05D1\u05D3\u05D9\u05E7\u05D4: \u05D4\u05E6\u05D2 \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF");
-        refreshList();
-    }
+    // ------------------------------------------------------------------ Clients list
 
     private void refreshList() {
         ClientStore s = Data.get(this);
@@ -272,33 +377,21 @@ public class MainActivity extends Activity {
         int count = 0;
         for (final int r : rows) {
             if (count >= 300) {
-                TextView more = new TextView(this);
-                more.setText("\u05DE\u05D5\u05E6\u05D2\u05D9\u05DD 300 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E8\u05D0\u05E9\u05D5\u05E0\u05D9\u05DD - \u05D7\u05E4\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05E6\u05DE\u05E6\u05DD (" + rows.size() + " \u05D1\u05E1\u05DA \u05D4\u05DB\u05D5\u05DC)");
-                more.setPadding(0, dp(10), 0, dp(10));
-                listBox.addView(more);
+                listBox.addView(Ui.text(this, "  \u05DE\u05D5\u05E6\u05D2\u05D9\u05DD 300 \u05E8\u05D0\u05E9\u05D5\u05E0\u05D9\u05DD \u05DE\u05EA\u05D5\u05DA " + rows.size() + " - \u05D7\u05E4\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05E6\u05DE\u05E6\u05DD", 13, Ui.MUTED, false));
                 break;
             }
             count++;
-            TextView tv = new TextView(this);
             String phone = s.firstPhone(r);
-            tv.setText(s.name(r) + (phone.isEmpty() ? "" : "\n" + phone));
-            tv.setTextSize(17);
-            tv.setPadding(dp(4), dp(12), dp(4), dp(12));
-            tv.setOnClickListener(v -> openCard(r));
-            tv.setOnLongClickListener(v -> {
+            LinearLayout card = Ui.rowCard(this, s.name(r), phone, "", 0, v -> openCard(r));
+            card.setOnLongClickListener(v -> {
                 startActivity(new Intent(this, ClientEditActivity.class).putExtra(DetailActivity.EXTRA_ROW, r));
                 return true;
             });
-            listBox.addView(tv);
-            android.view.View line = new android.view.View(this);
-            line.setBackgroundColor(0xFFDDDDDD);
-            listBox.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
+            listBox.addView(card, Ui.cardParams(this));
         }
         if (rows.isEmpty()) {
-            TextView none = new TextView(this);
-            none.setText(s.rows.isEmpty() ? "\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA - \u05DC\u05D7\u05E5 \"\u05D9\u05D9\u05D1\u05D5\u05D0\" \u05D0\u05D5 \"+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9\"" : "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
-            none.setPadding(0, dp(10), 0, dp(10));
-            listBox.addView(none);
+            listBox.addView(Ui.text(this, s.rows.isEmpty() ? "  \u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA - \u05DC\u05D7\u05E5 \"\u05D9\u05D9\u05D1\u05D5\u05D0\" \u05D0\u05D5 \"\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9\"" : "  \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA",
+                    14, Ui.MUTED, false));
         }
     }
 
