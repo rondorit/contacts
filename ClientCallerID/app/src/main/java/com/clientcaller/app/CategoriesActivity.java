@@ -46,6 +46,7 @@ public class CategoriesActivity extends Activity {
                 android.view.View v = super.getView(position, convertView, parent);
                 v.setPadding(dp(14), dp(14), dp(14), dp(14));
                 v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
+                v.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
                 return v;
             }
         };

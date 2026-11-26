@@ -61,6 +61,7 @@ final class Ui {
         t.setTextSize(size);
         t.setTextColor(color);
         if (bold) t.setTypeface(null, Typeface.BOLD);
+        t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         return t;
     }
 
@@ -77,14 +78,17 @@ final class Ui {
         t.setMinimumHeight(dp(c, 104));
         TextView i = text(c, icon, 28, TEXT, false);
         i.setGravity(Gravity.CENTER);
+        i.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(i);
         TextView ti = text(c, title, 14, TEXT, true);
         ti.setGravity(Gravity.CENTER);
+        ti.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         ti.setPadding(0, dp(c, 4), 0, 0);
         t.addView(ti);
         if (sub != null && !sub.isEmpty()) {
             TextView s = text(c, sub, 12, subColor, false);
             s.setGravity(Gravity.CENTER);
+            s.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             s.setMaxLines(2);
             t.addView(s);
         }
@@ -100,9 +104,11 @@ final class Ui {
         t.setGravity(Gravity.CENTER_HORIZONTAL);
         TextView n = text(c, icon + "  " + number, 26, color, true);
         n.setGravity(Gravity.CENTER);
+        n.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(n);
         TextView lb = text(c, label, 13, MUTED, false);
         lb.setGravity(Gravity.CENTER);
+        lb.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(lb);
         t.setClickable(true);
         t.setOnClickListener(l);
@@ -173,6 +179,12 @@ final class Ui {
                 int m = dp(c, 4);
                 ((ViewGroup.MarginLayoutParams) lp).setMargins(m, m, m, m);
                 b.setLayoutParams(lp);
+            }
+        } else if (v instanceof TextView && !(v instanceof android.widget.Button)) {
+            TextView t = (TextView) v;
+            int hg = t.getGravity() & Gravity.HORIZONTAL_GRAVITY_MASK;
+            if (t.getTextAlignment() == View.TEXT_ALIGNMENT_GRAVITY && hg != Gravity.CENTER_HORIZONTAL) {
+                t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             }
         } else if (v instanceof ViewGroup) {
             ViewGroup g = (ViewGroup) v;

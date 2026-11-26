@@ -120,8 +120,10 @@ public class MainActivity extends Activity {
             tb.setPadding(0, dp(6), 0, dp(6));
             TextView ic = Ui.text(this, TAB_ICONS[i], 22, Ui.TEXT, false);
             ic.setGravity(android.view.Gravity.CENTER);
+            ic.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             TextView nm = Ui.text(this, TAB_NAMES[i], 12, Ui.MUTED, false);
             nm.setGravity(android.view.Gravity.CENTER);
+            nm.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             tb.addView(ic);
             tb.addView(nm);
             tb.setOnClickListener(v -> showTab(idx));

@@ -204,6 +204,7 @@ final class CallPopup {
         int m = (int) (12 * d);
         frame.setPadding(m, m, m, m);
         frame.addView(box);
+        Ui.polish(frame);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -313,6 +314,7 @@ final class CallPopup {
         int m = (int) (12 * d);
         frame.setPadding(m, m, m, m);
         frame.addView(box);
+        Ui.polish(frame);
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
