@@ -32,7 +32,9 @@ public class TicketActivity extends Activity {
     private String oldStatus;
     private EditText eClient, ePhone, eTitle, eDesc, eEquip, eOutsource, eNote;
     private Spinner sStatus, sPriority, sCategory;
-    private TextView tFollow;
+    private TextView tFollow, history;
+    private Spinner sProvider;
+    private final java.util.List<String> providerNames = new java.util.ArrayList<>();
     private long followupAt;
 
     @Override
@@ -76,8 +78,17 @@ public class TicketActivity extends Activity {
         sCategory = spinner(box, "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4", TicketDb.CATEGORIES, He.CATEGORY, t.category);
         eEquip = field(box, "\u05E6\u05D9\u05D5\u05D3 (\u05E9\u05DD \u05DE\u05D7\u05E9\u05D1, \u05D3\u05D2\u05DD, \u05DE\u05E1\u05E4\u05E8 \u05E1\u05D9\u05D3\u05D5\u05E8\u05D9)", t.equipment,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        eOutsource = field(box, "\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5 (\u05D7\u05D1\u05E8\u05D4 / \u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8 / \u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D0\u05E6\u05DC\u05DD)", t.outsource,
+        label(box, "\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA (\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5)");
+        LinearLayout pRow = row(box);
+        sProvider = new Spinner(this);
+        pRow.addView(sProvider, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(pRow, "\u05E0\u05D9\u05D4\u05D5\u05DC", v -> startActivity(new Intent(this, ProvidersActivity.class)));
+        loadProviders(t.provider);
+        eOutsource = field(box, "\u05E4\u05E8\u05D8\u05D9\u05DD \u05DC\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5 (\u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D0\u05E6\u05DC\u05DD, \u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8)", t.outsource,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        LinearLayout sendRow = row(box);
+        rowButton(sendRow, "\u05E9\u05DC\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> sendToProvider(true));
+        rowButton(sendRow, "\u05E9\u05DC\u05D7 \u05D1\u05DE\u05D9\u05D9\u05DC", v -> sendToProvider(false));
 
         label(box, "\u05DE\u05E2\u05E7\u05D1");
         tFollow = new TextView(this);
@@ -104,16 +115,9 @@ public class TicketActivity extends Activity {
         showFollowup();
 
         label(box, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D9\u05EA \u05D4\u05E2\u05E8\u05D5\u05EA");
-        TextView history = new TextView(this);
+        history = new TextView(this);
         history.setTextIsSelectable(true);
-        StringBuilder sb = new StringBuilder();
-        if (t.id > 0) {
-            for (TicketDb.Note n : db.notes(t.id)) {
-                if (sb.length() > 0) sb.append("\n\n");
-                sb.append(TicketDb.fmt(n.time)).append('\n').append(n.text);
-            }
-        }
-        history.setText(sb.length() == 0 ? "\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF." : sb.toString());
+        showHistory();
         box.addView(history);
         eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -166,15 +170,85 @@ public class TicketActivity extends Activity {
         t.category = TicketDb.CATEGORIES[sCategory.getSelectedItemPosition()];
         t.equipment = eEquip.getText().toString().trim();
         t.outsource = eOutsource.getText().toString().trim();
+        int pi = sProvider.getSelectedItemPosition();
+        t.provider = pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1);
         t.followupAt = followupAt;
     }
 
-    private void save() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (sProvider != null) {
+            int pi = sProvider.getSelectedItemPosition();
+            loadProviders(pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1));
+        }
+    }
+
+    private void loadProviders(String selected) {
+        providerNames.clear();
+        for (TicketDb.Provider p : db.providers()) providerNames.add(p.name);
+        if (!selected.isEmpty() && !providerNames.contains(selected)) providerNames.add(selected);
+        java.util.List<String> items = new java.util.ArrayList<>();
+        items.add("\u05DC\u05DC\u05D0");
+        items.addAll(providerNames);
+        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sProvider.setAdapter(a);
+        sProvider.setSelection(selected.isEmpty() ? 0 : providerNames.indexOf(selected) + 1);
+    }
+
+    private void showHistory() {
+        StringBuilder sb = new StringBuilder();
+        if (t.id > 0) {
+            for (TicketDb.Note n : db.notes(t.id)) {
+                if (sb.length() > 0) sb.append("\n\n");
+                sb.append(TicketDb.fmt(n.time)).append('\n').append(n.text);
+            }
+        }
+        history.setText(sb.length() == 0 ? "\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF." : sb.toString());
+    }
+
+    /** Sends the ticket to the chosen outsourcing provider by WhatsApp or email. */
+    private void sendToProvider(boolean whatsapp) {
         readForm();
+        if (t.provider.isEmpty()) {
+            toast("\u05D1\u05D7\u05E8 \u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA");
+            return;
+        }
+        TicketDb.Provider p = db.providerByName(t.provider);
+        String phone = p == null ? "" : p.phone.trim();
+        String email = p == null ? "" : p.email.trim();
+        if (whatsapp && phone.isEmpty()) {
+            toast("\u05D0\u05D9\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA - \u05D4\u05D5\u05E1\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1'\u05E0\u05D9\u05D4\u05D5\u05DC'");
+            return;
+        }
+        if (!whatsapp && email.isEmpty()) {
+            toast("\u05D0\u05D9\u05DF \u05DE\u05D9\u05D9\u05DC \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA - \u05D4\u05D5\u05E1\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1'\u05E0\u05D9\u05D4\u05D5\u05DC'");
+            return;
+        }
+        if (!persist()) return;
+        db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + (whatsapp ? " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : " \u05D1\u05DE\u05D9\u05D9\u05DC"));
+        showHistory();
+        String text = db.summary(t);
+        if (whatsapp) {
+            open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
+                    + DetailActivity.whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
+        } else {
+            Intent send = new Intent(Intent.ACTION_SEND)
+                    .putExtra(Intent.EXTRA_EMAIL, new String[]{email})
+                    .putExtra(Intent.EXTRA_SUBJECT, "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title)
+                    .putExtra(Intent.EXTRA_TEXT, text);
+            send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
+            open(Intent.createChooser(send, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05DE\u05D9\u05D9\u05DC"));
+        }
+    }
+
+    /** Saves the form; returns false if the ticket has no subject yet. */
+    private boolean persist() {
         if (t.title.isEmpty()) {
             if (t.description.isEmpty()) {
                 toast("\u05DB\u05EA\u05D5\u05D1 \u05E0\u05D5\u05E9\u05D0 \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4");
-                return;
+                return false;
             }
             t.title = t.description.length() > 40 ? t.description.substring(0, 40) + "\u2026" : t.description;
         }
@@ -182,11 +256,19 @@ public class TicketActivity extends Activity {
         db.save(t);
         if (isNew) db.addNote(t.id, "\u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05E0\u05E4\u05EA\u05D7\u05D4 (" + He.status(t.status) + ")");
         else if (!t.status.equals(oldStatus)) db.addNote(t.id, "\u05E1\u05D8\u05D8\u05D5\u05E1: " + He.status(oldStatus) + " \u2190 " + He.status(t.status));
+        oldStatus = t.status;
         String note = eNote.getText().toString().trim();
         if (!note.isEmpty()) db.addNote(t.id, note);
+        eNote.setText("");
         Followups.schedule(this, t);
         Followups.syncCalendar(this, t);
         db.save(t);
+        return true;
+    }
+
+    private void save() {
+        readForm();
+        if (!persist()) return;
         toast("\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " \u05E0\u05E9\u05DE\u05E8\u05D4");
         finish();
     }

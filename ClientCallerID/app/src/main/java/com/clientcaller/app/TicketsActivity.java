@@ -61,7 +61,14 @@ public class TicketsActivity extends Activity {
         add.setAllCaps(false);
         add.setText("+ \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         add.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)));
-        root.addView(add);
+        LinearLayout addRow = new LinearLayout(this);
+        addRow.addView(add, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Button prov = new Button(this);
+        prov.setAllCaps(false);
+        prov.setText("\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA");
+        prov.setOnClickListener(v -> startActivity(new Intent(this, ProvidersActivity.class)));
+        addRow.addView(prov, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        root.addView(addRow);
 
         search = new EditText(this);
         search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7, \u05E0\u05D5\u05E9\u05D0, \u05E6\u05D9\u05D5\u05D3\u2026");
@@ -118,7 +125,7 @@ public class TicketsActivity extends Activity {
             if (!ok) continue;
             if (!q.isEmpty()) {
                 String hay = (t.clientName + " " + t.clientPhone + " " + t.title + " " + t.description + " "
-                        + t.equipment + " " + t.outsource + " #" + t.id).toLowerCase(Locale.ROOT);
+                        + t.equipment + " " + t.outsource + " " + t.provider + " #" + t.id).toLowerCase(Locale.ROOT);
                 if (!hay.contains(q)) continue;
             }
             sel.add(t);
@@ -143,7 +150,8 @@ public class TicketsActivity extends Activity {
             sb.append('#').append(t.id).append("  ").append(He.status(t.status)).append('\n');
             sb.append(t.clientName.isEmpty() ? "(\u05DC\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7)" : t.clientName).append(" \u2014 ").append(t.title);
             if (t.followupAt > 0 && t.isOpen()) sb.append("\n\u05DE\u05E2\u05E7\u05D1: ").append(TicketDb.fmt(t.followupAt));
-            if (!t.outsource.isEmpty()) sb.append("\n\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5: ").append(t.outsource);
+            if (!t.provider.isEmpty() || !t.outsource.isEmpty())
+                sb.append("\n\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5: ").append(t.provider).append(t.provider.isEmpty() || t.outsource.isEmpty() ? "" : " - ").append(t.outsource);
             items.add(sb.toString());
         }
         adapter.clear();

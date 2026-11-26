@@ -99,7 +99,7 @@ public class DetailActivity extends Activity {
     }
 
     /** Israeli local numbers get the 972 country code; others are used as written. */
-    private static String whatsAppNumber(String number) {
+    static String whatsAppNumber(String number) {
         String k = ClientStore.key(number);
         String plain = number.replaceAll("[^0-9]", "");
         if (number.trim().startsWith("+") || plain.startsWith("00")) {
