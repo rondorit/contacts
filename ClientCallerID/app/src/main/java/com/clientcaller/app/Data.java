@@ -27,6 +27,15 @@ final class Data {
         return cache;
     }
 
+    static final String KEY_EDITED = "clients_edited";  // changed in the app since last import/export
+
+    /** Saves the client list after adding/editing/deleting in the app. */
+    static synchronized void saveEdits(Context ctx) throws java.io.IOException {
+        ClientStore s = get(ctx);
+        s.saveFile(new File(ctx.getApplicationContext().getFilesDir(), FILE));
+        CallLogger.prefs(ctx).edit().putBoolean(KEY_EDITED, true).apply();
+    }
+
     static synchronized void reset() {
         cache = null;
     }

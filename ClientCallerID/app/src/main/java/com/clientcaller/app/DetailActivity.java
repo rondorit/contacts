@@ -43,6 +43,16 @@ public class DetailActivity extends Activity {
         box.addView(name);
 
         final int clientRow = r;
+        Button edit = new Button(this);
+        edit.setAllCaps(false);
+        edit.setText("\u05E2\u05E8\u05D9\u05DB\u05EA \u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7");
+        final int editRow = r;
+        edit.setOnClickListener(v -> {
+            startActivity(new Intent(this, ClientEditActivity.class).putExtra(EXTRA_ROW, editRow));
+            finish();
+        });
+        box.addView(edit);
+
         Button newTicket = new Button(this);
         newTicket.setAllCaps(false);
         newTicket.setText("+ \u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA \u05D7\u05D3\u05E9\u05D4");

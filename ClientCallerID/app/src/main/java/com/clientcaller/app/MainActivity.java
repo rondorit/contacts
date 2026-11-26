@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMS = 3;
     private static final int REQ_BACKUP = 4;
     private static final int REQ_RESTORE = 5;
+    private static final int REQ_EXPORT = 6;
 
     private TextView status;
     private Button bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
@@ -76,6 +77,18 @@ public class MainActivity extends Activity {
         root.addView(ticketRow);
 
         bImport = addButton(root, v -> pickFile());
+        LinearLayout clientRow = new LinearLayout(this);
+        Button bAdd = new Button(this);
+        bAdd.setAllCaps(false);
+        bAdd.setText("+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9");
+        bAdd.setOnClickListener(v -> startActivity(new Intent(this, ClientEditActivity.class)));
+        Button bExport = new Button(this);
+        bExport.setAllCaps(false);
+        bExport.setText("\u05D9\u05D9\u05E6\u05D5\u05D0 \u05DC\u05D0\u05E7\u05E1\u05DC");
+        bExport.setOnClickListener(v -> startExport());
+        clientRow.addView(bAdd, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        clientRow.addView(bExport, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        root.addView(clientRow);
         bNameCol = addButton(root, v -> chooseNameColumn());
         bCols = addButton(root, v -> choosePhoneColumns());
         bPerms = addButton(root, v -> askPermissions());
@@ -215,6 +228,34 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ import
 
     private void pickFile() {
+        if (CallLogger.prefs(this).getBoolean(Data.KEY_EDITED, false)) {
+            new AlertDialog.Builder(this)
+                    .setTitle("\u05D9\u05E9 \u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD \u05E9\u05DC\u05D0 \u05D9\u05D5\u05E6\u05D0\u05D5")
+                    .setMessage("\u05D4\u05D5\u05E1\u05E4\u05EA \u05D0\u05D5 \u05E2\u05E8\u05DB\u05EA \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05D5\u05E2\u05D3\u05D9\u05D9\u05DF \u05DC\u05D0 \u05D9\u05D9\u05E6\u05D0\u05EA \u05D0\u05D5\u05EA\u05DD \u05DC\u05D0\u05E7\u05E1\u05DC. "
+                            + "\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9 \u05D9\u05DE\u05D7\u05E7 \u05D0\u05EA \u05D4\u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD \u05D4\u05D0\u05DC\u05D4. \u05DE\u05D4 \u05DC\u05E2\u05E9\u05D5\u05EA?")
+                    .setPositiveButton("\u05D9\u05D9\u05E6\u05D0 \u05E7\u05D5\u05D3\u05DD", (d, w) -> startExport())
+                    .setNeutralButton("\u05D9\u05D9\u05D1\u05D0 \u05D1\u05DB\u05DC \u05D6\u05D0\u05EA", (d, w) -> pickFileNow())
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                    .show();
+            return;
+        }
+        pickFileNow();
+    }
+
+    private void startExport() {
+        if (Data.get(this).headers.isEmpty()) {
+            Toast.makeText(this, "\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DC\u05D9\u05D9\u05E6\u05D5\u05D0", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + ".xlsx");
+        startActivityForResult(i, REQ_EXPORT);
+    }
+
+    private void pickFileNow() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("*/*");
@@ -239,6 +280,7 @@ public class MainActivity extends Activity {
                     if (s.rows.isEmpty()) throw new IOException("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5");
                     s.saveFile(new File(getFilesDir(), Data.FILE));
                     Data.set(this, s);
+                    CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
                     final int n = s.rows.size();
                     runOnUiThread(() -> {
                         Toast.makeText(this, "\u05D9\u05D5\u05D1\u05D0\u05D5 " + n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", Toast.LENGTH_LONG).show();
@@ -247,6 +289,19 @@ public class MainActivity extends Activity {
                 } catch (Exception e) {
                     final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                     runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg, Toast.LENGTH_LONG).show());
+                }
+            }).start();
+        } else if (requestCode == REQ_EXPORT && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            final Uri uri = data.getData();
+            new Thread(() -> {
+                try (java.io.OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05DB\u05EA\u05D5\u05D1 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
+                    Data.get(this).writeXlsx(out);
+                    CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
+                    runOnUiThread(() -> Toast.makeText(this, "\u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC \u05E0\u05E9\u05DE\u05E8", Toast.LENGTH_LONG).show());
+                } catch (Exception e) {
+                    final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+                    runOnUiThread(() -> Toast.makeText(this, "\u05D4\u05D9\u05D9\u05E6\u05D5\u05D0 \u05E0\u05DB\u05E9\u05DC: " + msg, Toast.LENGTH_LONG).show());
                 }
             }).start();
         } else if ((requestCode == REQ_BACKUP || requestCode == REQ_RESTORE)

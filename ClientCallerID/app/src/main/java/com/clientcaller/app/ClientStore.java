@@ -193,6 +193,103 @@ public class ClientStore {
     }
 
     /** Uses the given columns as phone columns (chosen by the user). */
+    /** Adds a new client (r < 0) or replaces row r. */
+    public int setRow(int r, List<String> values) {
+        List<String> row = new ArrayList<>();
+        for (int c = 0; c < headers.size(); c++) {
+            String v = c < values.size() && values.get(c) != null ? values.get(c).trim() : "";
+            row.add(v.replace("\t", " ").replace("\n", " "));
+        }
+        if (r < 0 || r >= rows.size()) {
+            rows.add(row);
+            r = rows.size() - 1;
+        } else {
+            rows.set(r, row);
+        }
+        index();
+        return r;
+    }
+
+    public void removeRow(int r) {
+        if (r >= 0 && r < rows.size()) rows.remove(r);
+        index();
+    }
+
+    /** Writes the whole client table as an Excel (.xlsx) file, right-to-left sheet. */
+    public void writeXlsx(java.io.OutputStream out) throws IOException {
+        java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(out);
+        String head = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+        String pkg = "http://schemas.openxmlformats.org/package/2006/";
+        String off = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        String main = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        put(z, "[Content_Types].xml", head + "<Types xmlns=\"" + pkg + "content-types\">"
+                + "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+                + "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+                + "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"
+                + "<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>"
+                + "</Types>");
+        put(z, "_rels/.rels", head + "<Relationships xmlns=\"" + pkg + "relationships\">"
+                + "<Relationship Id=\"rId1\" Type=\"" + off + "/officeDocument\" Target=\"xl/workbook.xml\"/>"
+                + "</Relationships>");
+        put(z, "xl/workbook.xml", head + "<workbook xmlns=\"" + main + "\" xmlns:r=\"" + off + "\">"
+                + "<sheets><sheet name=\"\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+        put(z, "xl/_rels/workbook.xml.rels", head + "<Relationships xmlns=\"" + pkg + "relationships\">"
+                + "<Relationship Id=\"rId1\" Type=\"" + off + "/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
+                + "</Relationships>");
+        StringBuilder sb = new StringBuilder(head);
+        sb.append("<worksheet xmlns=\"").append(main).append("\">")
+                .append("<sheetViews><sheetView rightToLeft=\"1\" workbookViewId=\"0\"/></sheetViews><sheetData>");
+        List<List<String>> all = new ArrayList<>();
+        all.add(headers);
+        all.addAll(rows);
+        for (int r = 0; r < all.size(); r++) {
+            sb.append("<row r=\"").append(r + 1).append("\">");
+            List<String> row = all.get(r);
+            for (int c = 0; c < row.size(); c++) {
+                String v = row.get(c);
+                if (v == null || v.isEmpty()) continue;
+                sb.append("<c r=\"").append(colName(c)).append(r + 1).append("\" t=\"inlineStr\"><is><t xml:space=\"preserve\">")
+                        .append(xml(v)).append("</t></is></c>");
+            }
+            sb.append("</row>");
+        }
+        sb.append("</sheetData></worksheet>");
+        put(z, "xl/worksheets/sheet1.xml", sb.toString());
+        z.finish();
+        z.flush();
+    }
+
+    private static void put(java.util.zip.ZipOutputStream z, String name, String content) throws IOException {
+        z.putNextEntry(new ZipEntry(name));
+        z.write(content.getBytes(StandardCharsets.UTF_8));
+        z.closeEntry();
+    }
+
+    private static String colName(int c) {
+        StringBuilder sb = new StringBuilder();
+        c++;
+        while (c > 0) {
+            int m = (c - 1) % 26;
+            sb.insert(0, (char) ('A' + m));
+            c = (c - 1) / 26;
+        }
+        return sb.toString();
+    }
+
+    private static String xml(String v) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < v.length(); i++) {
+            char ch = v.charAt(i);
+            if (ch == '&') sb.append("&amp;");
+            else if (ch == '<') sb.append("&lt;");
+            else if (ch == '>') sb.append("&gt;");
+            else if (ch == '"') sb.append("&quot;");
+            else if (ch < 0x20 && ch != '\t') sb.append(' ');
+            else sb.append(ch);
+        }
+        return sb.toString();
+    }
+
     /** Uses the given column as the client name (chosen by the user). */
     public void setNameColumn(int c) {
         if (c >= 0 && c < headers.size()) nameCol = c;
