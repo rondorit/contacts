@@ -117,6 +117,18 @@ final class Templates {
         return out;
     }
 
+    /** Fills a template for a client (no ticket): name, phone, today and the Excel columns. */
+    static String fillClient(Context c, int row, String text) {
+        ClientStore s = Data.get(c);
+        TicketDb.Ticket t = new TicketDb.Ticket();
+        t.clientName = s.name(row);
+        t.clientPhone = s.firstPhone(row);
+        t.status = "";
+        t.priority = "";
+        t.category = "";
+        return fill(c, t, text);
+    }
+
     /** Replaces the {fields} in text with this ticket's data and the client's Excel row. */
     static String fill(Context c, TicketDb.Ticket t, String text) {
         TicketDb db = TicketDb.get(c);
@@ -125,7 +137,7 @@ final class Templates {
             notes.append(TicketDb.fmt(n.time)).append(" - ").append(n.text).append('\n');
         }
         String[] values = {
-                String.valueOf(t.id), t.clientName, t.clientPhone, t.title, t.description, t.equipment, t.mac,
+                t.id > 0 ? String.valueOf(t.id) : "", t.clientName, t.clientPhone, t.title, t.description, t.equipment, t.mac,
                 He.category(t.category), He.priority(t.priority), He.status(t.status), t.provider, t.outsource,
                 t.followupAt > 0 ? TicketDb.fmt(t.followupAt) : "",
                 t.created > 0 ? TicketDb.fmt(t.created) : "",

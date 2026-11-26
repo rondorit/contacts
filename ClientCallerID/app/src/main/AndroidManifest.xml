@@ -47,6 +47,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".GroupSendActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".TemplatesActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

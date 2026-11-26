@@ -214,6 +214,14 @@ public class DetailActivity extends Activity {
                 .setItems(names, (d, w) -> startActivity(new Intent(this, DetailActivity.class)
                         .putExtra(EXTRA_ROW, list.get(w))))
                 .setNeutralButton("\u05E9\u05E0\u05D4 \u05E2\u05DE\u05D5\u05D3\u05EA \u05D7\u05DC\u05E7\u05D4", (d, w) -> choosePlotColumn(s, r))
+                .setPositiveButton("\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05DB\u05DC \u05D4\u05D7\u05DC\u05E7\u05D4", (d, w) -> {
+                    int[] arr = new int[list.size() + 1];
+                    arr[0] = r;
+                    for (int i = 0; i < list.size(); i++) arr[i + 1] = list.get(i);
+                    startActivity(new Intent(this, GroupSendActivity.class)
+                            .putExtra(GroupSendActivity.EXTRA_ROWS, arr)
+                            .putExtra(GroupSendActivity.EXTRA_TITLE, "\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05D7\u05DC\u05E7\u05D4 " + val));
+                })
                 .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
                 .show();
     }
