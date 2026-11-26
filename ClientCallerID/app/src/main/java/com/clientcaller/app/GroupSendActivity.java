@@ -36,6 +36,7 @@ public class GroupSendActivity extends Activity {
     private List<Templates.Tpl> tpls;
     private EditText message;
     private Spinner tplSpinner;
+    private boolean editingTemplates;
     private TextView progress;
     private Button next;
     private int pos = -1;
@@ -84,7 +85,10 @@ public class GroupSendActivity extends Activity {
         Button editTpl = new Button(this);
         editTpl.setAllCaps(false);
         editTpl.setText("\u05E2\u05E8\u05D9\u05DB\u05EA \u05EA\u05D1\u05E0\u05D9\u05D5\u05EA");
-        editTpl.setOnClickListener(v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        editTpl.setOnClickListener(v -> {
+            editingTemplates = true;
+            startActivity(new Intent(this, TemplatesActivity.class));
+        });
         box.addView(editTpl);
         tplSpinner = sp;
 
@@ -250,7 +254,10 @@ public class GroupSendActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        reloadTemplates();
+        if (editingTemplates) {
+            editingTemplates = false;
+            reloadTemplates();
+        }
         showProgress();
     }
 
