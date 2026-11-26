@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
     private static final int REQ_EXPORT = 6;
 
     private TextView status;
-    private Button bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
+    private Button bAsk, bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
     private LinearLayout settingsBox, listBox;
     private final List<Integer> shown = new ArrayList<>();
@@ -120,6 +120,11 @@ public class MainActivity extends Activity {
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))));
         bRole = addButton(settingsBox, v -> askCallerIdRole());
         bCalendar = addButton(settingsBox, v -> chooseCalendar());
+        bAsk = addButton(settingsBox, v -> {
+            SharedPreferences sp = CallLogger.prefs(this);
+            sp.edit().putBoolean(CallLogger.KEY_ASK, !sp.getBoolean(CallLogger.KEY_ASK, true)).apply();
+            refresh();
+        });
         bUnknown = addButton(settingsBox, v -> {
             SharedPreferences sp = CallLogger.prefs(this);
             sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !sp.getBoolean(CallLogger.KEY_UNKNOWN, false)).apply();
@@ -234,6 +239,8 @@ public class MainActivity extends Activity {
         String calText = calId < 0 ? "\u05DB\u05D1\u05D5\u05D9"
                 : calId == 0 ? "\u05D9\u05D5\u05DE\u05DF \u05E8\u05D0\u05E9\u05D9" : sp.getString(CallLogger.KEY_CAL_NAME, "\u05D9\u05D5\u05DE\u05DF \u05E9\u05E0\u05D1\u05D7\u05E8");
         bCalendar.setText("5. \u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF: " + calText);
+        bAsk.setText("\u05E9\u05DE\u05D9\u05E8\u05EA \u05E9\u05D9\u05D7\u05D4 \u05D1\u05D9\u05D5\u05DE\u05DF: " + (CallLogger.prefs(this).getBoolean(CallLogger.KEY_ASK, true)
+                ? "\u05DC\u05E9\u05D0\u05D5\u05DC \u05D0\u05D7\u05E8\u05D9 \u05DB\u05DC \u05E9\u05D9\u05D7\u05D4" : "\u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA, \u05D1\u05DC\u05D9 \u05DC\u05E9\u05D0\u05D5\u05DC"));
         bUnknown.setText("\u05E8\u05D9\u05E9\u05D5\u05DD \u05D2\u05DD \u05E9\u05DC \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD: "
                 + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
         bContacts.setText("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D2\u05DD \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF: "

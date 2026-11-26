@@ -19,6 +19,9 @@ final class CallLogger {
     static final String KEY_CAL_ID = "calendar_id";      // 0 = automatic, -1 = off
     static final String KEY_CAL_NAME = "calendar_name";
     static final String KEY_UNKNOWN = "log_unknown";
+    static final String KEY_ASK = "call_log_ask";           // true = ask after each call
+    static final String ACTION_SAVE = "com.clientcaller.app.CALL_LOG_SAVE";
+    static final String ACTION_SKIP = "com.clientcaller.app.CALL_LOG_SKIP";
     private static final String KEY_LAST_CALL = "last_call_id";
 
     private CallLogger() { }
@@ -84,16 +87,65 @@ final class CallLogger {
             }
             if (row >= 0) desc.append("\n\n").append(s.details(row));
 
-            ContentValues v = new ContentValues();
-            v.put(CalendarContract.Events.CALENDAR_ID, calId);
-            v.put(CalendarContract.Events.TITLE, "\uD83D\uDCDE " + kind + ": " + who);
-            v.put(CalendarContract.Events.DESCRIPTION, desc.toString());
-            v.put(CalendarContract.Events.DTSTART, date);
-            v.put(CalendarContract.Events.DTEND, date + Math.max(duration * 1000, 15 * 60 * 1000));
-            v.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
-            c.getContentResolver().insert(CalendarContract.Events.CONTENT_URI, v);
+            String title = "\uD83D\uDCDE " + kind + ": " + who;
+            long end = date + Math.max(duration * 1000, 15 * 60 * 1000);
+            if (p.getBoolean(KEY_ASK, true)) {
+                askToSave(c, id, calId, title, desc.toString(), date, end);
+            } else {
+                insertEvent(c, calId, title, desc.toString(), date, end);
+            }
         } catch (Exception ignored) {
         }
+    }
+
+    static void insertEvent(Context c, long calId, String title, String desc, long start, long end) {
+        ContentValues v = new ContentValues();
+        v.put(CalendarContract.Events.CALENDAR_ID, calId);
+        v.put(CalendarContract.Events.TITLE, title);
+        v.put(CalendarContract.Events.DESCRIPTION, desc);
+        v.put(CalendarContract.Events.DTSTART, start);
+        v.put(CalendarContract.Events.DTEND, end);
+        v.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+        c.getContentResolver().insert(CalendarContract.Events.CONTENT_URI, v);
+    }
+
+    /** Notification after the call: "Save to calendar?" with Save / No buttons. */
+    private static void askToSave(Context c, long callId, long calId, String title, String desc, long start, long end) {
+        android.app.NotificationManager nm = c.getSystemService(android.app.NotificationManager.class);
+        nm.createNotificationChannel(new android.app.NotificationChannel(
+                "call_log_ask", "\u05E9\u05DE\u05D9\u05E8\u05EA \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF", android.app.NotificationManager.IMPORTANCE_DEFAULT));
+        int nid = 70000 + (int) (callId % 20000);
+        android.content.Intent save = new android.content.Intent(c, FollowupReceiver.class).setAction(ACTION_SAVE)
+                .putExtra("nid", nid).putExtra("cal", calId).putExtra("title", title)
+                .putExtra("desc", desc).putExtra("start", start).putExtra("end", end);
+        android.content.Intent skip = new android.content.Intent(c, FollowupReceiver.class).setAction(ACTION_SKIP)
+                .putExtra("nid", nid);
+        int flags = android.app.PendingIntent.FLAG_IMMUTABLE | android.app.PendingIntent.FLAG_UPDATE_CURRENT;
+        android.app.PendingIntent pSave = android.app.PendingIntent.getBroadcast(c, nid, save, flags);
+        android.app.PendingIntent pSkip = android.app.PendingIntent.getBroadcast(c, nid + 1, skip, flags);
+        android.app.Notification n = new android.app.Notification.Builder(c, "call_log_ask")
+                .setSmallIcon(android.R.drawable.ic_menu_my_calendar)
+                .setContentTitle("\u05DC\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05D4\u05E9\u05D9\u05D7\u05D4 \u05D1\u05D9\u05D5\u05DE\u05DF?")
+                .setContentText(title)
+                .setStyle(new android.app.Notification.BigTextStyle().bigText(title + "\n" + desc))
+                .addAction(new android.app.Notification.Action.Builder(null, "\u05E9\u05DE\u05D5\u05E8 \u05D1\u05D9\u05D5\u05DE\u05DF", pSave).build())
+                .addAction(new android.app.Notification.Action.Builder(null, "\u05DC\u05D0", pSkip).build())
+                .setDeleteIntent(pSkip)
+                .setAutoCancel(true)
+                .build();
+        nm.notify(nid, n);
+    }
+
+    /** Handles the Save / No buttons of the notification. */
+    static void onAction(Context c, android.content.Intent i) {
+        int nid = i.getIntExtra("nid", 0);
+        try { c.getSystemService(android.app.NotificationManager.class).cancel(nid); } catch (Exception ignored) { }
+        if (!ACTION_SAVE.equals(i.getAction())) return;
+        try {
+            insertEvent(c, i.getLongExtra("cal", 0), i.getStringExtra("title"), i.getStringExtra("desc"),
+                    i.getLongExtra("start", 0), i.getLongExtra("end", 0));
+            android.widget.Toast.makeText(c, "\u05D4\u05E9\u05D9\u05D7\u05D4 \u05E0\u05E9\u05DE\u05E8\u05D4 \u05D1\u05D9\u05D5\u05DE\u05DF", android.widget.Toast.LENGTH_SHORT).show();
+        } catch (Exception ignored) { }
     }
 
     /** Writable calendars on the phone: ids and "Name (account)" labels. */

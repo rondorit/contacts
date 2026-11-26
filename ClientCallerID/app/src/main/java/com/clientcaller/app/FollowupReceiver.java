@@ -22,6 +22,10 @@ public class FollowupReceiver extends BroadcastReceiver {
             Backup.scheduleReminder(context);
             return;
         }
+        if (CallLogger.ACTION_SAVE.equals(action) || CallLogger.ACTION_SKIP.equals(action)) {
+            CallLogger.onAction(context, intent);
+            return;
+        }
         if (Backup.ACTION_REMIND.equals(action)) {
             Backup.remindIfNeeded(context);
             return;
