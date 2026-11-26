@@ -100,12 +100,19 @@ public class GroupSendActivity extends Activity {
         Button start = new Button(this);
         start.setAllCaps(false);
         start.setTextSize(18);
-        start.setText("\u05D4\u05EA\u05D7\u05DC \u05E9\u05DC\u05D9\u05D7\u05D4");
+        start.setText("\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 - \u05E4\u05EA\u05D7 \u05E6'\u05D0\u05D8 \u05DC\u05DB\u05DC \u05E0\u05DE\u05E2\u05DF");
         start.setOnClickListener(v -> startSending());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.topMargin = dp(16);
         box.addView(start, lp);
+
+        Button sms = new Button(this);
+        sms.setAllCaps(false);
+        sms.setTextSize(18);
+        sms.setText("SMS - \u05E9\u05DC\u05D7 \u05DC\u05DB\u05D5\u05DC\u05DD \u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA");
+        sms.setOnClickListener(v -> confirmSms());
+        box.addView(sms);
 
         progress = new TextView(this);
         progress.setTextSize(16);
@@ -138,6 +145,83 @@ public class GroupSendActivity extends Activity {
         }
         pos = 0;
         openNext();
+    }
+
+    // ------------------------------------------------------------------ SMS
+
+    private List<Integer> selected() {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) if (boxes.get(i).isChecked()) out.add(rows.get(i));
+        return out;
+    }
+
+    private void confirmSms() {
+        if (message.getText().toString().trim().isEmpty()) {
+            Toast.makeText(this, "\u05DB\u05EA\u05D5\u05D1 \u05D4\u05D5\u05D3\u05E2\u05D4 \u05D0\u05D5 \u05D1\u05D7\u05E8 \u05EA\u05D1\u05E0\u05D9\u05EA", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final List<Integer> to = selected();
+        if (to.isEmpty()) {
+            Toast.makeText(this, "\u05DC\u05D0 \u05E0\u05D1\u05D7\u05E8\u05D5 \u05E0\u05DE\u05E2\u05E0\u05D9\u05DD", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String preview = Templates.fillClient(this, to.get(0), message.getText().toString());
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("\u05DC\u05E9\u05DC\u05D5\u05D7 " + to.size() + " \u05D4\u05D5\u05D3\u05E2\u05D5\u05EA SMS?")
+                .setMessage("\u05DB\u05DC \u05E0\u05DE\u05E2\u05DF \u05D9\u05E7\u05D1\u05DC \u05D4\u05D5\u05D3\u05E2\u05D4 \u05E0\u05E4\u05E8\u05D3\u05EA \u05DE\u05D4\u05DE\u05E1\u05E4\u05E8 \u05E9\u05DC\u05DA (\u05E2\u05DC\u05D5\u05EA \u05DC\u05E4\u05D9 \u05D4\u05D7\u05D1\u05D9\u05DC\u05D4 \u05E9\u05DC\u05DA).\n\n\u05D3\u05D5\u05D2\u05DE\u05D4 \u05DC\u05DE\u05D4 \u05E9\u05D9\u05D9\u05E9\u05DC\u05D7:\n" + preview)
+                .setPositiveButton("\u05E9\u05DC\u05D7", (d, w) -> {
+                    if (checkSelfPermission(android.Manifest.permission.SEND_SMS)
+                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{android.Manifest.permission.SEND_SMS}, 7);
+                    } else {
+                        sendSms(to);
+                    }
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == 7 && results.length > 0
+                && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            sendSms(selected());
+        } else if (requestCode == 7) {
+            Toast.makeText(this, "\u05D1\u05DC\u05D9 \u05D4\u05E8\u05E9\u05D0\u05EA SMS \u05D0\u05D9 \u05D0\u05E4\u05E9\u05E8 \u05DC\u05E9\u05DC\u05D5\u05D7", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void sendSms(final List<Integer> to) {
+        final String template = message.getText().toString();
+        progress.setText("\u05E9\u05D5\u05DC\u05D7 SMS\u2026");
+        new Thread(() -> {
+            android.telephony.SmsManager sm = android.os.Build.VERSION.SDK_INT >= 31
+                    ? getSystemService(android.telephony.SmsManager.class)
+                    : android.telephony.SmsManager.getDefault();
+            ClientStore s = Data.get(this);
+            int ok = 0;
+            StringBuilder failed = new StringBuilder();
+            for (int i = 0; i < to.size(); i++) {
+                int r = to.get(i);
+                String phone = s.firstPhone(r).replaceAll("[^0-9+]", "");
+                try {
+                    String text = Templates.fillClient(this, r, template);
+                    ArrayList<String> parts = sm.divideMessage(text);
+                    sm.sendMultipartTextMessage(phone, null, parts, null, null);
+                    ok++;
+                } catch (Exception e) {
+                    failed.append("\n").append(s.name(r));
+                }
+                final int done = i + 1;
+                runOnUiThread(() -> progress.setText("\u05E9\u05D5\u05DC\u05D7 SMS\u2026 " + done + " \u05DE\u05EA\u05D5\u05DA " + to.size()));
+                try { Thread.sleep(700); } catch (InterruptedException ignored) { }
+            }
+            final String msg = "\u2713 \u05E0\u05E9\u05DC\u05D7\u05D5 " + ok + " \u05D4\u05D5\u05D3\u05E2\u05D5\u05EA SMS \u05DE\u05EA\u05D5\u05DA " + to.size()
+                    + (failed.length() == 0 ? "" : "\n\u05E0\u05DB\u05E9\u05DC\u05D5:" + failed);
+            runOnUiThread(() -> progress.setText(msg));
+        }).start();
     }
 
     private void openNext() {
