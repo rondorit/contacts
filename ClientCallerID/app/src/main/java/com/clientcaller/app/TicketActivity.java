@@ -186,6 +186,13 @@ public class TicketActivity extends Activity {
             else open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(ph))));
         });
         rowButton(aRow, "\u05E9\u05EA\u05E3 / \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5", v -> share());
+        LinearLayout sumRow = row(box);
+        rowButton(sumRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05E1\u05D9\u05DB\u05D5\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> {
+            readForm();
+            if (!persist()) return;
+            sendClientSummary();
+            showHistory();
+        });
         if (t.id > 0) {
             LinearLayout dRow = row(box);
             rowButton(dRow, "\u05DE\u05D7\u05E7 \u05E7\u05E8\u05D9\u05D0\u05D4", v -> new AlertDialog.Builder(this)
@@ -430,9 +437,37 @@ public class TicketActivity extends Activity {
 
     private void save() {
         readForm();
+        boolean closing = "Closed".equals(t.status) && !"Closed".equals(oldStatus);
         if (!persist()) return;
         toast("\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " \u05E0\u05E9\u05DE\u05E8\u05D4");
+        if (closing && !t.clientPhone.trim().isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("\u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05E0\u05E1\u05D2\u05E8\u05D4")
+                    .setMessage("\u05DC\u05E9\u05DC\u05D5\u05D7 \u05DC" + (t.clientName.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7" : t.clientName)
+                            + " \u05E1\u05D9\u05DB\u05D5\u05DD \u05E7\u05E6\u05E8 \u05E9\u05DC \u05D4\u05D8\u05D9\u05E4\u05D5\u05DC \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4?")
+                    .setPositiveButton("\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05E1\u05D9\u05DB\u05D5\u05DD", (d, w) -> {
+                        sendClientSummary();
+                        finish();
+                    })
+                    .setNegativeButton("\u05DC\u05D0", (d, w) -> finish())
+                    .setOnCancelListener(d -> finish())
+                    .show();
+            return;
+        }
         finish();
+    }
+
+    /** WhatsApp to the client with a short summary of the ticket (from the editable template). */
+    private void sendClientSummary() {
+        String phone = t.clientPhone.trim();
+        if (phone.isEmpty()) {
+            toast("\u05D0\u05D9\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF \u05DC\u05DC\u05E7\u05D5\u05D7");
+            return;
+        }
+        String text = Templates.fill(this, t, Templates.summaryTemplate(this).body);
+        db.addNote(t.id, "\u05E1\u05D9\u05DB\u05D5\u05DD \u05E0\u05E9\u05DC\u05D7 \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
+        open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
+                + DetailActivity.whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
     }
 
     private void share() {

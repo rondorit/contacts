@@ -20,7 +20,7 @@ final class Templates {
     static final String[] TICKET_FIELDS = {
             "{\u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4}", "{\u05DC\u05E7\u05D5\u05D7}", "{\u05D8\u05DC\u05E4\u05D5\u05DF}", "{\u05E0\u05D5\u05E9\u05D0}", "{\u05EA\u05D9\u05D0\u05D5\u05E8}", "{\u05E6\u05D9\u05D5\u05D3}", "{MAC}",
             "{\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4}", "{\u05D3\u05D7\u05D9\u05E4\u05D5\u05EA}", "{\u05E1\u05D8\u05D8\u05D5\u05E1}", "{\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA}", "{\u05E4\u05E8\u05D8\u05D9 \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5}",
-            "{\u05DE\u05E2\u05E7\u05D1}", "{\u05EA\u05D0\u05E8\u05D9\u05DA \u05E4\u05EA\u05D9\u05D7\u05D4}", "{\u05D4\u05D9\u05D5\u05DD}", "{\u05D4\u05E2\u05E8\u05D5\u05EA}"};
+            "{\u05DE\u05E2\u05E7\u05D1}", "{\u05EA\u05D0\u05E8\u05D9\u05DA \u05E4\u05EA\u05D9\u05D7\u05D4}", "{\u05D4\u05D9\u05D5\u05DD}", "{\u05D4\u05E2\u05E8\u05D5\u05EA}", "{\u05E1\u05D9\u05DB\u05D5\u05DD \u05D8\u05D9\u05E4\u05D5\u05DC}"};
 
     private Templates() { }
 
@@ -48,6 +48,11 @@ final class Templates {
         t.name = "\u05D1\u05D9\u05D8\u05D5\u05DC \u05DE\u05E0\u05D5\u05D9";
         t.subject = "\u05D1\u05E7\u05E9\u05D4 \u05DC\u05D1\u05D9\u05D8\u05D5\u05DC \u05DE\u05E0\u05D5\u05D9 - {\u05DC\u05E7\u05D5\u05D7} - \u05D0\u05EA\u05E8 {\u05D0\u05EA\u05E8}";
         t.body = "\u05E9\u05DC\u05D5\u05DD \u05E8\u05D1.\n\n\u05D1\u05D1\u05E7\u05E9\u05D4 \u05DC\u05D1\u05D8\u05DC \u05D0\u05EA \u05D4\u05DE\u05E0\u05D5\u05D9 \u05D4\u05D1\u05D0:\n\n\u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7: {\u05DC\u05E7\u05D5\u05D7}\n\u05DE\u05E1\u05E4\u05E8 \u05D0\u05EA\u05E8 / \u05DE\u05E0\u05D5\u05D9: {\u05D0\u05EA\u05E8}\n\u05DE\u05E1\u05E4\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05DE\u05DE\u05D9\u05E8: 0002-\n\n\u05E1\u05D9\u05D1\u05EA \u05D4\u05D1\u05D9\u05D8\u05D5\u05DC: ______ (\u05E2\u05D6\u05D1 \u05D0\u05EA \u05D4\u05E7\u05D9\u05D1\u05D5\u05E5 / \u05D1\u05E7\u05E9\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7 / \u05E1\u05D9\u05D1\u05D4 \u05D0\u05D7\u05E8\u05EA).\n\n\u05D1\u05D1\u05E7\u05E9\u05D4 \u05DC\u05E2\u05D3\u05DB\u05DF \u05DC\u05D0\u05D7\u05E8 \u05D1\u05D9\u05E6\u05D5\u05E2 \u05D4\u05D1\u05D9\u05D8\u05D5\u05DC \u05D5\u05DC\u05EA\u05D0\u05DD \u05D0\u05D9\u05E1\u05D5\u05E3 \u05E6\u05D9\u05D5\u05D3 \u05D1\u05DE\u05D9\u05D3\u05EA \u05D4\u05E6\u05D5\u05E8\u05DA.\n\n\u05EA\u05D5\u05D3\u05D4,\n\u05E8\u05D5\u05DF \u05E1\u05D5\u05DC\u05D5\u05DE\u05D5\u05DF\n\u05DE\u05E0\u05D4\u05DC \u05EA\u05E9\u05EA\u05D9\u05D5\u05EA \u05DE\u05D7\u05E9\u05D5\u05D1 \u05D5\u05EA\u05E7\u05E9\u05D5\u05E8\u05EA\n\u05E7\u05D9\u05D1\u05D5\u05E5 \u05DE\u05E6\u05E8";
+        out.add(t);
+        t = new Tpl();
+        t.name = SUMMARY_TEMPLATE;
+        t.subject = "\u05E1\u05D9\u05DB\u05D5\u05DD \u05D8\u05D9\u05E4\u05D5\u05DC - \u05E7\u05E8\u05D9\u05D0\u05D4 {\u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4}";
+        t.body = "\u05E9\u05DC\u05D5\u05DD {\u05DC\u05E7\u05D5\u05D7},\n\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA \u05E9\u05DC\u05DA (\u05DE\u05E1' {\u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4}) \u05D1\u05E0\u05D5\u05E9\u05D0 \"{\u05E0\u05D5\u05E9\u05D0}\" \u05D8\u05D5\u05E4\u05DC\u05D4 \u05D5\u05E0\u05E1\u05D2\u05E8\u05D4 \u2705\n\n\u05E1\u05D9\u05DB\u05D5\u05DD \u05D4\u05D8\u05D9\u05E4\u05D5\u05DC:\n{\u05E1\u05D9\u05DB\u05D5\u05DD \u05D8\u05D9\u05E4\u05D5\u05DC}\n\n\u05D0\u05DD \u05D4\u05EA\u05E7\u05DC\u05D4 \u05D7\u05D5\u05D6\u05E8\u05EA, \u05D0\u05E4\u05E9\u05E8 \u05DC\u05E4\u05E0\u05D5\u05EA \u05D0\u05DC\u05D9\u05D9 \u05D1\u05DB\u05DC \u05E2\u05EA.\n\u05D1\u05D1\u05E8\u05DB\u05D4,\n\u05E8\u05D5\u05DF \u05E1\u05D5\u05DC\u05D5\u05DE\u05D5\u05DF\n\u05DE\u05E0\u05D4\u05DC \u05EA\u05E9\u05EA\u05D9\u05D5\u05EA \u05DE\u05D7\u05E9\u05D5\u05D1 \u05D5\u05EA\u05E7\u05E9\u05D5\u05E8\u05EA\n\u05E7\u05D9\u05D1\u05D5\u05E5 \u05DE\u05E6\u05E8";
         out.add(t);
         return out;
     }
@@ -129,6 +134,30 @@ final class Templates {
         return fill(c, t, text);
     }
 
+    static final String SUMMARY_TEMPLATE = "\u05E1\u05D9\u05DB\u05D5\u05DD \u05D8\u05D9\u05E4\u05D5\u05DC \u05DC\u05DC\u05E7\u05D5\u05D7";
+
+    /** The last note the user wrote (not automatic ones); otherwise the problem description. */
+    static String workSummary(TicketDb db, TicketDb.Ticket t) {
+        String last = "";
+        if (t.id > 0) {
+            for (TicketDb.Note n : db.notes(t.id)) {
+                String x = n.text.trim();
+                if (x.startsWith("\u05E1\u05D8\u05D8\u05D5\u05E1:") || x.startsWith("\u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05E0\u05E4\u05EA\u05D7\u05D4") || x.startsWith("\u05E0\u05E9\u05DC\u05D7 \u05DC")
+                        || x.startsWith("\u05E1\u05D9\u05DB\u05D5\u05DD \u05E0\u05E9\u05DC\u05D7")) continue;
+                last = x.startsWith("\uD83D\uDCC4 \u05D8\u05E7\u05E1\u05D8 \u05DE\u05E9\u05D5\u05EA\u05E3:") ? x.substring("\uD83D\uDCC4 \u05D8\u05E7\u05E1\u05D8 \u05DE\u05E9\u05D5\u05EA\u05E3:".length()).trim() : x;
+            }
+        }
+        if (last.isEmpty()) last = t.description;
+        return last.length() > 400 ? last.substring(0, 400) + "\u2026" : last;
+    }
+
+    /** The client summary template (built-in text if the user deleted it). */
+    static Tpl summaryTemplate(Context c) {
+        for (Tpl t : list(c)) if (t.name.equals(SUMMARY_TEMPLATE)) return t;
+        List<Tpl> b = builtIn();
+        return b.get(b.size() - 1);
+    }
+
     /** Replaces the {fields} in text with this ticket's data and the client's Excel row. */
     static String fill(Context c, TicketDb.Ticket t, String text) {
         TicketDb db = TicketDb.get(c);
@@ -142,7 +171,8 @@ final class Templates {
                 t.followupAt > 0 ? TicketDb.fmt(t.followupAt) : "",
                 t.created > 0 ? TicketDb.fmt(t.created) : "",
                 TicketDb.fmt(System.currentTimeMillis()).substring(0, 10),
-                notes.toString().trim()};
+                notes.toString().trim(),
+                workSummary(db, t)};
         String out = text;
         for (int i = 0; i < TICKET_FIELDS.length; i++) out = out.replace(TICKET_FIELDS[i], values[i]);
 
