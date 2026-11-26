@@ -23,6 +23,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.List;
+
 /** Shows the client card over the incoming-call screen, plus a notification. */
 final class CallPopup {
     private static final String CHANNEL = "client_calls";
@@ -56,15 +58,15 @@ final class CallPopup {
      * WhatsApp call: we only get the name WhatsApp shows (contact name, or the number if not saved).
      * Find the client by number, by Excel name, or through the phone contact's numbers.
      */
-    static void onWhatsApp(Context ctx, final String shown) {
-        final Context app = ctx.getApplicationContext();
-        MAIN.post(() -> {
-            ClientStore s = Data.get(app);
-            int row = -1;
-            String number = null;
+    static String onWhatsApp(Context ctx, List<String> candidates) {
+        Context app = ctx.getApplicationContext();
+        ClientStore s = Data.get(app);
+        int row = -1;
+        String number = null, who = candidates.get(0);
+        for (String shown : candidates) {
             String digits = shown.replaceAll("[^0-9]", "");
             if (digits.length() >= 8) {
-                number = shown;
+                if (number == null) number = shown;
                 row = s.find(shown);
             }
             if (row < 0) {
@@ -79,21 +81,27 @@ final class CallPopup {
                     if (number == null) number = ph;
                 }
             }
-            String key = "wa:" + shown;
-            long now = System.currentTimeMillis();
-            if (key.equals(lastKey) && now - lastTime < 30000) return;
-            if (row >= 0) {
-                lastKey = key;
-                lastTime = now;
-                tagOverride = "\uD83D\uDCAC \u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
-                show(app, row);
-            } else if (number != null && Settings.canDrawOverlays(app)) {
-                lastKey = key;
-                lastTime = now;
-                tagOverride = "\uD83D\uDCAC \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
-                showContactOverlay(app, digits.length() >= 8 ? "" + shown : shown, number);
-            }
-        });
+            if (row >= 0) { who = shown; break; }
+        }
+        String key = "wa:" + who;
+        long now = System.currentTimeMillis();
+        if (key.equals(lastKey) && now - lastTime < 120000) return "\u05DB\u05D1\u05E8 \u05D4\u05D5\u05E6\u05D2 (" + who + ")";
+        if (!Settings.canDrawOverlays(app)) return "\u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05EA \u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA";
+        if (row >= 0) {
+            lastKey = key;
+            lastTime = now;
+            tagOverride = "\uD83D\uDCAC \u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
+            show(app, row);
+            return "\u05D6\u05D5\u05D4\u05D4 \u05DB\u05DC\u05E7\u05D5\u05D7: " + s.name(row);
+        }
+        if (number != null) {
+            lastKey = key;
+            lastTime = now;
+            tagOverride = "\uD83D\uDCAC \u05DE\u05EA\u05E7\u05E9\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4";
+            showContactOverlay(app, who, number);
+            return "\u05DC\u05D0 \u05D1\u05D0\u05E7\u05E1\u05DC, \u05D4\u05D5\u05E6\u05D2 \u05DB\u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8: " + who;
+        }
+        return "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0 \u05D1\u05D0\u05E7\u05E1\u05DC \u05D5\u05DC\u05D0 \u05D1\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8: " + who;
     }
 
     static void show(Context ctx, int row) {
