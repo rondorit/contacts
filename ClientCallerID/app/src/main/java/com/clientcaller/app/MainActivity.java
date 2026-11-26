@@ -77,6 +77,20 @@ public class MainActivity extends Activity {
         ticketRow.addView(bOverdue, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         root.addView(ticketRow);
 
+        // Templates and lists
+        LinearLayout toolsRow = new LinearLayout(this);
+        String[] toolNames = {"\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA"};
+        Class<?>[] toolScreens = {TemplatesActivity.class, ProvidersActivity.class, CategoriesActivity.class};
+        for (int i = 0; i < toolNames.length; i++) {
+            final Class<?> screen = toolScreens[i];
+            Button b = new Button(this);
+            b.setAllCaps(false);
+            b.setText(toolNames[i]);
+            b.setOnClickListener(v -> startActivity(new Intent(this, screen)));
+            toolsRow.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+        root.addView(toolsRow);
+
         // Client data: add, import, export
         section(root, "\u05E0\u05D9\u05D4\u05D5\u05DC \u05E0\u05EA\u05D5\u05E0\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
         LinearLayout clientRow = new LinearLayout(this);

@@ -35,6 +35,7 @@ public class GroupSendActivity extends Activity {
     private final List<Integer> queue = new ArrayList<>();
     private List<Templates.Tpl> tpls;
     private EditText message;
+    private Spinner tplSpinner;
     private TextView progress;
     private Button next;
     private int pos = -1;
@@ -80,6 +81,12 @@ public class GroupSendActivity extends Activity {
         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(a);
         box.addView(sp);
+        Button editTpl = new Button(this);
+        editTpl.setAllCaps(false);
+        editTpl.setText("\u05E2\u05E8\u05D9\u05DB\u05EA \u05EA\u05D1\u05E0\u05D9\u05D5\u05EA");
+        editTpl.setOnClickListener(v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        box.addView(editTpl);
+        tplSpinner = sp;
 
         label(box, "\u05D4\u05D4\u05D5\u05D3\u05E2\u05D4 (\u05E9\u05D3\u05D5\u05EA \u05DB\u05DE\u05D5 {\u05DC\u05E7\u05D5\u05D7} \u05D9\u05D5\u05D7\u05DC\u05E4\u05D5 \u05DC\u05DB\u05DC \u05E0\u05DE\u05E2\u05DF)");
         message = new EditText(this);
@@ -243,7 +250,29 @@ public class GroupSendActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        reloadTemplates();
         showProgress();
+    }
+
+    /** After editing templates, refresh the list (keeps the current selection by name). */
+    private void reloadTemplates() {
+        if (tplSpinner == null) return;
+        int sel = tplSpinner.getSelectedItemPosition();
+        String selName = sel > 0 && sel <= tpls.size() ? tpls.get(sel - 1).name : "";
+        tpls = Templates.list(this);
+        List<String> names = new ArrayList<>();
+        names.add("\u05D4\u05D5\u05D3\u05E2\u05D4 \u05D7\u05D5\u05E4\u05E9\u05D9\u05EA");
+        int newSel = 0;
+        for (int i = 0; i < tpls.size(); i++) {
+            names.add(tpls.get(i).name);
+            if (tpls.get(i).name.equals(selName)) newSel = i + 1;
+        }
+        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, names);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        String keep = message.getText().toString();
+        tplSpinner.setAdapter(a);
+        tplSpinner.setSelection(newSel, false);
+        if (newSel > 0) message.setText(tpls.get(newSel - 1).body); else message.setText(keep);
     }
 
     private void showProgress() {
