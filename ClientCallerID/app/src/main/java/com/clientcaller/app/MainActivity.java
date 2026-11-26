@@ -34,9 +34,11 @@ public class MainActivity extends Activity {
     private static final int REQ_FILE = 1;
     private static final int REQ_ROLE = 2;
     private static final int REQ_PERMS = 3;
+    private static final int REQ_BACKUP = 4;
+    private static final int REQ_RESTORE = 5;
 
     private TextView status;
-    private Button bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
+    private Button bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
     private ArrayAdapter<String> adapter;
     private final List<Integer> shown = new ArrayList<>();
@@ -87,6 +89,27 @@ public class MainActivity extends Activity {
             refresh();
         });
         bTest = addButton(root, v -> testPopup());
+        LinearLayout bkRow = new LinearLayout(this);
+        bBackup = new Button(this);
+        bBackup.setAllCaps(false);
+        bBackup.setOnClickListener(v -> startBackup());
+        bRestore = new Button(this);
+        bRestore.setAllCaps(false);
+        bRestore.setText("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9");
+        bRestore.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
+                .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
+                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                    startActivityForResult(i, REQ_RESTORE);
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show());
+        bkRow.addView(bBackup, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        bkRow.addView(bRestore, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        root.addView(bkRow);
 
         search = new EditText(this);
         search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD \u05D0\u05D5 \u05D8\u05DC\u05E4\u05D5\u05DF");
@@ -106,6 +129,8 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         He.rtl(this);
+        Backup.scheduleReminder(this);
+        if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
     }
 
     @Override
@@ -155,6 +180,8 @@ public class MainActivity extends Activity {
         bCalendar.setText("5. \u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF: " + calText);
         bUnknown.setText("\u05E8\u05D9\u05E9\u05D5\u05DD \u05D2\u05DD \u05E9\u05DC \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD: "
                 + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
+        long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
+        bBackup.setText("\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD" + (lastBk == 0 ? " (\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2)" : "\n(\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10) + ")"));
         bTest.setText("\u05D1\u05D3\u05D9\u05E7\u05D4: \u05D4\u05E6\u05D2 \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF");
         refreshList();
     }
@@ -213,6 +240,33 @@ public class MainActivity extends Activity {
                 } catch (Exception e) {
                     final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                     runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg, Toast.LENGTH_LONG).show());
+                }
+            }).start();
+        } else if ((requestCode == REQ_BACKUP || requestCode == REQ_RESTORE)
+                && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            final Uri uri = data.getData();
+            final boolean backup = requestCode == REQ_BACKUP;
+            new Thread(() -> {
+                try {
+                    if (backup) {
+                        try (java.io.OutputStream out = getContentResolver().openOutputStream(uri)) {
+                            if (out == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05DB\u05EA\u05D5\u05D1 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
+                            Backup.write(this, out);
+                        }
+                    } else {
+                        try (InputStream in = getContentResolver().openInputStream(uri)) {
+                            if (in == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E4\u05EA\u05D5\u05D7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
+                            Backup.restore(this, in);
+                        }
+                    }
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, backup ? "\u05D4\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05E9\u05DE\u05E8" : "\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D4\u05D5\u05E9\u05DC\u05DD", Toast.LENGTH_LONG).show();
+                        refresh();
+                    });
+                } catch (Exception e) {
+                    final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+                    runOnUiThread(() -> Toast.makeText(this, (backup ? "\u05D4\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05DB\u05E9\u05DC: " : "\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05E0\u05DB\u05E9\u05DC: ") + msg,
+                            Toast.LENGTH_LONG).show());
                 }
             }).start();
         } else if (requestCode == REQ_ROLE) {
@@ -301,6 +355,16 @@ public class MainActivity extends Activity {
                     refresh();
                 })
                 .show();
+    }
+
+    private void startBackup() {
+        String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("application/zip");
+        i.putExtra(Intent.EXTRA_TITLE, "backup-service-" + date + ".zip");
+        Toast.makeText(this, "\u05D1\u05D7\u05E8 \u05D4\u05D9\u05DB\u05DF \u05DC\u05E9\u05DE\u05D5\u05E8 - \u05DE\u05D5\u05DE\u05DC\u05E5 Google Drive", Toast.LENGTH_LONG).show();
+        startActivityForResult(i, REQ_BACKUP);
     }
 
     private void chooseNameColumn() {

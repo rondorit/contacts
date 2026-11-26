@@ -19,6 +19,11 @@ public class FollowupReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)
                 || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             Followups.rescheduleAll(context);
+            Backup.scheduleReminder(context);
+            return;
+        }
+        if (Backup.ACTION_REMIND.equals(action)) {
+            Backup.remindIfNeeded(context);
             return;
         }
         if (!ACTION.equals(action)) return;

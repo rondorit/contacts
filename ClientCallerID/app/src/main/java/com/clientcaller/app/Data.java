@@ -27,6 +27,10 @@ final class Data {
         return cache;
     }
 
+    static synchronized void reset() {
+        cache = null;
+    }
+
     static synchronized void set(Context ctx, ClientStore s) {
         applyPhoneColumns(ctx, s);
         cache = s;
