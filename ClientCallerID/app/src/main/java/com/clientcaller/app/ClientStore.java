@@ -65,7 +65,7 @@ public class ClientStore {
             List<String> h = table.get(start);
             for (int c = 0; c < width; c++) {
                 String v = c < h.size() ? h.get(c).trim() : "";
-                headers.add(v.isEmpty() ? "Column " + (c + 1) : v);
+                headers.add(v.isEmpty() ? "\u05E2\u05DE\u05D5\u05D3\u05D4 " + (c + 1) : v);
             }
             for (int i = start + 1; i < table.size(); i++) {
                 List<String> r = table.get(i);
@@ -183,7 +183,7 @@ public class ClientStore {
         String v = rows.get(r).get(nameCol);
         if (!v.isEmpty()) return v;
         String p = firstPhone(r);
-        return p.isEmpty() ? "Client" : p;
+        return p.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7" : p;
     }
 
     /** Comparison keys of all phone numbers of a client. */
@@ -315,7 +315,7 @@ public class ClientStore {
             return readXlsx(new ByteArrayInputStream(data));
         }
         if (data.length >= 4 && (data[0] & 0xFF) == 0xD0 && (data[1] & 0xFF) == 0xCF) {
-            throw new IOException("This is an old .xls file. In Excel choose Save As > Excel Workbook (.xlsx) and import that.");
+            throw new IOException("\u05D6\u05D4\u05D5 \u05E7\u05D5\u05D1\u05E5 xls \u05D9\u05E9\u05DF. \u05D1\u05D0\u05E7\u05E1\u05DC \u05D1\u05D7\u05E8 \u05E9\u05DE\u05D9\u05E8\u05D4 \u05D1\u05E9\u05DD > \u05D7\u05D5\u05D1\u05E8\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4 \u05E9\u05DC Excel (.xlsx) \u05D5\u05D9\u05D9\u05D1\u05D0 \u05D0\u05D5\u05EA\u05D5.");
         }
         return readCsv(data);
     }
@@ -399,7 +399,7 @@ public class ClientStore {
 
         String path = firstSheetPath(files);
         byte[] sheet = path == null ? null : files.get(path);
-        if (sheet == null) throw new IOException("No worksheet found in the file");
+        if (sheet == null) throw new IOException("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0 \u05D2\u05D9\u05DC\u05D9\u05D5\u05DF \u05D1\u05E7\u05D5\u05D1\u05E5");
 
         List<List<String>> out = new ArrayList<>();
         NodeList sd = parse(sheet).getElementsByTagNameNS("*", "sheetData");

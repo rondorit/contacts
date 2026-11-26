@@ -28,7 +28,7 @@ public class FollowupReceiver extends BroadcastReceiver {
         try {
             NotificationManager nm = context.getSystemService(NotificationManager.class);
             nm.createNotificationChannel(new NotificationChannel(
-                    CHANNEL, "Ticket follow-ups", NotificationManager.IMPORTANCE_HIGH));
+                    CHANNEL, "\u05DE\u05E2\u05E7\u05D1 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", NotificationManager.IMPORTANCE_HIGH));
             Intent open = new Intent(context, TicketActivity.class)
                     .putExtra(TicketActivity.EXTRA_TICKET, t.id)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -37,10 +37,10 @@ public class FollowupReceiver extends BroadcastReceiver {
             String who = t.clientName.isEmpty() ? "" : t.clientName + ": ";
             Notification n = new Notification.Builder(context, CHANNEL)
                     .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                    .setContentTitle("Follow-up #" + t.id + " - " + who + t.title)
-                    .setContentText(t.status + " | " + t.priority)
+                    .setContentTitle("\u05DE\u05E2\u05E7\u05D1 \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " - " + who + t.title)
+                    .setContentText(He.status(t.status) + " | " + He.priority(t.priority))
                     .setStyle(new Notification.BigTextStyle().bigText(
-                            t.status + " | " + t.priority + (t.description.isEmpty() ? "" : "\n" + t.description)))
+                            He.status(t.status) + " | " + He.priority(t.priority) + (t.description.isEmpty() ? "" : "\n" + t.description)))
                     .setContentIntent(pi)
                     .setAutoCancel(true)
                     .build();

@@ -75,6 +75,7 @@ final class CallPopup {
 
         LinearLayout box = new LinearLayout(app);
         box.setOrientation(LinearLayout.VERTICAL);
+        box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         int p = (int) (16 * d);
         box.setPadding(p, p, p, p);
         GradientDrawable bg = new GradientDrawable();
@@ -85,7 +86,7 @@ final class CallPopup {
         box.setElevation(12 * d);
 
         TextView tag = new TextView(app);
-        tag.setText("Client calling");
+        tag.setText("\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8");
         tag.setTextColor(0xFF1E88E5);
         tag.setTextSize(13);
         box.addView(tag);
@@ -112,12 +113,12 @@ final class CallPopup {
             String last = "";
             for (TicketDb.Ticket t : TicketDb.get(app).forClient(s.name(row), s.keysForRow(row))) {
                 if (!t.isOpen()) continue;
-                if (openCount == 0) last = "#" + t.id + " " + t.title + " (" + t.status + ")";
+                if (openCount == 0) last = "#" + t.id + " " + t.title + " (" + He.status(t.status) + ")";
                 openCount++;
             }
             if (openCount > 0) {
                 TextView tk = new TextView(app);
-                tk.setText("\uD83C\uDFAB Open tickets: " + openCount + "\n" + last);
+                tk.setText("\uD83C\uDFAB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA: " + openCount + "\n" + last);
                 tk.setTextColor(0xFFD32F2F);
                 tk.setTextSize(15);
                 tk.setPadding(0, 0, 0, (int) (8 * d));
@@ -128,7 +129,7 @@ final class CallPopup {
         LinearLayout buttons = new LinearLayout(app);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         Button ticket = new Button(app);
-        ticket.setText("New ticket");
+        ticket.setText("\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         ticket.setAllCaps(false);
         ticket.setOnClickListener(v -> {
             removeOverlay();
@@ -139,7 +140,7 @@ final class CallPopup {
         });
         buttons.addView(ticket, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         Button open = new Button(app);
-        open.setText("Card");
+        open.setText("\u05DB\u05E8\u05D8\u05D9\u05E1");
         open.setAllCaps(false);
         open.setOnClickListener(v -> {
             removeOverlay();
@@ -149,7 +150,7 @@ final class CallPopup {
             try { app.startActivity(i); } catch (Exception ignored) { }
         });
         Button close = new Button(app);
-        close.setText("Close");
+        close.setText("\u05E1\u05D2\u05D5\u05E8");
         close.setAllCaps(false);
         close.setOnClickListener(v -> removeOverlay());
         buttons.addView(open, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -183,7 +184,7 @@ final class CallPopup {
             ClientStore s = Data.get(app);
             NotificationManager nm = app.getSystemService(NotificationManager.class);
             nm.createNotificationChannel(new NotificationChannel(
-                    CHANNEL, "Client calls", NotificationManager.IMPORTANCE_HIGH));
+                    CHANNEL, "\u05E9\u05D9\u05D7\u05D5\u05EA \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", NotificationManager.IMPORTANCE_HIGH));
             Intent i = new Intent(app, DetailActivity.class)
                     .putExtra(DetailActivity.EXTRA_ROW, row)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -193,7 +194,7 @@ final class CallPopup {
             int nl = details.indexOf('\n');
             Notification n = new Notification.Builder(app, CHANNEL)
                     .setSmallIcon(android.R.drawable.sym_call_incoming)
-                    .setContentTitle("Client calling: " + s.name(row))
+                    .setContentTitle("\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8: " + s.name(row))
                     .setContentText(nl < 0 ? details : details.substring(0, nl))
                     .setStyle(new Notification.BigTextStyle().bigText(details))
                     .setContentIntent(pi)

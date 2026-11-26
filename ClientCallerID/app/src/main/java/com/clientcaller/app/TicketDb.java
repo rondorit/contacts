@@ -184,19 +184,20 @@ final class TicketDb extends SQLiteOpenHelper {
     /** Plain-text summary for sharing (WhatsApp, email, outsourcing partner). */
     String summary(Ticket t) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Service ticket #").append(t.id).append('\n');
-        if (!t.clientName.isEmpty()) sb.append("Client: ").append(t.clientName).append('\n');
-        if (!t.clientPhone.isEmpty()) sb.append("Phone: ").append(t.clientPhone).append('\n');
-        sb.append("Subject: ").append(t.title).append('\n');
-        if (!t.description.isEmpty()) sb.append("Problem: ").append(t.description).append('\n');
-        if (!t.equipment.isEmpty()) sb.append("Equipment: ").append(t.equipment).append('\n');
-        sb.append("Category: ").append(t.category).append(" | Priority: ").append(t.priority)
-                .append(" | Status: ").append(t.status).append('\n');
-        if (t.followupAt > 0) sb.append("Follow-up: ").append(fmt(t.followupAt)).append('\n');
-        sb.append("Opened: ").append(fmt(t.created)).append('\n');
+        sb.append("\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #").append(t.id).append('\n');
+        if (!t.clientName.isEmpty()) sb.append("\u05DC\u05E7\u05D5\u05D7: ").append(t.clientName).append('\n');
+        if (!t.clientPhone.isEmpty()) sb.append("\u05D8\u05DC\u05E4\u05D5\u05DF: ").append(t.clientPhone).append('\n');
+        sb.append("\u05E0\u05D5\u05E9\u05D0: ").append(t.title).append('\n');
+        if (!t.description.isEmpty()) sb.append("\u05EA\u05D9\u05D0\u05D5\u05E8 \u05D4\u05EA\u05E7\u05DC\u05D4: ").append(t.description).append('\n');
+        if (!t.equipment.isEmpty()) sb.append("\u05E6\u05D9\u05D5\u05D3: ").append(t.equipment).append('\n');
+        if (!t.outsource.isEmpty()) sb.append("\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5: ").append(t.outsource).append('\n');
+        sb.append("\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4: ").append(He.category(t.category)).append(" | \u05D3\u05D7\u05D9\u05E4\u05D5\u05EA: ").append(He.priority(t.priority))
+                .append(" | \u05E1\u05D8\u05D8\u05D5\u05E1: ").append(He.status(t.status)).append('\n');
+        if (t.followupAt > 0) sb.append("\u05DE\u05E2\u05E7\u05D1: ").append(fmt(t.followupAt)).append('\n');
+        sb.append("\u05E0\u05E4\u05EA\u05D7\u05D4: ").append(fmt(t.created)).append('\n');
         List<Note> notes = notes(t.id);
         if (!notes.isEmpty()) {
-            sb.append("\nNotes:\n");
+            sb.append("\n\u05D4\u05E2\u05E8\u05D5\u05EA:\n");
             for (Note n : notes) sb.append(fmt(n.time)).append(" - ").append(n.text).append('\n');
         }
         return sb.toString();

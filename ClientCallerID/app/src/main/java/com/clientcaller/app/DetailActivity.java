@@ -45,7 +45,7 @@ public class DetailActivity extends Activity {
         final int clientRow = r;
         Button newTicket = new Button(this);
         newTicket.setAllCaps(false);
-        newTicket.setText("+ New service ticket");
+        newTicket.setText("+ \u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA \u05D7\u05D3\u05E9\u05D4");
         newTicket.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
                 .putExtra(EXTRA_ROW, clientRow)));
         box.addView(newTicket);
@@ -77,7 +77,7 @@ public class DetailActivity extends Activity {
                     line.setOrientation(LinearLayout.HORIZONTAL);
                     Button call = new Button(this);
                     call.setAllCaps(false);
-                    call.setText("Call " + number);
+                    call.setText("\u05D4\u05EA\u05E7\u05E9\u05E8 " + number);
                     call.setOnClickListener(v -> open(new Intent(Intent.ACTION_DIAL,
                             Uri.parse("tel:" + Uri.encode(number)))));
                     Button wa = new Button(this);
@@ -95,6 +95,7 @@ public class DetailActivity extends Activity {
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
         setContentView(sv);
+        He.rtl(this);
     }
 
     /** Israeli local numbers get the 972 country code; others are used as written. */
@@ -120,7 +121,7 @@ public class DetailActivity extends Activity {
         List<TicketDb.Ticket> list = TicketDb.get(this).forClient(s.name(row), s.keysForRow(row));
         if (list.isEmpty()) return;
         TextView label = new TextView(this);
-        label.setText("Service tickets (" + list.size() + ")");
+        label.setText("\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA (" + list.size() + ")");
         label.setTextSize(13);
         label.setTextColor(0xFF777777);
         label.setPadding(0, dp(8), 0, 0);
@@ -128,7 +129,7 @@ public class DetailActivity extends Activity {
         for (final TicketDb.Ticket t : list) {
             Button b = new Button(this);
             b.setAllCaps(false);
-            b.setText((t.isOverdue() ? "\u26A0 " : "") + "#" + t.id + "  " + t.status + "  \u2014  " + t.title);
+            b.setText((t.isOverdue() ? "\u26A0 " : "") + "#" + t.id + "  " + He.status(t.status) + "  \u2014  " + t.title);
             b.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
                     .putExtra(TicketActivity.EXTRA_TICKET, t.id)));
             ticketBox.addView(b);
@@ -139,7 +140,7 @@ public class DetailActivity extends Activity {
         try {
             startActivity(i);
         } catch (Exception e) {
-            Toast.makeText(this, "No app found for this action", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4 \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05DC\u05E4\u05E2\u05D5\u05DC\u05D4 \u05D6\u05D5", Toast.LENGTH_SHORT).show();
         }
     }
 

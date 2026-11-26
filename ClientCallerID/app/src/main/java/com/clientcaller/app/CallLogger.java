@@ -67,19 +67,19 @@ final class CallLogger {
             if (row < 0 && !p.getBoolean(KEY_UNKNOWN, false)) return;
 
             String who = row >= 0 ? s.name(row)
-                    : (number == null || number.isEmpty() ? "Private number" : number);
+                    : (number == null || number.isEmpty() ? "\u05DE\u05E1\u05E4\u05E8 \u05D7\u05E1\u05D5\u05D9" : number);
             String kind;
-            if (type == CallLog.Calls.INCOMING_TYPE) kind = "Incoming call";
-            else if (type == CallLog.Calls.OUTGOING_TYPE) kind = "Outgoing call";
-            else if (type == CallLog.Calls.MISSED_TYPE) kind = "Missed call";
-            else if (type == CallLog.Calls.REJECTED_TYPE) kind = "Rejected call";
-            else if (type == CallLog.Calls.BLOCKED_TYPE) kind = "Blocked call";
-            else kind = "Call";
+            if (type == CallLog.Calls.INCOMING_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05E0\u05DB\u05E0\u05E1\u05EA";
+            else if (type == CallLog.Calls.OUTGOING_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05D9\u05D5\u05E6\u05D0\u05EA";
+            else if (type == CallLog.Calls.MISSED_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05E9\u05DC\u05D0 \u05E0\u05E2\u05E0\u05EA\u05D4";
+            else if (type == CallLog.Calls.REJECTED_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05E9\u05E0\u05D3\u05D7\u05EA\u05D4";
+            else if (type == CallLog.Calls.BLOCKED_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05D7\u05E1\u05D5\u05DE\u05D4";
+            else kind = "\u05E9\u05D9\u05D7\u05D4";
 
             StringBuilder desc = new StringBuilder();
-            desc.append("Phone: ").append(number == null ? "" : number);
+            desc.append("\u05D8\u05DC\u05E4\u05D5\u05DF: ").append(number == null ? "" : number);
             if (duration > 0) {
-                desc.append("\nDuration: ").append(String.format(Locale.US, "%d:%02d", duration / 60, duration % 60));
+                desc.append("\n\u05DE\u05E9\u05DA: ").append(String.format(Locale.US, "%d:%02d", duration / 60, duration % 60));
             }
             if (row >= 0) desc.append("\n\n").append(s.details(row));
 
@@ -108,7 +108,7 @@ final class CallLogger {
                 ids.add(cur.getLong(0));
                 String name = cur.getString(1);
                 String acc = cur.getString(2);
-                labels.add((name == null ? "Calendar" : name)
+                labels.add((name == null ? "\u05D9\u05D5\u05DE\u05DF" : name)
                         + (acc == null || acc.equals(name) ? "" : "  (" + acc + ")"));
             }
         } catch (Exception ignored) {

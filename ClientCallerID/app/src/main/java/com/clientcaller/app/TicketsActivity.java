@@ -23,7 +23,7 @@ import java.util.Locale;
 public class TicketsActivity extends Activity {
     static final String EXTRA_FILTER = "filter";
     static final int OPEN = 0, OVERDUE = 1, CLOSED = 2, ALL = 3;
-    private static final String[] NAMES = {"Open", "Overdue", "Closed", "All"};
+    private static final String[] NAMES = {"\u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8", "\u05E1\u05D2\u05D5\u05E8\u05D5\u05EA", "\u05D4\u05DB\u05DC"};
 
     private int filter = OPEN;
     private final Button[] tabs = new Button[4];
@@ -36,7 +36,7 @@ public class TicketsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         filter = getIntent().getIntExtra(EXTRA_FILTER, OPEN);
-        setTitle("Service tickets");
+        setTitle("\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA");
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -59,12 +59,12 @@ public class TicketsActivity extends Activity {
 
         Button add = new Button(this);
         add.setAllCaps(false);
-        add.setText("+ New ticket");
+        add.setText("+ \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         add.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)));
         root.addView(add);
 
         search = new EditText(this);
-        search.setHint("Search client, subject, equipment\u2026");
+        search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7, \u05E0\u05D5\u05E9\u05D0, \u05E6\u05D9\u05D5\u05D3\u2026");
         search.setSingleLine(true);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
@@ -85,6 +85,7 @@ public class TicketsActivity extends Activity {
         root.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         setContentView(root);
+        He.rtl(this);
     }
 
     @Override
@@ -137,17 +138,17 @@ public class TicketsActivity extends Activity {
         for (TicketDb.Ticket t : sel) {
             shown.add(t.id);
             StringBuilder sb = new StringBuilder();
-            if (t.isOverdue()) sb.append("\u26A0 OVERDUE  ");
-            if ("Urgent".equals(t.priority)) sb.append("\uD83D\uDD34 Urgent  ");
-            sb.append('#').append(t.id).append("  ").append(t.status).append('\n');
-            sb.append(t.clientName.isEmpty() ? "(no client)" : t.clientName).append(" \u2014 ").append(t.title);
-            if (t.followupAt > 0 && t.isOpen()) sb.append("\nFollow-up: ").append(TicketDb.fmt(t.followupAt));
-            if (!t.outsource.isEmpty()) sb.append("\nOutsourcing: ").append(t.outsource);
+            if (t.isOverdue()) sb.append("\u26A0 \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8  ");
+            if ("Urgent".equals(t.priority)) sb.append("\uD83D\uDD34 \u05D3\u05D7\u05D5\u05E3  ");
+            sb.append('#').append(t.id).append("  ").append(He.status(t.status)).append('\n');
+            sb.append(t.clientName.isEmpty() ? "(\u05DC\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7)" : t.clientName).append(" \u2014 ").append(t.title);
+            if (t.followupAt > 0 && t.isOpen()) sb.append("\n\u05DE\u05E2\u05E7\u05D1: ").append(TicketDb.fmt(t.followupAt));
+            if (!t.outsource.isEmpty()) sb.append("\n\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5: ").append(t.outsource);
             items.add(sb.toString());
         }
         adapter.clear();
         adapter.addAll(items);
-        empty.setText(items.isEmpty() ? "No tickets here." : "");
+        empty.setText(items.isEmpty() ? "\u05D0\u05D9\u05DF \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05DB\u05D0\u05DF." : "");
     }
 
     private int dp(int v) {

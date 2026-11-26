@@ -52,7 +52,7 @@ public class TicketActivity extends Activity {
         }
         oldStatus = t.status;
         followupAt = t.followupAt;
-        setTitle(t.id > 0 ? "Ticket #" + t.id : "New ticket");
+        setTitle(t.id > 0 ? "\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id : "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -62,30 +62,30 @@ public class TicketActivity extends Activity {
         TextView head = new TextView(this);
         head.setTextSize(20);
         head.setTypeface(null, Typeface.BOLD);
-        head.setText(t.id > 0 ? "Ticket #" + t.id + "  \u00B7  opened " + TicketDb.fmt(t.created) : "New ticket");
+        head.setText(t.id > 0 ? "\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "  \u00B7  \u05E0\u05E4\u05EA\u05D7\u05D4 " + TicketDb.fmt(t.created) : "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         box.addView(head);
 
-        eClient = field(box, "Client", t.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        ePhone = field(box, "Client phone", t.clientPhone, InputType.TYPE_CLASS_PHONE);
-        eTitle = field(box, "Subject (short)", t.title, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        eDesc = field(box, "Problem description", t.description,
+        eClient = field(box, "\u05DC\u05E7\u05D5\u05D7", t.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        ePhone = field(box, "\u05D8\u05DC\u05E4\u05D5\u05DF \u05D4\u05DC\u05E7\u05D5\u05D7", t.clientPhone, InputType.TYPE_CLASS_PHONE);
+        eTitle = field(box, "\u05E0\u05D5\u05E9\u05D0 (\u05E7\u05E6\u05E8)", t.title, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        eDesc = field(box, "\u05EA\u05D9\u05D0\u05D5\u05E8 \u05D4\u05EA\u05E7\u05DC\u05D4", t.description,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         eDesc.setMinLines(3);
-        sStatus = spinner(box, "Status", TicketDb.STATUSES, t.status);
-        sPriority = spinner(box, "Priority", TicketDb.PRIORITIES, t.priority);
-        sCategory = spinner(box, "Category", TicketDb.CATEGORIES, t.category);
-        eEquip = field(box, "Equipment (computer name, model, serial no.)", t.equipment,
+        sStatus = spinner(box, "\u05E1\u05D8\u05D8\u05D5\u05E1", TicketDb.STATUSES, He.STATUS, t.status);
+        sPriority = spinner(box, "\u05D3\u05D7\u05D9\u05E4\u05D5\u05EA", TicketDb.PRIORITIES, He.PRIORITY, t.priority);
+        sCategory = spinner(box, "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4", TicketDb.CATEGORIES, He.CATEGORY, t.category);
+        eEquip = field(box, "\u05E6\u05D9\u05D5\u05D3 (\u05E9\u05DD \u05DE\u05D7\u05E9\u05D1, \u05D3\u05D2\u05DD, \u05DE\u05E1\u05E4\u05E8 \u05E1\u05D9\u05D3\u05D5\u05E8\u05D9)", t.equipment,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        eOutsource = field(box, "Outsourcing (company / contact / their ticket no.)", t.outsource,
+        eOutsource = field(box, "\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5 (\u05D7\u05D1\u05E8\u05D4 / \u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8 / \u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D0\u05E6\u05DC\u05DD)", t.outsource,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 
-        label(box, "Follow-up");
+        label(box, "\u05DE\u05E2\u05E7\u05D1");
         tFollow = new TextView(this);
         tFollow.setTextSize(17);
         box.addView(tFollow);
         LinearLayout fRow = row(box);
-        rowButton(fRow, "Set date & time", v -> pickFollowup());
-        rowButton(fRow, "Tomorrow 9:00", v -> {
+        rowButton(fRow, "\u05D1\u05D7\u05E8 \u05EA\u05D0\u05E8\u05D9\u05DA \u05D5\u05E9\u05E2\u05D4", v -> pickFollowup());
+        rowButton(fRow, "\u05DE\u05D7\u05E8 9:00", v -> {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DAY_OF_MONTH, 1);
             c.set(Calendar.HOUR_OF_DAY, 9);
@@ -94,16 +94,16 @@ public class TicketActivity extends Activity {
             setFollowup(c.getTimeInMillis());
         });
         LinearLayout fRow2 = row(box);
-        rowButton(fRow2, "In 1 week", v -> {
+        rowButton(fRow2, "\u05D1\u05E2\u05D5\u05D3 \u05E9\u05D1\u05D5\u05E2", v -> {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DAY_OF_MONTH, 7);
             c.set(Calendar.SECOND, 0);
             setFollowup(c.getTimeInMillis());
         });
-        rowButton(fRow2, "No follow-up", v -> setFollowup(0));
+        rowButton(fRow2, "\u05DC\u05DC\u05D0 \u05DE\u05E2\u05E7\u05D1", v -> setFollowup(0));
         showFollowup();
 
-        label(box, "Notes history");
+        label(box, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D9\u05EA \u05D4\u05E2\u05E8\u05D5\u05EA");
         TextView history = new TextView(this);
         history.setTextIsSelectable(true);
         StringBuilder sb = new StringBuilder();
@@ -113,15 +113,15 @@ public class TicketActivity extends Activity {
                 sb.append(TicketDb.fmt(n.time)).append('\n').append(n.text);
             }
         }
-        history.setText(sb.length() == 0 ? "No notes yet." : sb.toString());
+        history.setText(sb.length() == 0 ? "\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF." : sb.toString());
         box.addView(history);
-        eNote = field(box, "Add a note (what was done, what's next)", "",
+        eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         eNote.setMinLines(2);
 
         Button save = new Button(this);
         save.setAllCaps(false);
-        save.setText("Save ticket");
+        save.setText("\u05E9\u05DE\u05D5\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4");
         save.setTextSize(18);
         save.setOnClickListener(v -> save());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -130,29 +130,30 @@ public class TicketActivity extends Activity {
         box.addView(save, lp);
 
         LinearLayout aRow = row(box);
-        rowButton(aRow, "Call client", v -> {
+        rowButton(aRow, "\u05D4\u05EA\u05E7\u05E9\u05E8 \u05DC\u05DC\u05E7\u05D5\u05D7", v -> {
             String ph = ePhone.getText().toString().trim();
-            if (ph.isEmpty()) toast("No phone number");
+            if (ph.isEmpty()) toast("\u05D0\u05D9\u05DF \u05DE\u05E1\u05E4\u05E8 \u05D8\u05DC\u05E4\u05D5\u05DF");
             else open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(ph))));
         });
-        rowButton(aRow, "Share / outsourcing", v -> share());
+        rowButton(aRow, "\u05E9\u05EA\u05E3 / \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5", v -> share());
         if (t.id > 0) {
             LinearLayout dRow = row(box);
-            rowButton(dRow, "Delete ticket", v -> new AlertDialog.Builder(this)
-                    .setMessage("Delete ticket #" + t.id + "?")
-                    .setPositiveButton("Delete", (d, w) -> {
+            rowButton(dRow, "\u05DE\u05D7\u05E7 \u05E7\u05E8\u05D9\u05D0\u05D4", v -> new AlertDialog.Builder(this)
+                    .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "?")
+                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> {
                         Followups.cancel(this, t.id);
                         Followups.removeEvent(this, t);
                         db.delete(t.id);
                         finish();
                     })
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                     .show());
         }
 
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
         setContentView(sv);
+        He.rtl(this);
     }
 
     private void readForm() {
@@ -160,9 +161,9 @@ public class TicketActivity extends Activity {
         t.clientPhone = ePhone.getText().toString().trim();
         t.title = eTitle.getText().toString().trim();
         t.description = eDesc.getText().toString().trim();
-        t.status = (String) sStatus.getSelectedItem();
-        t.priority = (String) sPriority.getSelectedItem();
-        t.category = (String) sCategory.getSelectedItem();
+        t.status = TicketDb.STATUSES[sStatus.getSelectedItemPosition()];
+        t.priority = TicketDb.PRIORITIES[sPriority.getSelectedItemPosition()];
+        t.category = TicketDb.CATEGORIES[sCategory.getSelectedItemPosition()];
         t.equipment = eEquip.getText().toString().trim();
         t.outsource = eOutsource.getText().toString().trim();
         t.followupAt = followupAt;
@@ -172,35 +173,35 @@ public class TicketActivity extends Activity {
         readForm();
         if (t.title.isEmpty()) {
             if (t.description.isEmpty()) {
-                toast("Write a subject for the ticket");
+                toast("\u05DB\u05EA\u05D5\u05D1 \u05E0\u05D5\u05E9\u05D0 \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4");
                 return;
             }
             t.title = t.description.length() > 40 ? t.description.substring(0, 40) + "\u2026" : t.description;
         }
         boolean isNew = t.id == 0;
         db.save(t);
-        if (isNew) db.addNote(t.id, "Ticket opened (" + t.status + ")");
-        else if (!t.status.equals(oldStatus)) db.addNote(t.id, "Status: " + oldStatus + " \u2192 " + t.status);
+        if (isNew) db.addNote(t.id, "\u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05E0\u05E4\u05EA\u05D7\u05D4 (" + He.status(t.status) + ")");
+        else if (!t.status.equals(oldStatus)) db.addNote(t.id, "\u05E1\u05D8\u05D8\u05D5\u05E1: " + He.status(oldStatus) + " \u2190 " + He.status(t.status));
         String note = eNote.getText().toString().trim();
         if (!note.isEmpty()) db.addNote(t.id, note);
         Followups.schedule(this, t);
         Followups.syncCalendar(this, t);
         db.save(t);
-        toast("Ticket #" + t.id + " saved");
+        toast("\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " \u05E0\u05E9\u05DE\u05E8\u05D4");
         finish();
     }
 
     private void share() {
         readForm();
         if (t.id == 0) {
-            toast("Save the ticket first");
+            toast("\u05E9\u05DE\u05D5\u05E8 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05D4\u05E7\u05E8\u05D9\u05D0\u05D4");
             return;
         }
         Intent i = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, "Service ticket #" + t.id + " - " + t.title)
+                .putExtra(Intent.EXTRA_SUBJECT, "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title)
                 .putExtra(Intent.EXTRA_TEXT, db.summary(t));
-        open(Intent.createChooser(i, "Share ticket"));
+        open(Intent.createChooser(i, "\u05E9\u05D9\u05EA\u05D5\u05E3 \u05E7\u05E8\u05D9\u05D0\u05D4"));
     }
 
     private void pickFollowup() {
@@ -221,10 +222,10 @@ public class TicketActivity extends Activity {
 
     private void showFollowup() {
         if (followupAt == 0) {
-            tFollow.setText("None");
+            tFollow.setText("\u05D0\u05D9\u05DF");
         } else {
             boolean late = followupAt < System.currentTimeMillis();
-            tFollow.setText(TicketDb.fmt(followupAt) + (late ? "   (OVERDUE)" : ""));
+            tFollow.setText(TicketDb.fmt(followupAt) + (late ? "   (\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8)" : ""));
         }
     }
 
@@ -248,13 +249,13 @@ public class TicketActivity extends Activity {
         return e;
     }
 
-    private Spinner spinner(LinearLayout box, String label, String[] items, String value) {
+    private Spinner spinner(LinearLayout box, String label, String[] keys, String[] items, String value) {
         label(box, label);
         Spinner s = new Spinner(this);
         ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         s.setAdapter(a);
-        List<String> list = Arrays.asList(items);
+        List<String> list = Arrays.asList(keys);
         int i = list.indexOf(value);
         s.setSelection(i < 0 ? 0 : i);
         box.addView(s);
@@ -280,7 +281,7 @@ public class TicketActivity extends Activity {
         try {
             startActivity(i);
         } catch (Exception e) {
-            toast("No app found for this action");
+            toast("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4 \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05DC\u05E4\u05E2\u05D5\u05DC\u05D4 \u05D6\u05D5");
         }
     }
 

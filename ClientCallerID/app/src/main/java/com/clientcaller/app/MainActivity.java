@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
         root.setPadding(p, p, p, p);
 
         TextView title = new TextView(this);
-        title.setText("Client Caller ID");
+        title.setText("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA");
         title.setTextSize(22);
         title.setTypeface(null, Typeface.BOLD);
         root.addView(title);
@@ -87,7 +87,7 @@ public class MainActivity extends Activity {
         bTest = addButton(root, v -> testPopup());
 
         search = new EditText(this);
-        search.setHint("Search name or phone");
+        search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD \u05D0\u05D5 \u05D8\u05DC\u05E4\u05D5\u05DF");
         search.setSingleLine(true);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
@@ -103,6 +103,7 @@ public class MainActivity extends Activity {
         root.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         setContentView(root);
+        He.rtl(this);
     }
 
     @Override
@@ -117,40 +118,40 @@ public class MainActivity extends Activity {
             if (t.isOpen()) openT++;
             if (t.isOverdue()) lateT++;
         }
-        bTickets.setText("🎫 Tickets (" + openT + " open)");
-        bOverdue.setText("Overdue: " + lateT);
+        bTickets.setText("\uD83C\uDFAB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA (" + openT + " \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA)");
+        bOverdue.setText("\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8: " + lateT);
         bOverdue.setTextColor(lateT > 0 ? 0xFFD32F2F : 0xFF444444);
         ClientStore s = Data.get(this);
         int n = s.rows.size();
         if (n == 0) {
-            status.setText("No clients yet. Start with step 1.");
+            status.setText("\u05E2\u05D3\u05D9\u05D9\u05DF \u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA. \u05D4\u05EA\u05D7\u05DC \u05D1\u05E9\u05DC\u05D1 1.");
         } else {
             StringBuilder cols = new StringBuilder();
             for (int c : s.phoneCols) {
                 if (cols.length() > 0) cols.append(", ");
                 cols.append(s.headers.get(c));
             }
-            status.setText(n + " clients loaded.\nName column: " + s.headers.get(s.nameCol)
-                    + "\nPhone column(s): " + (cols.length() == 0 ? "NONE FOUND - check the file" : cols));
+            status.setText(n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D8\u05E2\u05E0\u05D5.\n\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD: " + s.headers.get(s.nameCol)
+                    + "\n\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF: " + (cols.length() == 0 ? "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 - \u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5" : cols));
         }
-        bImport.setText((n > 0 ? "\u2713 " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
-        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "Allow phone, calendar & notification access");
-        bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "Allow showing over other apps");
+        bImport.setText((n > 0 ? "\u2713 " : "1. ") + "\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D0\u05E7\u05E1\u05DC" + (n > 0 ? " (\u05DC\u05D7\u05E5 \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF)" : ""));
+        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
+        bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA \u05D0\u05D7\u05E8\u05D5\u05EA");
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager rm = getSystemService(RoleManager.class);
             boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
-            bRole.setText((held ? "\u2713 " : "4. ") + "Set as Caller ID app");
+            bRole.setText((held ? "\u2713 " : "4. ") + "\u05D4\u05D2\u05D3\u05E8\u05D4 \u05DB\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D9\u05EA \u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05EA\u05E7\u05E9\u05E8");
         } else {
             bRole.setVisibility(View.GONE);
         }
         SharedPreferences sp = CallLogger.prefs(this);
         long calId = sp.getLong(CallLogger.KEY_CAL_ID, 0);
-        String calText = calId < 0 ? "OFF"
-                : calId == 0 ? "main calendar" : sp.getString(CallLogger.KEY_CAL_NAME, "chosen calendar");
-        bCalendar.setText("5. Log calls in calendar: " + calText);
-        bUnknown.setText("Also log calls from unknown numbers: "
-                + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "ON" : "OFF"));
-        bTest.setText("Test: show popup for first client");
+        String calText = calId < 0 ? "\u05DB\u05D1\u05D5\u05D9"
+                : calId == 0 ? "\u05D9\u05D5\u05DE\u05DF \u05E8\u05D0\u05E9\u05D9" : sp.getString(CallLogger.KEY_CAL_NAME, "\u05D9\u05D5\u05DE\u05DF \u05E9\u05E0\u05D1\u05D7\u05E8");
+        bCalendar.setText("5. \u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF: " + calText);
+        bUnknown.setText("\u05E8\u05D9\u05E9\u05D5\u05DD \u05D2\u05DD \u05E9\u05DC \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD: "
+                + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
+        bTest.setText("\u05D1\u05D3\u05D9\u05E7\u05D4: \u05D4\u05E6\u05D2 \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF");
         refreshList();
     }
 
@@ -187,27 +188,27 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_FILE && resultCode == RESULT_OK && data != null && data.getData() != null) {
             final Uri uri = data.getData();
-            Toast.makeText(this, "Reading file\u2026", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "\u05E7\u05D5\u05E8\u05D0 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5\u2026", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 try {
                     byte[] bytes;
                     try (InputStream in = getContentResolver().openInputStream(uri)) {
-                        if (in == null) throw new IOException("Cannot open the file");
+                        if (in == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E4\u05EA\u05D5\u05D7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
                         bytes = ClientStore.readAll(in);
                     }
                     ClientStore s = new ClientStore();
                     s.load(ClientStore.readTable(bytes));
-                    if (s.rows.isEmpty()) throw new IOException("No client rows found in the file");
+                    if (s.rows.isEmpty()) throw new IOException("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5");
                     s.saveFile(new File(getFilesDir(), Data.FILE));
                     Data.set(s);
                     final int n = s.rows.size();
                     runOnUiThread(() -> {
-                        Toast.makeText(this, "Imported " + n + " clients", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "\u05D9\u05D5\u05D1\u05D0\u05D5 " + n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", Toast.LENGTH_LONG).show();
                         refresh();
                     });
                 } catch (Exception e) {
                     final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                    runOnUiThread(() -> Toast.makeText(this, "Could not read file: " + msg, Toast.LENGTH_LONG).show());
+                    runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg, Toast.LENGTH_LONG).show());
                 }
             }).start();
         } else if (requestCode == REQ_ROLE) {
@@ -236,7 +237,7 @@ public class MainActivity extends Activity {
 
     private void askPermissions() {
         if (hasPermissions()) {
-            Toast.makeText(this, "Already allowed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "\u05DB\u05D1\u05E8 \u05D0\u05D5\u05E9\u05E8", Toast.LENGTH_SHORT).show();
             return;
         }
         requestPermissions(neededPermissions(), REQ_PERMS);
@@ -250,7 +251,7 @@ public class MainActivity extends Activity {
             if (results[i] != PackageManager.PERMISSION_GRANTED
                     && !shouldShowRequestPermissionRationale(permissions[i])) {
                 // Permanently denied: send the user to the app's settings page.
-                Toast.makeText(this, "Open Permissions and allow Phone, Call logs and Notifications",
+                Toast.makeText(this, "\u05E4\u05EA\u05D7 \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D5\u05D0\u05E9\u05E8 \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF \u05E9\u05D9\u05D7\u05D5\u05EA, \u05D9\u05D5\u05DE\u05DF \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA",
                         Toast.LENGTH_LONG).show();
                 startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                         Uri.parse("package:" + getPackageName())));
@@ -264,11 +265,11 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT < 29) return;
         RoleManager rm = getSystemService(RoleManager.class);
         if (rm == null || !rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-            Toast.makeText(this, "Not available on this phone - steps 2 and 3 are enough", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "\u05DC\u05D0 \u05D6\u05DE\u05D9\u05DF \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D6\u05D4 - \u05E9\u05DC\u05D1\u05D9\u05DD 2 \u05D5-3 \u05DE\u05E1\u05E4\u05D9\u05E7\u05D9\u05DD", Toast.LENGTH_LONG).show();
             return;
         }
         if (rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-            Toast.makeText(this, "Already set", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "\u05DB\u05D1\u05E8 \u05DE\u05D5\u05D2\u05D3\u05E8", Toast.LENGTH_SHORT).show();
             return;
         }
         startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), REQ_ROLE);
@@ -276,18 +277,18 @@ public class MainActivity extends Activity {
 
     private void chooseCalendar() {
         if (!CallLogger.hasPermissions(this)) {
-            Toast.makeText(this, "Do step 2 first (allow calendar access)", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "\u05D1\u05E6\u05E2 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E9\u05DC\u05D1 2 (\u05D4\u05E8\u05E9\u05D0\u05EA \u05D9\u05D5\u05DE\u05DF)", Toast.LENGTH_LONG).show();
             return;
         }
         final List<Long> ids = new ArrayList<>();
         final List<String> labels = new ArrayList<>();
         ids.add(-1L);
-        labels.add("Off - don't log calls");
+        labels.add("\u05DB\u05D1\u05D5\u05D9 - \u05DC\u05D0 \u05DC\u05E8\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA");
         ids.add(0L);
-        labels.add("Automatic - main calendar");
+        labels.add("\u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9 - \u05D9\u05D5\u05DE\u05DF \u05E8\u05D0\u05E9\u05D9");
         CallLogger.listCalendars(this, ids, labels);
         new AlertDialog.Builder(this)
-                .setTitle("Calendar for call log")
+                .setTitle("\u05D9\u05D5\u05DE\u05DF \u05DC\u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D5\u05DE\u05E2\u05E7\u05D1\u05D9\u05DD")
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> {
                     CallLogger.prefs(this).edit()
                             .putLong(CallLogger.KEY_CAL_ID, ids.get(which))
@@ -301,11 +302,11 @@ public class MainActivity extends Activity {
     private void testPopup() {
         ClientStore s = Data.get(this);
         if (s.rows.isEmpty()) {
-            Toast.makeText(this, "Import the Excel file first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC", Toast.LENGTH_SHORT).show();
             return;
         }
         if (!Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "Do step 3 first to see the popup over other apps", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "\u05D1\u05E6\u05E2 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E9\u05DC\u05D1 3 \u05DB\u05D3\u05D9 \u05DC\u05E8\u05D0\u05D5\u05EA \u05D0\u05EA \u05D4\u05D7\u05DC\u05D5\u05E0\u05D9\u05EA", Toast.LENGTH_LONG).show();
         }
         CallPopup.show(this, 0);
     }

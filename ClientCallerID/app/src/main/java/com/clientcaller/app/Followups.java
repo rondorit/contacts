@@ -66,7 +66,7 @@ final class Followups {
                 removeEvent(c, t);
                 return;
             }
-            String title = "\uD83D\uDD27 Follow-up: "
+            String title = "\uD83D\uDD27 \u05DE\u05E2\u05E7\u05D1: "
                     + (t.clientName.isEmpty() ? "" : t.clientName + " - ") + t.title;
             ContentValues v = new ContentValues();
             v.put(CalendarContract.Events.TITLE, title);
