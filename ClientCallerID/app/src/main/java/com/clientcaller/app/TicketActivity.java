@@ -75,7 +75,12 @@ public class TicketActivity extends Activity {
         eDesc.setMinLines(3);
         sStatus = spinner(box, "\u05E1\u05D8\u05D8\u05D5\u05E1", TicketDb.STATUSES, He.STATUS, t.status);
         sPriority = spinner(box, "\u05D3\u05D7\u05D9\u05E4\u05D5\u05EA", TicketDb.PRIORITIES, He.PRIORITY, t.priority);
-        sCategory = spinner(box, "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4", TicketDb.CATEGORIES, He.CATEGORY, t.category);
+        label(box, "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4");
+        LinearLayout cRow = row(box);
+        sCategory = new Spinner(this);
+        cRow.addView(sCategory, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(cRow, "\u05E0\u05D9\u05D4\u05D5\u05DC", v -> startActivity(new Intent(this, CategoriesActivity.class)));
+        loadCategories(He.category(t.category));
         eEquip = field(box, "\u05E6\u05D9\u05D5\u05D3 (\u05E9\u05DD \u05DE\u05D7\u05E9\u05D1, \u05D3\u05D2\u05DD, \u05DE\u05E1\u05E4\u05E8 \u05E1\u05D9\u05D3\u05D5\u05E8\u05D9)", t.equipment,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         label(box, "\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA (\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5)");
@@ -167,7 +172,7 @@ public class TicketActivity extends Activity {
         t.description = eDesc.getText().toString().trim();
         t.status = TicketDb.STATUSES[sStatus.getSelectedItemPosition()];
         t.priority = TicketDb.PRIORITIES[sPriority.getSelectedItemPosition()];
-        t.category = TicketDb.CATEGORIES[sCategory.getSelectedItemPosition()];
+        t.category = String.valueOf(sCategory.getSelectedItem());
         t.equipment = eEquip.getText().toString().trim();
         t.outsource = eOutsource.getText().toString().trim();
         int pi = sProvider.getSelectedItemPosition();
@@ -181,7 +186,19 @@ public class TicketActivity extends Activity {
         if (sProvider != null) {
             int pi = sProvider.getSelectedItemPosition();
             loadProviders(pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1));
+            loadCategories(String.valueOf(sCategory.getSelectedItem()));
         }
+    }
+
+    private void loadCategories(String selected) {
+        java.util.List<String> items = Categories.list(this);
+        if (selected != null && !selected.isEmpty() && !items.contains(selected)) items.add(selected);
+        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sCategory.setAdapter(a);
+        int i = items.indexOf(selected);
+        if (i < 0) i = items.indexOf("\u05D0\u05D7\u05E8");
+        sCategory.setSelection(Math.max(i, 0));
     }
 
     private void loadProviders(String selected) {
@@ -226,12 +243,42 @@ public class TicketActivity extends Activity {
             toast("\u05D0\u05D9\u05DF \u05DE\u05D9\u05D9\u05DC \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA - \u05D4\u05D5\u05E1\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1'\u05E0\u05D9\u05D4\u05D5\u05DC'");
             return;
         }
+        askProviderFollowup(() -> doSend(whatsapp, phone, email));
+    }
+
+    /** Asks when to check back with the provider; sets the ticket's follow-up. */
+    private void askProviderFollowup(final Runnable next) {
+        String[] opts = {"\u05DE\u05D7\u05E8 9:00", "\u05D1\u05E2\u05D5\u05D3 \u05D9\u05D5\u05DE\u05D9\u05D9\u05DD 9:00", "\u05D1\u05E2\u05D5\u05D3 \u05E9\u05D1\u05D5\u05E2 9:00", "\u05D1\u05D7\u05E8 \u05EA\u05D0\u05E8\u05D9\u05DA \u05D5\u05E9\u05E2\u05D4", "\u05D1\u05DC\u05D9 \u05DC\u05E9\u05E0\u05D5\u05EA \u05DE\u05E2\u05E7\u05D1"};
+        new AlertDialog.Builder(this)
+                .setTitle("\u05DE\u05EA\u05D9 \u05DC\u05D1\u05D3\u05D5\u05E7 \u05DE\u05D5\u05DC " + t.provider + "?")
+                .setItems(opts, (d, w) -> {
+                    if (w <= 2) {
+                        Calendar c = Calendar.getInstance();
+                        c.add(Calendar.DAY_OF_MONTH, w == 0 ? 1 : (w == 1 ? 2 : 7));
+                        c.set(Calendar.HOUR_OF_DAY, 9);
+                        c.set(Calendar.MINUTE, 0);
+                        c.set(Calendar.SECOND, 0);
+                        setFollowup(c.getTimeInMillis());
+                        next.run();
+                    } else if (w == 3) {
+                        pickFollowup(next);
+                    } else {
+                        next.run();
+                    }
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
+    }
+
+    private void doSend(boolean whatsapp, String phone, String email) {
+        readForm();
         if (!"Closed".equals(t.status) && !"Waiting for outsourcing".equals(t.status)) {
             t.status = "Waiting for outsourcing";
             sStatus.setSelection(java.util.Arrays.asList(TicketDb.STATUSES).indexOf(t.status));
         }
         if (!persist()) return;
-        db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + (whatsapp ? " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : " \u05D1\u05DE\u05D9\u05D9\u05DC"));
+        db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + (whatsapp ? " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : " \u05D1\u05DE\u05D9\u05D9\u05DC")
+                + (t.followupAt > 0 ? " | \u05DE\u05E2\u05E7\u05D1 \u05DE\u05D5\u05DC\u05D5: " + TicketDb.fmt(t.followupAt) : ""));
         showHistory();
         String text = db.summary(t);
         if (whatsapp) {
@@ -291,12 +338,17 @@ public class TicketActivity extends Activity {
     }
 
     private void pickFollowup() {
+        pickFollowup(null);
+    }
+
+    private void pickFollowup(final Runnable after) {
         final Calendar c = Calendar.getInstance();
         if (followupAt > 0) c.setTimeInMillis(followupAt);
         new DatePickerDialog(this, (view, y, m, d) -> new TimePickerDialog(this, (tp, h, min) -> {
             Calendar r = Calendar.getInstance();
             r.set(y, m, d, h, min, 0);
             setFollowup(r.getTimeInMillis());
+            if (after != null) after.run();
         }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show(),
                 c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
