@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private TextView status;
     private Button bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
-    private ArrayAdapter<String> adapter;
+    private LinearLayout settingsBox, listBox;
     private final List<Integer> shown = new ArrayList<>();
 
     @Override
@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
         status.setPadding(0, dp(4), 0, dp(8));
         root.addView(status);
 
+        // Service tickets
         LinearLayout ticketRow = new LinearLayout(this);
         bTickets = new Button(this);
         bTickets.setAllCaps(false);
@@ -76,37 +77,60 @@ public class MainActivity extends Activity {
         ticketRow.addView(bOverdue, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         root.addView(ticketRow);
 
-        bImport = addButton(root, v -> pickFile());
+        // Client data: add, import, export
+        section(root, "\u05E0\u05D9\u05D4\u05D5\u05DC \u05E0\u05EA\u05D5\u05E0\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
         LinearLayout clientRow = new LinearLayout(this);
         Button bAdd = new Button(this);
         bAdd.setAllCaps(false);
         bAdd.setText("+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9");
         bAdd.setOnClickListener(v -> startActivity(new Intent(this, ClientEditActivity.class)));
+        bImport = new Button(this);
+        bImport.setAllCaps(false);
+        bImport.setOnClickListener(v -> pickFile());
         Button bExport = new Button(this);
         bExport.setAllCaps(false);
         bExport.setText("\u05D9\u05D9\u05E6\u05D5\u05D0 \u05DC\u05D0\u05E7\u05E1\u05DC");
         bExport.setOnClickListener(v -> startExport());
         clientRow.addView(bAdd, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        clientRow.addView(bImport, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         clientRow.addView(bExport, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         root.addView(clientRow);
-        bNameCol = addButton(root, v -> chooseNameColumn());
-        bCols = addButton(root, v -> choosePhoneColumns());
-        bPerms = addButton(root, v -> askPermissions());
-        bOverlay = addButton(root, v -> startActivity(new Intent(
+        TextView editHint = new TextView(this);
+        editHint.setText("\u05DC\u05E2\u05E8\u05D9\u05DB\u05EA \u05DC\u05E7\u05D5\u05D7: \u05DC\u05D7\u05E5 \u05E2\u05DC\u05D9\u05D5 \u05D1\u05E8\u05E9\u05D9\u05DE\u05D4 \u05D5\u05D0\u05D6 \"\u05E2\u05E8\u05D9\u05DB\u05EA \u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7\", \u05D0\u05D5 \u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4 \u05E2\u05DC\u05D9\u05D5.");
+        editHint.setTextSize(12);
+        editHint.setTextColor(0xFF777777);
+        root.addView(editHint);
+
+        // Settings (collapsible)
+        final Button bSettings = new Button(this);
+        bSettings.setAllCaps(false);
+        root.addView(bSettings);
+        settingsBox = new LinearLayout(this);
+        settingsBox.setOrientation(LinearLayout.VERTICAL);
+        root.addView(settingsBox);
+        bSettings.setOnClickListener(v -> {
+            boolean show = settingsBox.getVisibility() != android.view.View.VISIBLE;
+            settingsBox.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
+            bSettings.setText(show ? "\u25B2 \u05D4\u05E1\u05EA\u05E8 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA" : "\u2699 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA, \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D5\u05D2\u05D9\u05D1\u05D5\u05D9");
+        });
+        bNameCol = addButton(settingsBox, v -> chooseNameColumn());
+        bCols = addButton(settingsBox, v -> choosePhoneColumns());
+        bPerms = addButton(settingsBox, v -> askPermissions());
+        bOverlay = addButton(settingsBox, v -> startActivity(new Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))));
-        bRole = addButton(root, v -> askCallerIdRole());
-        bCalendar = addButton(root, v -> chooseCalendar());
-        bUnknown = addButton(root, v -> {
+        bRole = addButton(settingsBox, v -> askCallerIdRole());
+        bCalendar = addButton(settingsBox, v -> chooseCalendar());
+        bUnknown = addButton(settingsBox, v -> {
             SharedPreferences sp = CallLogger.prefs(this);
             sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !sp.getBoolean(CallLogger.KEY_UNKNOWN, false)).apply();
             refresh();
         });
-        bContacts = addButton(root, v -> {
+        bContacts = addButton(settingsBox, v -> {
             SharedPreferences sp = CallLogger.prefs(this);
             sp.edit().putBoolean(PhoneContacts.KEY_ENABLED, !sp.getBoolean(PhoneContacts.KEY_ENABLED, true)).apply();
             refresh();
         });
-        bTest = addButton(root, v -> testPopup());
+        bTest = addButton(settingsBox, v -> testPopup());
         LinearLayout bkRow = new LinearLayout(this);
         bBackup = new Button(this);
         bBackup.setAllCaps(false);
@@ -127,8 +151,13 @@ public class MainActivity extends Activity {
                 .show());
         bkRow.addView(bBackup, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         bkRow.addView(bRestore, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        root.addView(bkRow);
+        settingsBox.addView(bkRow);
+        boolean setupDone = !Data.get(this).rows.isEmpty() && hasPermissions() && Settings.canDrawOverlays(this);
+        settingsBox.setVisibility(setupDone ? android.view.View.GONE : android.view.View.VISIBLE);
+        bSettings.setText(setupDone ? "\u2699 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA, \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D5\u05D2\u05D9\u05D1\u05D5\u05D9" : "\u25B2 \u05D4\u05E1\u05EA\u05E8 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA");
 
+        // Clients list
+        section(root, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
         search = new EditText(this);
         search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD \u05D0\u05D5 \u05D8\u05DC\u05E4\u05D5\u05DF");
         search.setSingleLine(true);
@@ -138,17 +167,26 @@ public class MainActivity extends Activity {
             @Override public void afterTextChanged(Editable e) { refreshList(); }
         });
         root.addView(search);
+        listBox = new LinearLayout(this);
+        listBox.setOrientation(LinearLayout.VERTICAL);
+        root.addView(listBox);
 
-        ListView list = new ListView(this);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-        list.setAdapter(adapter);
-        list.setOnItemClickListener((parent, view, pos, id) -> openCard(shown.get(pos)));
-        root.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-
-        setContentView(root);
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        sv.addView(root);
+        setContentView(sv);
         He.rtl(this);
         Backup.scheduleReminder(this);
         if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
+    }
+
+    private void section(LinearLayout root, String text) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(14);
+        t.setTypeface(null, Typeface.BOLD);
+        t.setTextColor(0xFF1E88E5);
+        t.setPadding(0, dp(14), 0, dp(2));
+        root.addView(t);
     }
 
     @Override
@@ -179,7 +217,7 @@ public class MainActivity extends Activity {
             status.setText(n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D8\u05E2\u05E0\u05D5.\n\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD: " + s.headers.get(s.nameCol)
                     + "\n\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF: " + (cols.length() == 0 ? "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 - \u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5" : cols));
         }
-        bImport.setText((n > 0 ? "\u2713 " : "1. ") + "\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D0\u05E7\u05E1\u05DC" + (n > 0 ? " (\u05DC\u05D7\u05E5 \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF)" : ""));
+        bImport.setText("\u05D9\u05D9\u05D1\u05D5\u05D0 \u05D0\u05E7\u05E1\u05DC / Access");
         bNameCol.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7");
         bCols.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF (\u05D0\u05DD \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D6\u05D5\u05D4\u05D9\u05DD)");
         bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF, \u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8 \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
@@ -209,16 +247,38 @@ public class MainActivity extends Activity {
     private void refreshList() {
         ClientStore s = Data.get(this);
         List<Integer> rows = s.search(search.getText().toString());
-        shown.clear();
-        List<String> items = new ArrayList<>();
-        for (int r : rows) {
-            if (shown.size() >= 500) break;
-            shown.add(r);
+        listBox.removeAllViews();
+        int count = 0;
+        for (final int r : rows) {
+            if (count >= 300) {
+                TextView more = new TextView(this);
+                more.setText("\u05DE\u05D5\u05E6\u05D2\u05D9\u05DD 300 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E8\u05D0\u05E9\u05D5\u05E0\u05D9\u05DD - \u05D7\u05E4\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05E6\u05DE\u05E6\u05DD (" + rows.size() + " \u05D1\u05E1\u05DA \u05D4\u05DB\u05D5\u05DC)");
+                more.setPadding(0, dp(10), 0, dp(10));
+                listBox.addView(more);
+                break;
+            }
+            count++;
+            TextView tv = new TextView(this);
             String phone = s.firstPhone(r);
-            items.add(s.name(r) + (phone.isEmpty() ? "" : "    " + phone));
+            tv.setText(s.name(r) + (phone.isEmpty() ? "" : "\n" + phone));
+            tv.setTextSize(17);
+            tv.setPadding(dp(4), dp(12), dp(4), dp(12));
+            tv.setOnClickListener(v -> openCard(r));
+            tv.setOnLongClickListener(v -> {
+                startActivity(new Intent(this, ClientEditActivity.class).putExtra(DetailActivity.EXTRA_ROW, r));
+                return true;
+            });
+            listBox.addView(tv);
+            android.view.View line = new android.view.View(this);
+            line.setBackgroundColor(0xFFDDDDDD);
+            listBox.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
         }
-        adapter.clear();
-        adapter.addAll(items);
+        if (rows.isEmpty()) {
+            TextView none = new TextView(this);
+            none.setText(s.rows.isEmpty() ? "\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA - \u05DC\u05D7\u05E5 \"\u05D9\u05D9\u05D1\u05D5\u05D0\" \u05D0\u05D5 \"+ \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9\"" : "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
+            none.setPadding(0, dp(10), 0, dp(10));
+            listBox.addView(none);
+        }
     }
 
     private void openCard(int row) {
