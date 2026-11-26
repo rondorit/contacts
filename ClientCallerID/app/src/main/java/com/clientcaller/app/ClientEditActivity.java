@@ -91,7 +91,7 @@ public class ClientEditActivity extends Activity {
         }
 
         ScrollView sv = new ScrollView(this);
-        sv.addView(box);
+        sv.addView(Ui.wrapCard(this, box));
         setContentView(sv);
         He.rtl(this);
     }

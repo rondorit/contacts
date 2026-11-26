@@ -75,8 +75,9 @@ public class MainActivity extends Activity {
         for (int i = 0; i < 4; i++) {
             pages[i] = new LinearLayout(this);
             pages[i].setOrientation(LinearLayout.VERTICAL);
-            pages[i].setPadding(dp(10), dp(6), dp(10), dp(16));
+            pages[i].setPadding(dp(10), dp(6), dp(10), dp(90));
             scrolls[i] = new android.widget.ScrollView(this);
+            scrolls[i].setFillViewport(true);
             scrolls[i].addView(pages[i]);
             content.addView(scrolls[i]);
         }
@@ -294,6 +295,25 @@ public class MainActivity extends Activity {
         }
         p.addView(status, Ui.cardParams(this));
 
+        p.addView(Ui.sectionTitle(this, "\u05D2\u05D9\u05D1\u05D5\u05D9"));
+        long lastBk = sp.getLong(Backup.KEY_LAST, 0);
+        boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
+        List<View> bk = new ArrayList<>();
+        bk.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : "\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10),
+                oldBk ? need : ok, v -> startBackup()));
+        bk.add(Ui.tile(this, "\u267B\uFE0F", "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9", "", 0, v -> new AlertDialog.Builder(this)
+                .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
+                .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
+                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                    startActivityForResult(i, REQ_RESTORE);
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show()));
+        Ui.grid(this, p, bk, 3);
+
         p.addView(Ui.sectionTitle(this, "\u05E0\u05EA\u05D5\u05E0\u05D9 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA"));
         List<View> data = new ArrayList<>();
         data.add(Ui.tile(this, "\uD83D\uDCE5", "\u05D9\u05D9\u05D1\u05D5\u05D0", "\u05D0\u05E7\u05E1\u05DC / Access", info, v -> pickFile()));
@@ -348,24 +368,6 @@ public class MainActivity extends Activity {
         }
         Ui.grid(this, p, perms, 3);
 
-        p.addView(Ui.sectionTitle(this, "\u05D2\u05D9\u05D1\u05D5\u05D9"));
-        long lastBk = sp.getLong(Backup.KEY_LAST, 0);
-        boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
-        List<View> bk = new ArrayList<>();
-        bk.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : "\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10),
-                oldBk ? need : ok, v -> startBackup()));
-        bk.add(Ui.tile(this, "\u267B\uFE0F", "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9", "", 0, v -> new AlertDialog.Builder(this)
-                .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
-                .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
-                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> {
-                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                    i.addCategory(Intent.CATEGORY_OPENABLE);
-                    i.setType("*/*");
-                    startActivityForResult(i, REQ_RESTORE);
-                })
-                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                .show()));
-        Ui.grid(this, p, bk, 3);
     }
 
     // ------------------------------------------------------------------ Clients list

@@ -94,12 +94,15 @@ public class TicketsActivity extends Activity {
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
                 android.view.View v = super.getView(position, convertView, parent);
-                v.setPadding(dp(8), dp(14), dp(8), dp(14));
+                v.setPadding(dp(14), dp(14), dp(14), dp(14));
+                v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
                 return v;
             }
         };
-        list.setDivider(new android.graphics.drawable.ColorDrawable(0xFF9E9E9E));
-        list.setDividerHeight(Math.max(2, dp(1)));
+        list.setDivider(new android.graphics.drawable.ColorDrawable(0x00000000));
+        list.setDividerHeight(dp(8));
+        list.setPadding(0, dp(8), 0, dp(8));
+        list.setClipToPadding(false);
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, pos, id) -> startActivity(
                 new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, shown.get(pos))));

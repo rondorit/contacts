@@ -45,12 +45,15 @@ public class ProvidersActivity extends Activity {
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
                 android.view.View v = super.getView(position, convertView, parent);
-                v.setPadding(dp(8), dp(14), dp(8), dp(14));
+                v.setPadding(dp(14), dp(14), dp(14), dp(14));
+                v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
                 return v;
             }
         };
-        lv.setDivider(new android.graphics.drawable.ColorDrawable(0xFF9E9E9E));
-        lv.setDividerHeight(Math.max(2, dp(1)));
+        lv.setDivider(new android.graphics.drawable.ColorDrawable(0x00000000));
+        lv.setDividerHeight(dp(8));
+        lv.setPadding(0, dp(8), 0, dp(8));
+        lv.setClipToPadding(false);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener((parent, view, pos, id) -> edit(list.get(pos)));
         root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));

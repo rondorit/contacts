@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -30,120 +31,98 @@ public class DetailActivity extends Activity {
         }
         List<String> row = s.rows.get(r);
         setTitle(s.name(r));
+        final int clientRow = r;
+        this.row = clientRow;
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        int p = dp(16);
-        box.setPadding(p, p, p, p);
+        box.setPadding(dp(10), dp(10), dp(10), dp(40));
 
-        TextView name = new TextView(this);
-        name.setText(s.name(r));
-        name.setTextSize(24);
-        name.setTypeface(null, Typeface.BOLD);
-        name.setTextIsSelectable(true);
-        box.addView(name);
-
-        // Quick actions: call, WhatsApp, email.
+        // Header card
         final String phone1 = s.firstPhone(r);
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.VERTICAL);
+        android.graphics.drawable.GradientDrawable hg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{Ui.PRIMARY_DARK, Ui.PRIMARY});
+        hg.setCornerRadius(dp(16));
+        head.setBackground(hg);
+        head.setPadding(dp(18), dp(16), dp(18), dp(16));
+        TextView name = Ui.text(this, s.name(r), 24, 0xFFFFFFFF, true);
+        name.setTextIsSelectable(true);
+        head.addView(name);
+        int pc = plotColumn(s);
+        String plotVal = pc >= 0 ? row.get(pc).trim() : "";
+        String sub = (phone1.isEmpty() ? "" : "\uD83D\uDCDE " + phone1) + (plotVal.isEmpty() ? "" : "    \uD83C\uDFD8\uFE0F \u05D7\u05DC\u05E7\u05D4 " + plotVal);
+        if (!sub.isEmpty()) head.addView(Ui.text(this, sub, 15, 0xDDFFFFFF, false));
+        box.addView(head, Ui.cardParams(this));
+
+        // Action tiles
         String mail = "";
         for (String v : row) {
             if (v.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) { mail = v.trim(); break; }
         }
         final String email1 = mail;
-        LinearLayout quick = new LinearLayout(this);
-        Button qCall = new Button(this);
-        qCall.setAllCaps(false);
-        qCall.setText("\u05D4\u05EA\u05E7\u05E9\u05E8");
-        qCall.setEnabled(!phone1.isEmpty());
-        qCall.setOnClickListener(v -> open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone1)))));
-        Button qWa = new Button(this);
-        qWa.setAllCaps(false);
-        qWa.setText("\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
-        qWa.setEnabled(!phone1.isEmpty());
-        qWa.setOnClickListener(v -> open(new Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://wa.me/" + whatsAppNumber(phone1)))));
-        Button qMail = new Button(this);
-        qMail.setAllCaps(false);
-        qMail.setText("\u05DE\u05D9\u05D9\u05DC");
-        qMail.setEnabled(!email1.isEmpty());
-        qMail.setOnClickListener(v -> open(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + email1))));
-        quick.addView(qCall, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        quick.addView(qWa, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        quick.addView(qMail, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        box.addView(quick);
-
-        // Other clients on the same plot (\u05D7\u05DC\u05E7\u05D4)
-        Button plot = new Button(this);
-        plot.setAllCaps(false);
-        int pc = plotColumn(s);
-        String plotVal = pc >= 0 ? row.get(pc).trim() : "";
         int same = pc >= 0 ? samePlot(s, r, pc).size() : 0;
-        plot.setText(pc < 0 ? "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D5\u05E1\u05E4\u05D9\u05DD \u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4"
-                : plotVal.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4 (\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4 \u05DC\u05DC\u05E7\u05D5\u05D7)"
-                : "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D5\u05E1\u05E4\u05D9\u05DD \u05D1\u05D7\u05DC\u05E7\u05D4 " + plotVal + " (" + same + ")");
-        final int plotRow = r;
-        plot.setOnClickListener(v -> showSamePlot(plotRow));
-        box.addView(plot);
-
-        final int clientRow = r;
-        Button edit = new Button(this);
-        edit.setAllCaps(false);
-        edit.setText("\u05E2\u05E8\u05D9\u05DB\u05EA \u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7");
-        final int editRow = r;
-        edit.setOnClickListener(v -> {
-            startActivity(new Intent(this, ClientEditActivity.class).putExtra(EXTRA_ROW, editRow));
+        List<View> acts = new java.util.ArrayList<>();
+        acts.add(dim(Ui.tile(this, "\uD83D\uDCDE", "\u05D4\u05EA\u05E7\u05E9\u05E8", "", 0,
+                v -> open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone1))))), phone1.isEmpty()));
+        acts.add(dim(Ui.tile(this, "\uD83D\uDCAC", "\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", "", 0,
+                v -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + whatsAppNumber(phone1))))), phone1.isEmpty()));
+        acts.add(dim(Ui.tile(this, "\u2709\uFE0F", "\u05DE\u05D9\u05D9\u05DC", email1.isEmpty() ? "\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05EA" : "", Ui.MUTED,
+                v -> open(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + email1)))), email1.isEmpty()));
+        acts.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, TicketActivity.class)
+                .putExtra(EXTRA_ROW, clientRow))));
+        acts.add(Ui.tile(this, "\uD83C\uDFD8\uFE0F", "\u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4", pc < 0 ? "" : plotVal.isEmpty() ? "\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4" : same + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA",
+                Ui.MUTED, v -> showSamePlot(clientRow)));
+        acts.add(Ui.tile(this, "\u270F\uFE0F", "\u05E2\u05E8\u05D9\u05DB\u05D4", "", 0, v -> {
+            startActivity(new Intent(this, ClientEditActivity.class).putExtra(EXTRA_ROW, clientRow));
             finish();
-        });
-        box.addView(edit);
+        }));
+        Ui.grid(this, box, acts, 3);
 
-        Button newTicket = new Button(this);
-        newTicket.setAllCaps(false);
-        newTicket.setText("+ \u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA \u05D7\u05D3\u05E9\u05D4");
-        newTicket.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
-                .putExtra(EXTRA_ROW, clientRow)));
-        box.addView(newTicket);
+        // Tickets
         ticketBox = new LinearLayout(this);
         ticketBox.setOrientation(LinearLayout.VERTICAL);
         box.addView(ticketBox);
-        this.row = clientRow;
 
+        // Details
+        box.addView(Ui.sectionTitle(this, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7"));
+        LinearLayout details = Ui.card(this);
+        boolean first = true;
         for (int c = 0; c < s.headers.size(); c++) {
             String value = row.get(c);
             if (c == s.nameCol || value.isEmpty()) continue;
-
-            TextView label = new TextView(this);
-            label.setText(s.headers.get(c));
-            label.setTextSize(13);
-            label.setTextColor(0xFF777777);
-            label.setPadding(0, dp(12), 0, 0);
-            box.addView(label);
-
-            TextView val = new TextView(this);
-            val.setText(value);
-            val.setTextSize(17);
+            if (!first) {
+                View line = new View(this);
+                line.setBackgroundColor(0xFFE5E7EB);
+                LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1)));
+                llp.setMargins(0, dp(8), 0, dp(8));
+                details.addView(line, llp);
+            }
+            first = false;
+            details.addView(Ui.text(this, s.headers.get(c), 12, Ui.MUTED, false));
+            TextView val = Ui.text(this, value, 17, Ui.TEXT, false);
             val.setTextIsSelectable(true);
-            box.addView(val);
-
+            details.addView(val);
             if (s.phoneCols.contains(c)) {
                 for (final String number : ClientStore.phoneParts(value)) {
                     LinearLayout line = new LinearLayout(this);
-                    line.setOrientation(LinearLayout.HORIZONTAL);
                     Button call = new Button(this);
                     call.setAllCaps(false);
-                    call.setText("\u05D4\u05EA\u05E7\u05E9\u05E8 " + number);
-                    call.setOnClickListener(v -> open(new Intent(Intent.ACTION_DIAL,
-                            Uri.parse("tel:" + Uri.encode(number)))));
+                    call.setText("\uD83D\uDCDE " + number);
+                    call.setOnClickListener(v -> open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number)))));
                     Button wa = new Button(this);
                     wa.setAllCaps(false);
-                    wa.setText("WhatsApp");
+                    wa.setText("\uD83D\uDCAC \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
                     wa.setOnClickListener(v -> open(new Intent(Intent.ACTION_VIEW,
                             Uri.parse("https://wa.me/" + whatsAppNumber(number)))));
-                    line.addView(call, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
-                    line.addView(wa, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                    box.addView(line);
+                    line.addView(call, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 3f));
+                    line.addView(wa, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+                    details.addView(line);
                 }
             }
         }
+        box.addView(details, Ui.cardParams(this));
 
         calBox = new LinearLayout(this);
         calBox.setOrientation(LinearLayout.VERTICAL);
@@ -153,6 +132,15 @@ public class DetailActivity extends Activity {
         sv.addView(box);
         setContentView(sv);
         He.rtl(this);
+    }
+
+    private static View dim(View v, boolean disabled) {
+        if (disabled) {
+            v.setAlpha(0.4f);
+            v.setEnabled(false);
+            v.setClickable(false);
+        }
+        return v;
     }
 
     /** Israeli local numbers get the 972 country code; others are used as written. */
@@ -256,18 +244,9 @@ public class DetailActivity extends Activity {
         if (row >= s.rows.size()) return;
         List<Followups.CalEvent> events = Followups.eventsFor(this, s.name(row));
         if (events.isEmpty()) return;
-        TextView label = new TextView(this);
-        label.setText("\u05D0\u05D9\u05E8\u05D5\u05E2\u05D9\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF (" + events.size() + ") - \u05DC\u05D7\u05E5 \u05E2\u05DC \u05D0\u05D9\u05E8\u05D5\u05E2 \u05DB\u05D3\u05D9 \u05DC\u05DE\u05D7\u05D5\u05E7");
-        label.setTextSize(13);
-        label.setTextColor(0xFF777777);
-        label.setPadding(0, dp(16), 0, dp(4));
-        calBox.addView(label);
+        calBox.addView(Ui.sectionTitle(this, "\uD83D\uDCC5 \u05D0\u05D9\u05E8\u05D5\u05E2\u05D9\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF (" + events.size() + ") - \u05DC\u05D7\u05E5 \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4"));
         for (final Followups.CalEvent e : events) {
-            TextView tv = new TextView(this);
-            tv.setText(TicketDb.fmt(e.start) + "\n" + e.title);
-            tv.setTextSize(15);
-            tv.setPadding(0, dp(8), 0, dp(8));
-            tv.setOnClickListener(v -> new AlertDialog.Builder(this)
+            LinearLayout card = Ui.rowCard(this, e.title, TicketDb.fmt(e.start), "", 0, v -> new AlertDialog.Builder(this)
                     .setTitle(e.title)
                     .setMessage(TicketDb.fmt(e.start) + (e.description.isEmpty() ? "" : "\n\n" + e.description))
                     .setPositiveButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", (d, w) -> {
@@ -278,10 +257,7 @@ public class DetailActivity extends Activity {
                     })
                     .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
                     .show());
-            calBox.addView(tv);
-            android.view.View line = new android.view.View(this);
-            line.setBackgroundColor(0xFFDDDDDD);
-            calBox.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
+            calBox.addView(card, Ui.cardParams(this));
         }
     }
 
@@ -292,19 +268,17 @@ public class DetailActivity extends Activity {
         if (row >= s.rows.size()) return;
         List<TicketDb.Ticket> list = TicketDb.get(this).forClient(s.name(row), s.keysForRow(row));
         if (list.isEmpty()) return;
-        TextView label = new TextView(this);
-        label.setText("\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA (" + list.size() + ")");
-        label.setTextSize(13);
-        label.setTextColor(0xFF777777);
-        label.setPadding(0, dp(8), 0, 0);
-        ticketBox.addView(label);
+        ticketBox.addView(Ui.sectionTitle(this, "\uD83C\uDFAB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA (" + list.size() + ")"));
         for (final TicketDb.Ticket t : list) {
-            Button b = new Button(this);
-            b.setAllCaps(false);
-            b.setText((t.isOverdue() ? "\u26A0 " : "") + "#" + t.id + "  " + He.status(t.status) + "  \u2014  " + t.title);
-            b.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
-                    .putExtra(TicketActivity.EXTRA_TICKET, t.id)));
-            ticketBox.addView(b);
+            String badge;
+            int color;
+            if (t.isOverdue()) { badge = "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8"; color = Ui.RED; }
+            else if (!t.isOpen()) { badge = "\u05E1\u05D2\u05D5\u05E8\u05D4"; color = Ui.MUTED; }
+            else { badge = He.status(t.status); color = Ui.PRIMARY; }
+            String sub = "#" + t.id + "  \u2022  " + TicketDb.fmt(t.created)
+                    + (t.followupAt > 0 && t.isOpen() ? "\n\u05DE\u05E2\u05E7\u05D1: " + TicketDb.fmt(t.followupAt) : "");
+            ticketBox.addView(Ui.rowCard(this, t.title, sub, badge, color, v -> startActivity(
+                    new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, t.id))), Ui.cardParams(this));
         }
     }
 

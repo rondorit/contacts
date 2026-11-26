@@ -117,7 +117,7 @@ public class ReportActivity extends Activity {
         box.addView(results);
 
         ScrollView sv = new ScrollView(this);
-        sv.addView(box);
+        sv.addView(Ui.wrapCard(this, box));
         setContentView(sv);
         He.rtl(this);
         runReport();
@@ -223,13 +223,13 @@ public class ReportActivity extends Activity {
                     + "\n" + (t.clientName.isEmpty() ? "(\u05DC\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7)" : t.clientName) + " \u2014 " + t.title
                     + "\n" + He.category(t.category) + (t.provider.isEmpty() ? "" : "  |  " + t.provider));
             tv.setTextSize(15);
-            tv.setPadding(dp(4), dp(10), dp(4), dp(10));
+            tv.setPadding(dp(12), dp(10), dp(12), dp(10));
+            tv.setBackground(Ui.rounded(0xFFF3F6FB, 10, this));
             tv.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
                     .putExtra(TicketActivity.EXTRA_TICKET, t.id)));
             results.addView(tv);
-            View line = new View(this);
-            line.setBackgroundColor(0xFF9E9E9E);
-            results.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, dp(1))));
+            View gap = new View(this);
+            results.addView(gap, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(8)));
         }
     }
 

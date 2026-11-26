@@ -22,5 +22,6 @@ final class He {
 
     static void rtl(Activity a) {
         a.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        Ui.polish(a.getWindow().getDecorView());
     }
 }

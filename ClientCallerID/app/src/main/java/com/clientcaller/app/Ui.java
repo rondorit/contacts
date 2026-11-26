@@ -153,4 +153,41 @@ final class Ui {
         t.setOnClickListener(l);
         return t;
     }
+
+    /** Rounded, colored buttons everywhere (big buttons = filled primary). Walks the view tree. */
+    static void polish(View v) {
+        if (v instanceof android.widget.Button && !(v instanceof android.widget.CompoundButton)) {
+            android.widget.Button b = (android.widget.Button) v;
+            Context c = b.getContext();
+            float sp = c.getResources().getDisplayMetrics().scaledDensity;
+            boolean primary = b.getTextSize() >= 17.5f * sp;
+            GradientDrawable shape = rounded(primary ? PRIMARY : 0xFFE3EDFB, 12, c);
+            b.setBackground(new android.graphics.drawable.RippleDrawable(
+                    android.content.res.ColorStateList.valueOf(0x33000000), shape, null));
+            b.setTextColor(primary ? Color.WHITE : PRIMARY_DARK);
+            b.setStateListAnimator(null);
+            b.setPadding(dp(c, 10), dp(c, 10), dp(c, 10), dp(c, 10));
+            if (!b.isEnabled()) b.setAlpha(0.4f);
+            ViewGroup.LayoutParams lp = b.getLayoutParams();
+            if (lp instanceof ViewGroup.MarginLayoutParams) {
+                int m = dp(c, 4);
+                ((ViewGroup.MarginLayoutParams) lp).setMargins(m, m, m, m);
+                b.setLayoutParams(lp);
+            }
+        } else if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) polish(g.getChildAt(i));
+        }
+    }
+
+    /** Puts a form inside a white rounded card on the light background. */
+    static View wrapCard(Context c, LinearLayout box) {
+        LinearLayout outer = new LinearLayout(c);
+        outer.setOrientation(LinearLayout.VERTICAL);
+        outer.setPadding(dp(c, 8), dp(c, 8), dp(c, 8), dp(c, 40));
+        box.setBackground(rounded(Color.WHITE, 16, c));
+        box.setElevation(dp(c, 2));
+        outer.addView(box, cardParams(c));
+        return outer;
+    }
 }
