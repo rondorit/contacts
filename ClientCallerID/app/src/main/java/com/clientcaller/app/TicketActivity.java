@@ -26,6 +26,8 @@ import java.util.List;
 /** Create or edit one service ticket. */
 public class TicketActivity extends Activity {
     static final String EXTRA_TICKET = "ticket";
+    static final String EXTRA_NAME = "client_name";
+    static final String EXTRA_PHONE = "client_phone";
 
     private TicketDb db;
     private TicketDb.Ticket t;
@@ -50,6 +52,11 @@ public class TicketActivity extends Activity {
             if (row >= 0 && row < s.rows.size()) {
                 t.clientName = s.name(row);
                 t.clientPhone = s.firstPhone(row);
+            } else {
+                String n = getIntent().getStringExtra(EXTRA_NAME);
+                String ph = getIntent().getStringExtra(EXTRA_PHONE);
+                if (n != null) t.clientName = n;
+                if (ph != null) t.clientPhone = ph;
             }
         }
         oldStatus = t.status;

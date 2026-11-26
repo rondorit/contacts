@@ -64,9 +64,10 @@ final class CallLogger {
 
             ClientStore s = Data.get(c);
             int row = number == null ? -1 : s.find(number);
-            if (row < 0 && !p.getBoolean(KEY_UNKNOWN, false)) return;
+            String contact = row < 0 ? PhoneContacts.name(c, number) : null;
+            if (row < 0 && contact == null && !p.getBoolean(KEY_UNKNOWN, false)) return;
 
-            String who = row >= 0 ? s.name(row)
+            String who = row >= 0 ? s.name(row) : contact != null ? contact
                     : (number == null || number.isEmpty() ? "\u05DE\u05E1\u05E4\u05E8 \u05D7\u05E1\u05D5\u05D9" : number);
             String kind;
             if (type == CallLog.Calls.INCOMING_TYPE) kind = "\u05E9\u05D9\u05D7\u05D4 \u05E0\u05DB\u05E0\u05E1\u05EA";

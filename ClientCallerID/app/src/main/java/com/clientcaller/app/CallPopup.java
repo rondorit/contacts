@@ -39,13 +39,15 @@ final class CallPopup {
         MAIN.post(() -> {
             ClientStore s = Data.get(app);
             int row = s.find(number);
-            if (row < 0) return;
+            String contact = row < 0 ? PhoneContacts.name(app, number) : null;
+            if (row < 0 && contact == null) return;
             String k = ClientStore.key(number);
             long now = System.currentTimeMillis();
             if (k.equals(lastKey) && now - lastTime < 20000) return;
             lastKey = k;
             lastTime = now;
-            show(app, row);
+            if (row >= 0) show(app, row);
+            else if (Settings.canDrawOverlays(app)) showContactOverlay(app, contact, number);
         });
     }
 
@@ -66,6 +68,101 @@ final class CallPopup {
             wm.removeView(overlay);
         } catch (Exception ignored) { }
         overlay = null;
+    }
+
+    /** Popup for a caller found in the phone's contacts (not in the Excel list). */
+    private static void showContactOverlay(final Context app, final String name, final String number) {
+        removeOverlay();
+        float d = app.getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(app);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        int p = (int) (16 * d);
+        box.setPadding(p, p, p, p);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.WHITE);
+        bg.setCornerRadius(18 * d);
+        bg.setStroke((int) (2 * d), 0xFF43A047);
+        box.setBackground(bg);
+        box.setElevation(12 * d);
+
+        TextView tag = new TextView(app);
+        tag.setText("\u05DE\u05EA\u05E7\u05E9\u05E8 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF");
+        tag.setTextColor(0xFF43A047);
+        tag.setTextSize(13);
+        box.addView(tag);
+
+        TextView nm = new TextView(app);
+        nm.setText(name);
+        nm.setTextColor(Color.BLACK);
+        nm.setTextSize(22);
+        nm.setTypeface(null, Typeface.BOLD);
+        box.addView(nm);
+
+        TextView ph = new TextView(app);
+        ph.setText(number);
+        ph.setTextColor(0xFF333333);
+        ph.setTextSize(15);
+        ph.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
+        box.addView(ph);
+
+        try {
+            java.util.List<String> keys = new java.util.ArrayList<>();
+            keys.add(ClientStore.key(number));
+            int openCount = 0;
+            String last = "";
+            for (TicketDb.Ticket t : TicketDb.get(app).forClient(name, keys)) {
+                if (!t.isOpen()) continue;
+                if (openCount == 0) last = "#" + t.id + " " + t.title + " (" + He.status(t.status) + ")";
+                openCount++;
+            }
+            if (openCount > 0) {
+                TextView tk = new TextView(app);
+                tk.setText("\u1F3AB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA: " + openCount + "\n" + last);
+                tk.setTextColor(0xFFD32F2F);
+                tk.setTextSize(15);
+                tk.setPadding(0, 0, 0, (int) (8 * d));
+                box.addView(tk);
+            }
+        } catch (Exception ignored) { }
+
+        LinearLayout buttons = new LinearLayout(app);
+        Button ticket = new Button(app);
+        ticket.setText("\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
+        ticket.setAllCaps(false);
+        ticket.setOnClickListener(v -> {
+            removeOverlay();
+            Intent i = new Intent(app, TicketActivity.class)
+                    .putExtra(TicketActivity.EXTRA_NAME, name)
+                    .putExtra(TicketActivity.EXTRA_PHONE, number)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try { app.startActivity(i); } catch (Exception ignored) { }
+        });
+        Button close = new Button(app);
+        close.setText("\u05E1\u05D2\u05D5\u05E8");
+        close.setAllCaps(false);
+        close.setOnClickListener(v -> removeOverlay());
+        buttons.addView(ticket, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        buttons.addView(close, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        box.addView(buttons);
+
+        FrameLayout frame = new FrameLayout(app);
+        int m = (int) (12 * d);
+        frame.setPadding(m, m, m, m);
+        frame.addView(box);
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT);
+        lp.gravity = Gravity.TOP;
+        lp.y = (int) (70 * d);
+        try {
+            ((WindowManager) app.getSystemService(Context.WINDOW_SERVICE)).addView(frame, lp);
+            overlay = frame;
+        } catch (Exception ignored) { }
     }
 
     private static void showOverlay(final Context app, final int row) {

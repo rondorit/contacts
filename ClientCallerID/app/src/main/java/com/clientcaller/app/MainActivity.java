@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
     private static final int REQ_RESTORE = 5;
 
     private TextView status;
-    private Button bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
+    private Button bContacts, bBackup, bRestore, bImport, bNameCol, bCols, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
     private ArrayAdapter<String> adapter;
     private final List<Integer> shown = new ArrayList<>();
@@ -86,6 +86,11 @@ public class MainActivity extends Activity {
         bUnknown = addButton(root, v -> {
             SharedPreferences sp = CallLogger.prefs(this);
             sp.edit().putBoolean(CallLogger.KEY_UNKNOWN, !sp.getBoolean(CallLogger.KEY_UNKNOWN, false)).apply();
+            refresh();
+        });
+        bContacts = addButton(root, v -> {
+            SharedPreferences sp = CallLogger.prefs(this);
+            sp.edit().putBoolean(PhoneContacts.KEY_ENABLED, !sp.getBoolean(PhoneContacts.KEY_ENABLED, true)).apply();
             refresh();
         });
         bTest = addButton(root, v -> testPopup());
@@ -164,7 +169,7 @@ public class MainActivity extends Activity {
         bImport.setText((n > 0 ? "\u2713 " : "1. ") + "\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D0\u05E7\u05E1\u05DC" + (n > 0 ? " (\u05DC\u05D7\u05E5 \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF)" : ""));
         bNameCol.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7");
         bCols.setText("\u05D1\u05D7\u05D9\u05E8\u05EA \u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF (\u05D0\u05DD \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D6\u05D5\u05D4\u05D9\u05DD)");
-        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
+        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D9\u05D5\u05DE\u05DF, \u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8 \u05D5\u05D4\u05EA\u05E8\u05D0\u05D5\u05EA");
         bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA \u05D0\u05D7\u05E8\u05D5\u05EA");
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager rm = getSystemService(RoleManager.class);
@@ -180,6 +185,8 @@ public class MainActivity extends Activity {
         bCalendar.setText("5. \u05E8\u05D9\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D1\u05D9\u05D5\u05DE\u05DF: " + calText);
         bUnknown.setText("\u05E8\u05D9\u05E9\u05D5\u05DD \u05D2\u05DD \u05E9\u05DC \u05DE\u05E1\u05E4\u05E8\u05D9\u05DD \u05DC\u05D0 \u05DE\u05D5\u05DB\u05E8\u05D9\u05DD: "
                 + (sp.getBoolean(CallLogger.KEY_UNKNOWN, false) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
+        bContacts.setText("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D2\u05DD \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF: "
+                + (CallLogger.prefs(this).getBoolean(PhoneContacts.KEY_ENABLED, true) ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9"));
         long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
         bBackup.setText("\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD" + (lastBk == 0 ? " (\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2)" : "\n(\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10) + ")"));
         bTest.setText("\u05D1\u05D3\u05D9\u05E7\u05D4: \u05D4\u05E6\u05D2 \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF");
@@ -280,10 +287,12 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33) {
             return new String[]{Manifest.permission.READ_PHONE_STATE,
                     Manifest.permission.READ_CALL_LOG, Manifest.permission.POST_NOTIFICATIONS,
-                    Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR};
+                    Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR,
+                    Manifest.permission.READ_CONTACTS};
         }
         return new String[]{Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG,
-                Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR};
+                Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR,
+                Manifest.permission.READ_CONTACTS};
     }
 
     private boolean hasPermissions() {
