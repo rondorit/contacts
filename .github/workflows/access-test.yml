@@ -1,0 +1,27 @@
+name: Access import test
+on:
+  push:
+    paths:
+      - 'ClientCallerID/tools/**'
+      - 'ClientCallerID/app/src/main/java/com/clientcaller/app/AccessImport.java'
+      - '.github/workflows/access-test.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Run test
+        run: |
+          mkdir lib out
+          M=https://repo1.maven.org/maven2
+          curl -sfL -o lib/jackcess.jar $M/com/healthmarketscience/jackcess/jackcess/4.0.5/jackcess-4.0.5.jar
+          curl -sfL -o lib/lang3.jar $M/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar
+          curl -sfL -o lib/logging.jar $M/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+          S=ClientCallerID/app/src/main/java/com/clientcaller/app
+          javac -encoding UTF-8 -cp "lib/*" -d out $S/ClientStore.java $S/AccessImport.java ClientCallerID/tools/AccessTest.java
+          java -cp "out:lib/*" AccessTest

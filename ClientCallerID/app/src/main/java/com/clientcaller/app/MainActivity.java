@@ -255,6 +255,44 @@ public class MainActivity extends Activity {
         startActivityForResult(i, REQ_EXPORT);
     }
 
+    /** Runs on a background thread: loads the rows as the client list. */
+    private void finishImport(List<List<String>> table) throws Exception {
+        ClientStore s = new ClientStore();
+        s.load(table);
+        if (s.rows.isEmpty()) throw new IOException("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5");
+        s.saveFile(new File(getFilesDir(), Data.FILE));
+        Data.set(this, s);
+        CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
+        final int n = s.rows.size();
+        runOnUiThread(() -> {
+            Toast.makeText(this, "\u05D9\u05D5\u05D1\u05D0\u05D5 " + n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", Toast.LENGTH_LONG).show();
+            refresh();
+        });
+    }
+
+    /** An Access file with several tables: ask which one holds the clients. */
+    private void chooseAccessTable(final File f, final List<String> tables) {
+        final String last = CallLogger.prefs(this).getString("access_table", "");
+        if (tables.remove(last)) tables.add(0, last);
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05D8\u05D1\u05DC\u05D4 \u05E0\u05DE\u05E6\u05D0\u05D9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA?")
+                .setItems(tables.toArray(new String[0]), (d, w) -> {
+                    final String name = tables.get(w);
+                    CallLogger.prefs(this).edit().putString("access_table", name).apply();
+                    new Thread(() -> {
+                        try {
+                            finishImport(AccessImport.read(f, name));
+                        } catch (Exception e) {
+                            final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+                            runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg,
+                                    Toast.LENGTH_LONG).show());
+                        }
+                    }).start();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
+    }
+
     private void pickFileNow() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -275,17 +313,18 @@ public class MainActivity extends Activity {
                         if (in == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E4\u05EA\u05D5\u05D7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
                         bytes = ClientStore.readAll(in);
                     }
-                    ClientStore s = new ClientStore();
-                    s.load(ClientStore.readTable(bytes));
-                    if (s.rows.isEmpty()) throw new IOException("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5");
-                    s.saveFile(new File(getFilesDir(), Data.FILE));
-                    Data.set(this, s);
-                    CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
-                    final int n = s.rows.size();
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "\u05D9\u05D5\u05D1\u05D0\u05D5 " + n + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", Toast.LENGTH_LONG).show();
-                        refresh();
-                    });
+                    if (AccessImport.isAccess(bytes)) {
+                        final File f = new File(getCacheDir(), "import.accdb");
+                        try (java.io.FileOutputStream o = new java.io.FileOutputStream(f)) {
+                            o.write(bytes);
+                        }
+                        final List<String> tables = AccessImport.tables(f);
+                        if (tables.isEmpty()) throw new IOException("\u05D0\u05D9\u05DF \u05D8\u05D1\u05DC\u05D0\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5 \u05D4-Access");
+                        if (tables.size() == 1) finishImport(AccessImport.read(f, tables.get(0)));
+                        else runOnUiThread(() -> chooseAccessTable(f, tables));
+                    } else {
+                        finishImport(ClientStore.readTable(bytes));
+                    }
                 } catch (Exception e) {
                     final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                     runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg, Toast.LENGTH_LONG).show());

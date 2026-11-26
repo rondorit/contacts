@@ -10,8 +10,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 19
-        versionName '2.16'
+        versionCode 20
+        versionName '2.17'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).
@@ -29,6 +29,12 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/versions/**']
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -37,4 +43,9 @@ android {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+dependencies {
+    // Reads Microsoft Access (.accdb / .mdb) files
+    implementation 'com.healthmarketscience.jackcess:jackcess:4.0.5'
 }
