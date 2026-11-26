@@ -79,8 +79,8 @@ public class MainActivity extends Activity {
 
         // Templates and lists
         LinearLayout toolsRow = new LinearLayout(this);
-        String[] toolNames = {"\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA"};
-        Class<?>[] toolScreens = {TemplatesActivity.class, ProvidersActivity.class, CategoriesActivity.class};
+        String[] toolNames = {"\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA"};
+        Class<?>[] toolScreens = {ReportActivity.class, TemplatesActivity.class, ProvidersActivity.class, CategoriesActivity.class};
         for (int i = 0; i < toolNames.length; i++) {
             final Class<?> screen = toolScreens[i];
             Button b = new Button(this);

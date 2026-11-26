@@ -217,6 +217,10 @@ public class ClientStore {
 
     /** Writes the whole client table as an Excel (.xlsx) file, right-to-left sheet. */
     public void writeXlsx(java.io.OutputStream out) throws IOException {
+        writeXlsx(out, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA");
+    }
+
+    public void writeXlsx(java.io.OutputStream out, String sheetName) throws IOException {
         java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(out);
         String head = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
         String pkg = "http://schemas.openxmlformats.org/package/2006/";
@@ -232,7 +236,7 @@ public class ClientStore {
                 + "<Relationship Id=\"rId1\" Type=\"" + off + "/officeDocument\" Target=\"xl/workbook.xml\"/>"
                 + "</Relationships>");
         put(z, "xl/workbook.xml", head + "<workbook xmlns=\"" + main + "\" xmlns:r=\"" + off + "\">"
-                + "<sheets><sheet name=\"\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+                + "<sheets><sheet name=\"" + xml(sheetName) + "\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
         put(z, "xl/_rels/workbook.xml.rels", head + "<Relationships xmlns=\"" + pkg + "relationships\">"
                 + "<Relationship Id=\"rId1\" Type=\"" + off + "/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
                 + "</Relationships>");
