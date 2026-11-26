@@ -72,6 +72,19 @@ public class DetailActivity extends Activity {
         quick.addView(qMail, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         box.addView(quick);
 
+        // Other clients on the same plot (\u05D7\u05DC\u05E7\u05D4)
+        Button plot = new Button(this);
+        plot.setAllCaps(false);
+        int pc = plotColumn(s);
+        String plotVal = pc >= 0 ? row.get(pc).trim() : "";
+        int same = pc >= 0 ? samePlot(s, r, pc).size() : 0;
+        plot.setText(pc < 0 ? "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D5\u05E1\u05E4\u05D9\u05DD \u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4"
+                : plotVal.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4 (\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4 \u05DC\u05DC\u05E7\u05D5\u05D7)"
+                : "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D5\u05E1\u05E4\u05D9\u05DD \u05D1\u05D7\u05DC\u05E7\u05D4 " + plotVal + " (" + same + ")");
+        final int plotRow = r;
+        plot.setOnClickListener(v -> showSamePlot(plotRow));
+        box.addView(plot);
+
         final int clientRow = r;
         Button edit = new Button(this);
         edit.setAllCaps(false);
@@ -150,6 +163,71 @@ public class DetailActivity extends Activity {
             return plain.startsWith("00") ? plain.substring(2) : plain;
         }
         return (k.length() == 8 || k.length() == 9) ? "972" + k : plain;
+    }
+
+    private static final String KEY_PLOT_COL = "plot_col";
+
+    /** The plot column: chosen by the user, or a column whose title contains "\u05D7\u05DC\u05E7\u05D4". */
+    private int plotColumn(ClientStore s) {
+        String saved = CallLogger.prefs(this).getString(KEY_PLOT_COL, "");
+        if (!saved.isEmpty() && s.headers.indexOf(saved) >= 0) return s.headers.indexOf(saved);
+        for (int c = 0; c < s.headers.size(); c++) {
+            if (s.headers.get(c).contains("\u05D7\u05DC\u05E7\u05D4")) return c;
+        }
+        return -1;
+    }
+
+    private List<Integer> samePlot(ClientStore s, int r, int col) {
+        List<Integer> out = new java.util.ArrayList<>();
+        String val = s.rows.get(r).get(col).trim();
+        if (val.isEmpty()) return out;
+        for (int i = 0; i < s.rows.size(); i++) {
+            if (i != r && s.rows.get(i).get(col).trim().equalsIgnoreCase(val)) out.add(i);
+        }
+        return out;
+    }
+
+    private void showSamePlot(final int r) {
+        final ClientStore s = Data.get(this);
+        int col = plotColumn(s);
+        if (col < 0) {
+            choosePlotColumn(s, r);
+            return;
+        }
+        String val = s.rows.get(r).get(col).trim();
+        if (val.isEmpty()) {
+            Toast.makeText(this, "\u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4 \u05D0\u05D9\u05DF \u05E2\u05E8\u05DA \u05D1\u05E2\u05DE\u05D5\u05D3\u05D4 " + s.headers.get(col), Toast.LENGTH_LONG).show();
+            return;
+        }
+        final List<Integer> list = samePlot(s, r, col);
+        if (list.isEmpty()) {
+            Toast.makeText(this, "\u05D0\u05D9\u05DF \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05D5\u05E1\u05E4\u05D9\u05DD \u05D1\u05D7\u05DC\u05E7\u05D4 " + val, Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            String ph = s.firstPhone(list.get(i));
+            names[i] = s.name(list.get(i)) + (ph.isEmpty() ? "" : "   " + ph);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05D7\u05DC\u05E7\u05D4 " + val + " (" + list.size() + ")")
+                .setItems(names, (d, w) -> startActivity(new Intent(this, DetailActivity.class)
+                        .putExtra(EXTRA_ROW, list.get(w))))
+                .setNeutralButton("\u05E9\u05E0\u05D4 \u05E2\u05DE\u05D5\u05D3\u05EA \u05D7\u05DC\u05E7\u05D4", (d, w) -> choosePlotColumn(s, r))
+                .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
+                .show();
+    }
+
+    private void choosePlotColumn(final ClientStore s, final int r) {
+        final String[] headers = s.headers.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05E2\u05DE\u05D5\u05D3\u05D4 \u05D1\u05D0\u05E7\u05E1\u05DC \u05E0\u05DE\u05E6\u05D0\u05EA \u05D4\u05D7\u05DC\u05E7\u05D4?")
+                .setItems(headers, (d, w) -> {
+                    CallLogger.prefs(this).edit().putString(KEY_PLOT_COL, headers[w]).apply();
+                    showSamePlot(r);
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
     }
 
     private LinearLayout ticketBox, calBox;
