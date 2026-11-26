@@ -42,6 +42,18 @@ public class DetailActivity extends Activity {
         name.setTextIsSelectable(true);
         box.addView(name);
 
+        final int clientRow = r;
+        Button newTicket = new Button(this);
+        newTicket.setAllCaps(false);
+        newTicket.setText("+ New service ticket");
+        newTicket.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
+                .putExtra(EXTRA_ROW, clientRow)));
+        box.addView(newTicket);
+        ticketBox = new LinearLayout(this);
+        ticketBox.setOrientation(LinearLayout.VERTICAL);
+        box.addView(ticketBox);
+        this.row = clientRow;
+
         for (int c = 0; c < s.headers.size(); c++) {
             String value = row.get(c);
             if (c == s.nameCol || value.isEmpty()) continue;
@@ -93,6 +105,34 @@ public class DetailActivity extends Activity {
             return plain.startsWith("00") ? plain.substring(2) : plain;
         }
         return (k.length() == 8 || k.length() == 9) ? "972" + k : plain;
+    }
+
+    private LinearLayout ticketBox;
+    private int row = -1;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (ticketBox == null || row < 0) return;
+        ticketBox.removeAllViews();
+        ClientStore s = Data.get(this);
+        if (row >= s.rows.size()) return;
+        List<TicketDb.Ticket> list = TicketDb.get(this).forClient(s.name(row), s.keysForRow(row));
+        if (list.isEmpty()) return;
+        TextView label = new TextView(this);
+        label.setText("Service tickets (" + list.size() + ")");
+        label.setTextSize(13);
+        label.setTextColor(0xFF777777);
+        label.setPadding(0, dp(8), 0, 0);
+        ticketBox.addView(label);
+        for (final TicketDb.Ticket t : list) {
+            Button b = new Button(this);
+            b.setAllCaps(false);
+            b.setText((t.isOverdue() ? "\u26A0 " : "") + "#" + t.id + "  " + t.status + "  \u2014  " + t.title);
+            b.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
+                    .putExtra(TicketActivity.EXTRA_TICKET, t.id)));
+            ticketBox.addView(b);
+        }
     }
 
     private void open(Intent i) {

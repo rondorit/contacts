@@ -85,7 +85,7 @@ final class CallLogger {
 
             ContentValues v = new ContentValues();
             v.put(CalendarContract.Events.CALENDAR_ID, calId);
-            v.put(CalendarContract.Events.TITLE, "? " + kind + ": " + who);
+            v.put(CalendarContract.Events.TITLE, "\uD83D\uDCDE " + kind + ": " + who);
             v.put(CalendarContract.Events.DESCRIPTION, desc.toString());
             v.put(CalendarContract.Events.DTSTART, date);
             v.put(CalendarContract.Events.DTEND, date + Math.max(duration * 1000, 15 * 60 * 1000));

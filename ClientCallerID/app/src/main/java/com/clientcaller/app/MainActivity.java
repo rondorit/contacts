@@ -36,7 +36,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMS = 3;
 
     private TextView status;
-    private Button bImport, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest;
+    private Button bImport, bPerms, bOverlay, bRole, bCalendar, bUnknown, bTest, bTickets, bOverdue;
     private EditText search;
     private ArrayAdapter<String> adapter;
     private final List<Integer> shown = new ArrayList<>();
@@ -58,6 +58,20 @@ public class MainActivity extends Activity {
         status = new TextView(this);
         status.setPadding(0, dp(4), 0, dp(8));
         root.addView(status);
+
+        LinearLayout ticketRow = new LinearLayout(this);
+        bTickets = new Button(this);
+        bTickets.setAllCaps(false);
+        bTickets.setTextSize(17);
+        bTickets.setOnClickListener(v -> startActivity(new Intent(this, TicketsActivity.class)));
+        bOverdue = new Button(this);
+        bOverdue.setAllCaps(false);
+        bOverdue.setTextSize(17);
+        bOverdue.setOnClickListener(v -> startActivity(new Intent(this, TicketsActivity.class)
+                .putExtra(TicketsActivity.EXTRA_FILTER, TicketsActivity.OVERDUE)));
+        ticketRow.addView(bTickets, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 3f));
+        ticketRow.addView(bOverdue, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        root.addView(ticketRow);
 
         bImport = addButton(root, v -> pickFile());
         bPerms = addButton(root, v -> askPermissions());
@@ -98,6 +112,14 @@ public class MainActivity extends Activity {
     }
 
     private void refresh() {
+        int openT = 0, lateT = 0;
+        for (TicketDb.Ticket t : TicketDb.get(this).all()) {
+            if (t.isOpen()) openT++;
+            if (t.isOverdue()) lateT++;
+        }
+        bTickets.setText("🎫 Tickets (" + openT + " open)");
+        bOverdue.setText("Overdue: " + lateT);
+        bOverdue.setTextColor(lateT > 0 ? 0xFFD32F2F : 0xFF444444);
         ClientStore s = Data.get(this);
         int n = s.rows.size();
         if (n == 0) {
@@ -111,13 +133,13 @@ public class MainActivity extends Activity {
             status.setText(n + " clients loaded.\nName column: " + s.headers.get(s.nameCol)
                     + "\nPhone column(s): " + (cols.length() == 0 ? "NONE FOUND - check the file" : cols));
         }
-        bImport.setText((n > 0 ? "? " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
-        bPerms.setText((hasPermissions() ? "? " : "2. ") + "Allow phone, calendar & notification access");
-        bOverlay.setText((Settings.canDrawOverlays(this) ? "? " : "3. ") + "Allow showing over other apps");
+        bImport.setText((n > 0 ? "\u2713 " : "1. ") + "Import Excel file" + (n > 0 ? " (tap to update)" : ""));
+        bPerms.setText((hasPermissions() ? "\u2713 " : "2. ") + "Allow phone, calendar & notification access");
+        bOverlay.setText((Settings.canDrawOverlays(this) ? "\u2713 " : "3. ") + "Allow showing over other apps");
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager rm = getSystemService(RoleManager.class);
             boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
-            bRole.setText((held ? "? " : "4. ") + "Set as Caller ID app");
+            bRole.setText((held ? "\u2713 " : "4. ") + "Set as Caller ID app");
         } else {
             bRole.setVisibility(View.GONE);
         }
@@ -165,7 +187,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_FILE && resultCode == RESULT_OK && data != null && data.getData() != null) {
             final Uri uri = data.getData();
-            Toast.makeText(this, "Reading file?", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Reading file\u2026", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 try {
                     byte[] bytes;

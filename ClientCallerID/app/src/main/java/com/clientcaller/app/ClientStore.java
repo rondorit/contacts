@@ -43,10 +43,10 @@ public class ClientStore {
 
     private static final String[] PHONE_WORDS = {
             "phone", "tel", "mobile", "cell",
-            "טלפון", "טל.", "טל'", "נייד", "פלאפון", "סלולר"
+            "\u05D8\u05DC\u05E4\u05D5\u05DF", "\u05D8\u05DC.", "\u05D8\u05DC'", "\u05E0\u05D9\u05D9\u05D3", "\u05E4\u05DC\u05D0\u05E4\u05D5\u05DF", "\u05E1\u05DC\u05D5\u05DC\u05E8"
     };
     private static final String[] NAME_WORDS = {
-            "name", "שם", "client", "customer", "לקוח", "company", "חברה", "עסק"
+            "name", "\u05E9\u05DD", "client", "customer", "\u05DC\u05E7\u05D5\u05D7", "company", "\u05D7\u05D1\u05E8\u05D4", "\u05E2\u05E1\u05E7"
     };
     private static final String REL_NS =
             "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -83,7 +83,7 @@ public class ClientStore {
         phoneCols.clear();
         for (int c = 0; c < headers.size(); c++) {
             String h = headers.get(c).toLowerCase(Locale.ROOT).trim();
-            boolean match = h.equals("טל");
+            boolean match = h.equals("\u05D8\u05DC");
             for (String w : PHONE_WORDS) if (h.contains(w)) match = true;
             if (match) phoneCols.add(c);
         }
@@ -184,6 +184,15 @@ public class ClientStore {
         if (!v.isEmpty()) return v;
         String p = firstPhone(r);
         return p.isEmpty() ? "Client" : p;
+    }
+
+    /** Comparison keys of all phone numbers of a client. */
+    public List<String> keysForRow(int r) {
+        List<String> out = new ArrayList<>();
+        for (int c : phoneCols) {
+            for (String p : phoneParts(rows.get(r).get(c))) out.add(key(p));
+        }
+        return out;
     }
 
     public String firstPhone(int r) {
@@ -313,10 +322,10 @@ public class ClientStore {
 
     public static List<List<String>> readCsv(byte[] data) {
         String text = new String(data, StandardCharsets.UTF_8);
-        if (text.indexOf('�') >= 0 && Charset.isSupported("windows-1255")) {
+        if (text.indexOf('\uFFFD') >= 0 && Charset.isSupported("windows-1255")) {
             text = new String(data, Charset.forName("windows-1255")); // Hebrew Excel CSV
         }
-        if (text.startsWith("﻿")) text = text.substring(1);
+        if (text.startsWith("\uFEFF")) text = text.substring(1);
 
         int nl = text.indexOf('\n');
         String first = nl < 0 ? text : text.substring(0, nl);

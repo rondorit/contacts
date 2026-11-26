@@ -1,0 +1,204 @@
+package com.clientcaller.app;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/** Service tickets and their notes, stored on the phone (SQLite). */
+final class TicketDb extends SQLiteOpenHelper {
+
+    static final String[] STATUSES = {
+            "Open", "In progress", "Waiting for client", "Waiting for outsourcing", "Closed"};
+    static final String[] PRIORITIES = {"Low", "Normal", "Urgent"};
+    static final String[] CATEGORIES = {
+            "Hardware", "Software", "Network", "Printer", "Email", "Backup", "Security", "Other"};
+
+    static final class Ticket {
+        long id;
+        String clientName = "", clientPhone = "", title = "", description = "";
+        String status = "Open", priority = "Normal", category = "Other";
+        String equipment = "", outsource = "";
+        long created, updated, followupAt, eventId;
+
+        boolean isOpen() {
+            return !"Closed".equals(status);
+        }
+
+        boolean isOverdue() {
+            return isOpen() && followupAt > 0 && followupAt < System.currentTimeMillis();
+        }
+    }
+
+    static final class Note {
+        long time;
+        String text;
+    }
+
+    private static TicketDb instance;
+
+    static synchronized TicketDb get(Context c) {
+        if (instance == null) instance = new TicketDb(c.getApplicationContext());
+        return instance;
+    }
+
+    private TicketDb(Context c) {
+        super(c, "tickets.db", null, 1);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE tickets (_id INTEGER PRIMARY KEY AUTOINCREMENT, client_name TEXT,"
+                + " client_phone TEXT, title TEXT, description TEXT, status TEXT, priority TEXT,"
+                + " category TEXT, equipment TEXT, outsource TEXT, created INTEGER, updated INTEGER,"
+                + " followup_at INTEGER, event_id INTEGER)");
+        db.execSQL("CREATE TABLE notes (_id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER,"
+                + " time INTEGER, text TEXT)");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
+
+    private static final String[] COLS = {"_id", "client_name", "client_phone", "title", "description",
+            "status", "priority", "category", "equipment", "outsource", "created", "updated",
+            "followup_at", "event_id"};
+
+    private static Ticket read(Cursor c) {
+        Ticket t = new Ticket();
+        t.id = c.getLong(0);
+        t.clientName = str(c, 1);
+        t.clientPhone = str(c, 2);
+        t.title = str(c, 3);
+        t.description = str(c, 4);
+        t.status = str(c, 5);
+        t.priority = str(c, 6);
+        t.category = str(c, 7);
+        t.equipment = str(c, 8);
+        t.outsource = str(c, 9);
+        t.created = c.getLong(10);
+        t.updated = c.getLong(11);
+        t.followupAt = c.getLong(12);
+        t.eventId = c.getLong(13);
+        return t;
+    }
+
+    private static String str(Cursor c, int i) {
+        String s = c.getString(i);
+        return s == null ? "" : s;
+    }
+
+    long save(Ticket t) {
+        long now = System.currentTimeMillis();
+        if (t.created == 0) t.created = now;
+        t.updated = now;
+        ContentValues v = new ContentValues();
+        v.put("client_name", t.clientName);
+        v.put("client_phone", t.clientPhone);
+        v.put("title", t.title);
+        v.put("description", t.description);
+        v.put("status", t.status);
+        v.put("priority", t.priority);
+        v.put("category", t.category);
+        v.put("equipment", t.equipment);
+        v.put("outsource", t.outsource);
+        v.put("created", t.created);
+        v.put("updated", t.updated);
+        v.put("followup_at", t.followupAt);
+        v.put("event_id", t.eventId);
+        SQLiteDatabase db = getWritableDatabase();
+        if (t.id == 0) {
+            t.id = db.insert("tickets", null, v);
+        } else {
+            db.update("tickets", v, "_id=?", new String[]{String.valueOf(t.id)});
+        }
+        return t.id;
+    }
+
+    Ticket load(long id) {
+        try (Cursor c = getReadableDatabase().query("tickets", COLS, "_id=?",
+                new String[]{String.valueOf(id)}, null, null, null)) {
+            return c.moveToFirst() ? read(c) : null;
+        }
+    }
+
+    List<Ticket> all() {
+        List<Ticket> out = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("tickets", COLS, null, null, null, null,
+                "updated DESC")) {
+            while (c.moveToNext()) out.add(read(c));
+        }
+        return out;
+    }
+
+    void delete(long id) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete("notes", "ticket_id=?", new String[]{String.valueOf(id)});
+        db.delete("tickets", "_id=?", new String[]{String.valueOf(id)});
+    }
+
+    void addNote(long ticketId, String text) {
+        ContentValues v = new ContentValues();
+        v.put("ticket_id", ticketId);
+        v.put("time", System.currentTimeMillis());
+        v.put("text", text);
+        getWritableDatabase().insert("notes", null, v);
+    }
+
+    List<Note> notes(long ticketId) {
+        List<Note> out = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("notes", new String[]{"time", "text"},
+                "ticket_id=?", new String[]{String.valueOf(ticketId)}, null, null, "time ASC")) {
+            while (c.moveToNext()) {
+                Note n = new Note();
+                n.time = c.getLong(0);
+                n.text = str(c, 1);
+                out.add(n);
+            }
+        }
+        return out;
+    }
+
+    /** Tickets that belong to a client, matched by phone number or name. */
+    List<Ticket> forClient(String name, List<String> phoneKeys) {
+        List<Ticket> out = new ArrayList<>();
+        for (Ticket t : all()) {
+            String k = ClientStore.key(t.clientPhone);
+            boolean byPhone = k.length() >= 7 && phoneKeys.contains(k);
+            boolean byName = name != null && !name.isEmpty() && name.equalsIgnoreCase(t.clientName.trim());
+            if (byPhone || byName) out.add(t);
+        }
+        return out;
+    }
+
+    static String fmt(long time) {
+        return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date(time));
+    }
+
+    /** Plain-text summary for sharing (WhatsApp, email, outsourcing partner). */
+    String summary(Ticket t) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Service ticket #").append(t.id).append('\n');
+        if (!t.clientName.isEmpty()) sb.append("Client: ").append(t.clientName).append('\n');
+        if (!t.clientPhone.isEmpty()) sb.append("Phone: ").append(t.clientPhone).append('\n');
+        sb.append("Subject: ").append(t.title).append('\n');
+        if (!t.description.isEmpty()) sb.append("Problem: ").append(t.description).append('\n');
+        if (!t.equipment.isEmpty()) sb.append("Equipment: ").append(t.equipment).append('\n');
+        sb.append("Category: ").append(t.category).append(" | Priority: ").append(t.priority)
+                .append(" | Status: ").append(t.status).append('\n');
+        if (t.followupAt > 0) sb.append("Follow-up: ").append(fmt(t.followupAt)).append('\n');
+        sb.append("Opened: ").append(fmt(t.created)).append('\n');
+        List<Note> notes = notes(t.id);
+        if (!notes.isEmpty()) {
+            sb.append("\nNotes:\n");
+            for (Note n : notes) sb.append(fmt(n.time)).append(" - ").append(n.text).append('\n');
+        }
+        return sb.toString();
+    }
+}

@@ -106,10 +106,40 @@ final class CallPopup {
         body.setPadding(0, (int) (6 * d), 0, (int) (8 * d));
         box.addView(body);
 
+        // Open tickets of this client, so you know what the call is probably about.
+        try {
+            int openCount = 0;
+            String last = "";
+            for (TicketDb.Ticket t : TicketDb.get(app).forClient(s.name(row), s.keysForRow(row))) {
+                if (!t.isOpen()) continue;
+                if (openCount == 0) last = "#" + t.id + " " + t.title + " (" + t.status + ")";
+                openCount++;
+            }
+            if (openCount > 0) {
+                TextView tk = new TextView(app);
+                tk.setText("\uD83C\uDFAB Open tickets: " + openCount + "\n" + last);
+                tk.setTextColor(0xFFD32F2F);
+                tk.setTextSize(15);
+                tk.setPadding(0, 0, 0, (int) (8 * d));
+                box.addView(tk);
+            }
+        } catch (Exception ignored) { }
+
         LinearLayout buttons = new LinearLayout(app);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
+        Button ticket = new Button(app);
+        ticket.setText("New ticket");
+        ticket.setAllCaps(false);
+        ticket.setOnClickListener(v -> {
+            removeOverlay();
+            Intent i = new Intent(app, TicketActivity.class)
+                    .putExtra(DetailActivity.EXTRA_ROW, row)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try { app.startActivity(i); } catch (Exception ignored) { }
+        });
+        buttons.addView(ticket, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         Button open = new Button(app);
-        open.setText("Open card");
+        open.setText("Card");
         open.setAllCaps(false);
         open.setOnClickListener(v -> {
             removeOverlay();
