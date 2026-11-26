@@ -55,6 +55,18 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:label="צרף לקריאת שירות"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".ReportActivity"
             android:exported="false" />
 

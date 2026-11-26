@@ -28,6 +28,7 @@ public class TicketActivity extends Activity {
     static final String EXTRA_TICKET = "ticket";
     static final String EXTRA_NAME = "client_name";
     static final String EXTRA_PHONE = "client_phone";
+    static final String EXTRA_DESC = "description";
 
     private TicketDb db;
     private TicketDb.Ticket t;
@@ -59,6 +60,9 @@ public class TicketActivity extends Activity {
                 if (n != null) t.clientName = n;
                 if (ph != null) t.clientPhone = ph;
             }
+        }
+        if (t.id == 0 && getIntent().getStringExtra(EXTRA_DESC) != null) {
+            t.description = getIntent().getStringExtra(EXTRA_DESC);
         }
         oldStatus = t.status;
         followupAt = t.followupAt;
