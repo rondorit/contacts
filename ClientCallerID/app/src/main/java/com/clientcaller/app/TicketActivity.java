@@ -34,7 +34,8 @@ public class TicketActivity extends Activity {
     private String oldStatus;
     private EditText eClient, ePhone, eTitle, eDesc, eEquip, eMac, eOutsource, eNote;
     private Spinner sStatus, sPriority, sCategory;
-    private TextView tFollow, history;
+    private TextView tFollow;
+    private LinearLayout history;
     private Spinner sProvider;
     private final java.util.List<String> providerNames = new java.util.ArrayList<>();
     private long followupAt;
@@ -140,8 +141,8 @@ public class TicketActivity extends Activity {
         showFollowup();
 
         label(box, "\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D9\u05EA \u05D4\u05E2\u05E8\u05D5\u05EA");
-        history = new TextView(this);
-        history.setTextIsSelectable(true);
+        history = new LinearLayout(this);
+        history.setOrientation(LinearLayout.VERTICAL);
         showHistory();
         box.addView(history);
         eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
@@ -258,15 +259,34 @@ public class TicketActivity extends Activity {
         sProvider.setSelection(selected.isEmpty() ? 0 : providerNames.indexOf(selected) + 1);
     }
 
+    /** Notes history; tap a note to delete it. */
     private void showHistory() {
-        StringBuilder sb = new StringBuilder();
-        if (t.id > 0) {
-            for (TicketDb.Note n : db.notes(t.id)) {
-                if (sb.length() > 0) sb.append("\n\n");
-                sb.append(TicketDb.fmt(n.time)).append('\n').append(n.text);
-            }
+        history.removeAllViews();
+        java.util.List<TicketDb.Note> notes = t.id > 0 ? db.notes(t.id) : new java.util.ArrayList<>();
+        if (notes.isEmpty()) {
+            TextView none = new TextView(this);
+            none.setText("\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF.");
+            history.addView(none);
+            return;
         }
-        history.setText(sb.length() == 0 ? "\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF." : sb.toString());
+        for (final TicketDb.Note n : notes) {
+            TextView tv = new TextView(this);
+            tv.setText(TicketDb.fmt(n.time) + "\n" + n.text);
+            tv.setTextSize(15);
+            tv.setPadding(0, dp(8), 0, dp(8));
+            tv.setOnClickListener(v -> new AlertDialog.Builder(this)
+                    .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E9\u05D5\u05E8\u05D4 \u05D4\u05D6\u05D0\u05EA \u05DE\u05D4\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4?\n\n" + n.text)
+                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> {
+                        db.deleteNote(n.id);
+                        showHistory();
+                    })
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                    .show());
+            history.addView(tv);
+            android.view.View line = new android.view.View(this);
+            line.setBackgroundColor(0xFFDDDDDD);
+            history.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1) / 2 + 1)));
+        }
     }
 
     /** Sends the ticket to the chosen outsourcing provider by WhatsApp or email. */

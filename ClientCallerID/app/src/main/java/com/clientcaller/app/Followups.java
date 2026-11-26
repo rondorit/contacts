@@ -87,6 +87,41 @@ final class Followups {
         } catch (Exception ignored) { }
     }
 
+    static final class CalEvent {
+        long id, start;
+        String title = "", description = "";
+    }
+
+    /** Calendar events whose title mentions this client (call logs, follow-ups...). */
+    static java.util.List<CalEvent> eventsFor(Context c, String name) {
+        java.util.List<CalEvent> out = new java.util.ArrayList<>();
+        if (name == null || name.trim().isEmpty() || !calendarAllowed(c)) return out;
+        String[] proj = {CalendarContract.Events._ID, CalendarContract.Events.DTSTART,
+                CalendarContract.Events.TITLE, CalendarContract.Events.DESCRIPTION};
+        String sel = CalendarContract.Events.TITLE + " LIKE ? AND " + CalendarContract.Events.DELETED + "=0";
+        try (android.database.Cursor cur = c.getContentResolver().query(CalendarContract.Events.CONTENT_URI,
+                proj, sel, new String[]{"%" + name.trim() + "%"}, CalendarContract.Events.DTSTART + " DESC")) {
+            while (cur != null && cur.moveToNext() && out.size() < 100) {
+                CalEvent e = new CalEvent();
+                e.id = cur.getLong(0);
+                e.start = cur.getLong(1);
+                e.title = cur.getString(2) == null ? "" : cur.getString(2);
+                e.description = cur.getString(3) == null ? "" : cur.getString(3);
+                out.add(e);
+            }
+        } catch (Exception ignored) { }
+        return out;
+    }
+
+    static boolean deleteEvent(Context c, long eventId) {
+        try {
+            return calendarAllowed(c) && c.getContentResolver().delete(
+                    ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId), null, null) > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     static void removeEvent(Context c, TicketDb.Ticket t) {
         try {
             if (t.eventId > 0 && calendarAllowed(c)) {

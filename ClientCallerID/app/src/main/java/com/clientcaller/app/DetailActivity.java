@@ -1,6 +1,7 @@
 package com.clientcaller.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -41,6 +42,35 @@ public class DetailActivity extends Activity {
         name.setTypeface(null, Typeface.BOLD);
         name.setTextIsSelectable(true);
         box.addView(name);
+
+        // Quick actions: call, WhatsApp, email.
+        final String phone1 = s.firstPhone(r);
+        String mail = "";
+        for (String v : row) {
+            if (v.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) { mail = v.trim(); break; }
+        }
+        final String email1 = mail;
+        LinearLayout quick = new LinearLayout(this);
+        Button qCall = new Button(this);
+        qCall.setAllCaps(false);
+        qCall.setText("\u05D4\u05EA\u05E7\u05E9\u05E8");
+        qCall.setEnabled(!phone1.isEmpty());
+        qCall.setOnClickListener(v -> open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(phone1)))));
+        Button qWa = new Button(this);
+        qWa.setAllCaps(false);
+        qWa.setText("\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
+        qWa.setEnabled(!phone1.isEmpty());
+        qWa.setOnClickListener(v -> open(new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://wa.me/" + whatsAppNumber(phone1)))));
+        Button qMail = new Button(this);
+        qMail.setAllCaps(false);
+        qMail.setText("\u05DE\u05D9\u05D9\u05DC");
+        qMail.setEnabled(!email1.isEmpty());
+        qMail.setOnClickListener(v -> open(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + email1))));
+        quick.addView(qCall, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        quick.addView(qWa, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        quick.addView(qMail, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        box.addView(quick);
 
         final int clientRow = r;
         Button edit = new Button(this);
@@ -102,6 +132,10 @@ public class DetailActivity extends Activity {
             }
         }
 
+        calBox = new LinearLayout(this);
+        calBox.setOrientation(LinearLayout.VERTICAL);
+        box.addView(calBox);
+
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
         setContentView(sv);
@@ -118,12 +152,54 @@ public class DetailActivity extends Activity {
         return (k.length() == 8 || k.length() == 9) ? "972" + k : plain;
     }
 
-    private LinearLayout ticketBox;
+    private LinearLayout ticketBox, calBox;
     private int row = -1;
 
     @Override
     protected void onResume() {
         super.onResume();
+        refreshTickets();
+        refreshCalendar();
+    }
+
+    /** This client's calendar events (call log, follow-ups); tap one to delete it. */
+    private void refreshCalendar() {
+        if (calBox == null || row < 0) return;
+        calBox.removeAllViews();
+        ClientStore s = Data.get(this);
+        if (row >= s.rows.size()) return;
+        List<Followups.CalEvent> events = Followups.eventsFor(this, s.name(row));
+        if (events.isEmpty()) return;
+        TextView label = new TextView(this);
+        label.setText("\u05D0\u05D9\u05E8\u05D5\u05E2\u05D9\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF (" + events.size() + ") - \u05DC\u05D7\u05E5 \u05E2\u05DC \u05D0\u05D9\u05E8\u05D5\u05E2 \u05DB\u05D3\u05D9 \u05DC\u05DE\u05D7\u05D5\u05E7");
+        label.setTextSize(13);
+        label.setTextColor(0xFF777777);
+        label.setPadding(0, dp(16), 0, dp(4));
+        calBox.addView(label);
+        for (final Followups.CalEvent e : events) {
+            TextView tv = new TextView(this);
+            tv.setText(TicketDb.fmt(e.start) + "\n" + e.title);
+            tv.setTextSize(15);
+            tv.setPadding(0, dp(8), 0, dp(8));
+            tv.setOnClickListener(v -> new AlertDialog.Builder(this)
+                    .setTitle(e.title)
+                    .setMessage(TicketDb.fmt(e.start) + (e.description.isEmpty() ? "" : "\n\n" + e.description))
+                    .setPositiveButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", (d, w) -> {
+                        if (Followups.deleteEvent(this, e.id)) {
+                            Toast.makeText(this, "\u05D4\u05D0\u05D9\u05E8\u05D5\u05E2 \u05E0\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", Toast.LENGTH_SHORT).show();
+                        }
+                        refreshCalendar();
+                    })
+                    .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
+                    .show());
+            calBox.addView(tv);
+            android.view.View line = new android.view.View(this);
+            line.setBackgroundColor(0xFFDDDDDD);
+            calBox.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
+        }
+    }
+
+    private void refreshTickets() {
         if (ticketBox == null || row < 0) return;
         ticketBox.removeAllViews();
         ClientStore s = Data.get(this);
