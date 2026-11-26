@@ -32,9 +32,20 @@ public class ShareActivity extends Activity {
         CharSequence body = in.getCharSequenceExtra(Intent.EXTRA_TEXT);
         String subject = in.getStringExtra(Intent.EXTRA_SUBJECT);
         if (body == null || body.toString().trim().isEmpty()) {
-            Toast.makeText(this, "\u05DC\u05D0 \u05D4\u05EA\u05E7\u05D1\u05DC \u05D8\u05E7\u05E1\u05D8", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
+            // Shared as a file (.txt / .docx)?
+            android.net.Uri uri = in.getParcelableExtra(Intent.EXTRA_STREAM);
+            String fileText = uri == null ? null : readFileText(uri, in.getType());
+            if (fileText == null || fileText.trim().isEmpty()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E7\u05E8\u05D5\u05D0 \u05D0\u05EA \u05DE\u05D4 \u05E9\u05E9\u05D5\u05EA\u05E3")
+                        .setMessage("\u05D4\u05EA\u05E7\u05D1\u05DC: " + in.getType() + (uri == null ? "" : "\n" + uri.getLastPathSegment())
+                                + "\n\n\u05D0\u05E4\u05E9\u05E8 \u05DC\u05D4\u05E2\u05EA\u05D9\u05E7 \u05D0\u05EA \u05D4\u05D8\u05E7\u05E1\u05D8 \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05D4\u05E9\u05E0\u05D9\u05D9\u05D4, \u05D5\u05DC\u05D4\u05D3\u05D1\u05D9\u05E7 \u05D0\u05D5\u05EA\u05D5 \u05D1\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D1\u05DB\u05E4\u05EA\u05D5\u05E8 \"\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7\".")
+                        .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", (d, w) -> finish())
+                        .setOnCancelListener(d -> finish())
+                        .show();
+                return;
+            }
+            body = fileText;
         }
         text = (subject == null || subject.trim().isEmpty() ? "" : subject.trim() + "\n") + body.toString().trim();
         setTitle("\u05E6\u05D9\u05E8\u05D5\u05E3 \u05DC\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA");
@@ -75,6 +86,36 @@ public class ShareActivity extends Activity {
         setContentView(sv);
         He.rtl(this);
         refresh();
+    }
+
+    /** Text of a shared .txt or .docx file; null if it can't be read as text. */
+    private String readFileText(android.net.Uri uri, String type) {
+        try (java.io.InputStream is = getContentResolver().openInputStream(uri)) {
+            if (is == null) return null;
+            byte[] data = ClientStore.readAll(is);
+            if (data.length >= 2 && data[0] == 'P' && data[1] == 'K') {   // .docx = zip
+                java.util.zip.ZipInputStream z = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(data));
+                java.util.zip.ZipEntry e;
+                while ((e = z.getNextEntry()) != null) {
+                    if (e.getName().equals("word/document.xml")) {
+                        String xml = new String(ClientStore.readAll(z), java.nio.charset.StandardCharsets.UTF_8);
+                        xml = xml.replaceAll("</w:p>", "\n").replaceAll("<w:tab/>", "\t").replaceAll("<[^>]+>", "");
+                        return xml.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+                                .replace("&quot;", "\"").replace("&apos;", "'").trim();
+                    }
+                }
+                return null;
+            }
+            String t = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+            int bad = 0;
+            for (int i = 0; i < Math.min(t.length(), 2000); i++) {
+                char ch = t.charAt(i);
+                if (ch == '\uFFFD' || (ch < 0x20 && ch != '\n' && ch != '\r' && ch != '\t')) bad++;
+            }
+            return bad > 20 ? null : t;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void refresh() {

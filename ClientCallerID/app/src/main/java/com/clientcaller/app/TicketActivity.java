@@ -152,6 +152,22 @@ public class TicketActivity extends Activity {
         eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         eNote.setMinLines(2);
+        LinearLayout pasteRow = row(box);
+        rowButton(pasteRow, "\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7 \u05D8\u05E7\u05E1\u05D8 \u05E9\u05D4\u05D5\u05E2\u05EA\u05E7 (\u05EA\u05DE\u05DC\u05D5\u05DC / \u05D4\u05D5\u05D3\u05E2\u05D4)", v -> {
+            android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
+            if (cm == null || !cm.hasPrimaryClip() || cm.getPrimaryClip().getItemCount() == 0) {
+                toast("\u05D0\u05D9\u05DF \u05D8\u05E7\u05E1\u05D8 \u05DE\u05D5\u05E2\u05EA\u05E7");
+                return;
+            }
+            CharSequence clip = cm.getPrimaryClip().getItemAt(0).coerceToText(this);
+            if (clip == null || clip.toString().trim().isEmpty()) {
+                toast("\u05D0\u05D9\u05DF \u05D8\u05E7\u05E1\u05D8 \u05DE\u05D5\u05E2\u05EA\u05E7");
+                return;
+            }
+            String cur = eNote.getText().toString();
+            eNote.setText(cur.isEmpty() ? clip.toString().trim() : cur + "\n" + clip.toString().trim());
+            eNote.setSelection(eNote.getText().length());
+        });
 
         Button save = new Button(this);
         save.setAllCaps(false);
