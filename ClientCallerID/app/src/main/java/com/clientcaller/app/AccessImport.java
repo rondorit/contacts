@@ -26,6 +26,27 @@ public final class AccessImport {
         return sig.startsWith("Standard Jet DB") || sig.startsWith("Standard ACE DB");
     }
 
+    /** "mdb" for Access 2000-2003 files, "accdb" for Access 2007 and newer. */
+    public static String extension(File f) {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+            String n = db.getFileFormat().name();
+            return n.startsWith("V2000") || n.startsWith("V2003") || n.startsWith("V1997") || n.contains("JET") ? "mdb" : "accdb";
+        } catch (Exception e) {
+            return "accdb";
+        }
+    }
+
+    /** Opens the file and reads every row of the table; throws if the file is damaged. */
+    public static int verify(File f, String table) throws IOException {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+            com.healthmarketscience.jackcess.Table t = db.getTable(table);
+            if (t == null) throw new IOException("table missing");
+            int n = 0;
+            for (Row r : t) { r.size(); n++; }
+            return n;
+        }
+    }
+
     public static List<String> tables(File f) throws IOException {
         try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
             return new ArrayList<>(db.getTableNames());

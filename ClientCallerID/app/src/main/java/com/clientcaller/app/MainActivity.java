@@ -757,7 +757,8 @@ public class MainActivity extends Activity {
                     Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     i.setType("application/octet-stream");
-                    i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + ".accdb");
+                    String ext = AccessImport.extension(new File(getFilesDir(), Data.ACCESS_COPY));
+                    i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + "." + ext);
                     startActivityForResult(i, REQ_ACCESS_SAVE);
                 });
         if (!uriStr.isEmpty()) {
@@ -806,6 +807,18 @@ public class MainActivity extends Activity {
                 AccessExport.Result res = AccessExport.apply(work, table, s.headers, changed, dels,
                         Data.ID_COL, s.headers.get(s.nameCol));
 
+                // 2b. Make sure the result opens and reads completely before writing it anywhere.
+                int rowsAfter;
+                try {
+                    rowsAfter = AccessImport.verify(work, table);
+                } catch (Exception ve) {
+                    throw new IOException("\u05D1\u05D3\u05D9\u05E7\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E2\u05D5\u05D3\u05DB\u05DF \u05E0\u05DB\u05E9\u05DC\u05D4 - \u05D4\u05E7\u05D5\u05D1\u05E5 \u05DC\u05D0 \u05E0\u05E9\u05DE\u05E8, \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9 \u05DC\u05D0 \u05D4\u05E9\u05EA\u05E0\u05D4. (" + ve.getMessage() + ")");
+                }
+                // Keep the version before this update, so it can be restored.
+                try (java.io.FileOutputStream o = new java.io.FileOutputStream(new File(getFilesDir(), "access-before-update.bin"))) {
+                    o.write(src);
+                }
+
                 // 3. Write the result.
                 byte[] out;
                 try (InputStream in = new java.io.FileInputStream(work)) {
@@ -852,6 +865,7 @@ public class MainActivity extends Activity {
                 final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + (verified ? "  \u2713 \u05D0\u05D5\u05DE\u05EA" : "  (\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05D0\u05DE\u05EA)") + "\n\n"
                         + (drive ? "Google Drive \u05DE\u05E1\u05E0\u05DB\u05E8\u05DF \u05DC\u05DE\u05D7\u05E9\u05D1 \u05EA\u05D5\u05DA \u05D3\u05E7\u05D4-\u05E9\u05EA\u05D9\u05D9\u05DD. \u05D0\u05DD \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E4\u05EA\u05D5\u05D7 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1, \u05E1\u05D2\u05D5\u05E8 \u05D0\u05D5\u05EA\u05D5 - "
                         + "\u05D0\u05D7\u05E8\u05EA Drive \u05D9\u05E9\u05DE\u05D5\u05E8 \u05E2\u05D5\u05EA\u05E7 \u05E0\u05D5\u05E1\u05E3 \u05D1\u05E9\u05DD \u05E2\u05DD (1).\n\n" : "")
+                        + "\u05D1\u05E7\u05D5\u05D1\u05E5 " + rowsAfter + " \u05E8\u05E9\u05D5\u05DE\u05D5\u05EA.\n"
                         + "\u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05E2\u05D5\u05D3\u05DB\u05DF: " + res.updated + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D5, " + res.added + " \u05E0\u05D5\u05E1\u05E4\u05D5, "
                         + res.deleted + " \u05E0\u05DE\u05D7\u05E7\u05D5"
                         + (res.notFound > 0 ? "\n" + res.notFound + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05D1\u05E7\u05D5\u05D1\u05E5" : "")
