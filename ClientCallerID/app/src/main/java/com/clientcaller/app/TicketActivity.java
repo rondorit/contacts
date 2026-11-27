@@ -117,12 +117,12 @@ public class TicketActivity extends Activity {
         mRow.addView(eMac, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         rowButton(mRow, "\u05D1\u05D7\u05E8", v -> chooseMac());
         label(box, "\uD83D\uDC77 \u05D0\u05D7\u05E8\u05D0\u05D9 \u05D1\u05D9\u05E6\u05D5\u05E2 (\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA)");
-        LinearLayout aRow = row(box);
+        LinearLayout asRow = row(box);
         tAssignee = new TextView(this);
         tAssignee.setTextSize(17);
-        aRow.addView(tAssignee, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
-        rowButton(aRow, "\u05E9\u05D9\u05D9\u05DA", v -> assign());
-        rowButton(aRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC\u05D5", v -> {
+        asRow.addView(tAssignee, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(asRow, "\u05E9\u05D9\u05D9\u05DA", v -> assign());
+        rowButton(asRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC\u05D5", v -> {
             if (t.assignee.isEmpty()) { assign(); return; }
             readForm();
             if (persist()) Team.send(this, t);
