@@ -425,9 +425,11 @@ public class TicketActivity extends Activity {
             sStatus.setSelection(java.util.Arrays.asList(TicketDb.STATUSES).indexOf(t.status));
         }
         if (!persist()) return;
-        db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + (whatsapp ? " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : " \u05D1\u05DE\u05D9\u05D9\u05DC")
-                + (t.followupAt > 0 ? " | \u05DE\u05E2\u05E7\u05D1 \u05DE\u05D5\u05DC\u05D5: " + TicketDb.fmt(t.followupAt) : ""));
-        showHistory();
+        final String follow = t.followupAt > 0 ? " | \u05DE\u05E2\u05E7\u05D1 \u05DE\u05D5\u05DC\u05D5: " + TicketDb.fmt(t.followupAt) : "";
+        if (whatsapp) {
+            db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" + follow);
+            showHistory();
+        }
         String text = tpl == null ? db.summary(t) : Templates.fill(this, t, tpl.body);
         String subject = tpl == null || tpl.subject.trim().isEmpty()
                 ? "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title : Templates.fill(this, t, tpl.subject);
@@ -435,13 +437,62 @@ public class TicketActivity extends Activity {
             open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
                     + DetailActivity.whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
         } else {
-            Intent send = new Intent(Intent.ACTION_SEND)
-                    .putExtra(Intent.EXTRA_EMAIL, new String[]{email})
-                    .putExtra(Intent.EXTRA_SUBJECT, subject)
-                    .putExtra(Intent.EXTRA_TEXT, text);
-            send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
-            open(Intent.createChooser(send, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05DE\u05D9\u05D9\u05DC"));
+            final String clientMail = clientEmail();
+            if (clientMail.isEmpty()) {
+                sendEmail(email, "", subject, text, follow);
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("\u05D4\u05E2\u05EA\u05E7 \u05DC\u05DC\u05E7\u05D5\u05D7?")
+                        .setMessage("\u05DC\u05DC\u05E7\u05D5\u05D7 \u05D9\u05E9 \u05DB\u05EA\u05D5\u05D1\u05EA \u05DE\u05D9\u05D9\u05DC:\n" + clientMail + "\n\n\u05DC\u05D4\u05D5\u05E1\u05D9\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1\u05D4\u05E2\u05EA\u05E7 (CC) \u05DC\u05DE\u05D9\u05D9\u05DC \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA?")
+                        .setPositiveButton("\u05DB\u05DF, \u05E2\u05DD \u05D4\u05E2\u05EA\u05E7", (d, w) -> sendEmail(email, clientMail, subject, text, follow))
+                        .setNegativeButton("\u05D1\u05DC\u05D9 \u05D4\u05E2\u05EA\u05E7", (d, w) -> sendEmail(email, "", subject, text, follow))
+                        .show();
+            }
         }
+    }
+
+    /** Opens the email app, and records the email in the ticket and in the client's card. */
+    private void sendEmail(String to, String cc, String subject, String text, String follow) {
+        db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + " \u05D1\u05DE\u05D9\u05D9\u05DC" + (cc.isEmpty() ? "" : " (\u05D4\u05E2\u05EA\u05E7 \u05DC\u05DC\u05E7\u05D5\u05D7: " + cc + ")") + follow);
+        showHistory();
+        TicketDb.Sent m = new TicketDb.Sent();
+        m.ticketId = t.id;
+        m.clientName = t.clientName;
+        m.clientPhone = t.clientPhone;
+        m.to = to;
+        m.cc = cc;
+        m.subject = subject;
+        m.body = text;
+        db.addSent(m);
+        openEmail(this, to, cc, subject, text);
+    }
+
+    static void openEmail(Activity a, String to, String cc, String subject, String text) {
+        Intent send = new Intent(Intent.ACTION_SEND)
+                .putExtra(Intent.EXTRA_EMAIL, new String[]{to})
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_TEXT, text);
+        if (cc != null && !cc.isEmpty()) send.putExtra(Intent.EXTRA_CC, new String[]{cc});
+        send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
+        try {
+            a.startActivity(Intent.createChooser(send, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05DE\u05D9\u05D9\u05DC"));
+        } catch (Exception e) {
+            Toast.makeText(a, "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4 \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D9\u05EA \u05DE\u05D9\u05D9\u05DC", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** The client's email from the Excel row (any cell that looks like an email address). */
+    private String clientEmail() {
+        ClientStore s = Data.get(this);
+        int row = t.clientPhone.isEmpty() ? -1 : s.find(t.clientPhone);
+        if (row < 0 && !t.clientName.isEmpty()) {
+            for (int r = 0; r < s.rows.size(); r++) if (s.name(r).equalsIgnoreCase(t.clientName)) { row = r; break; }
+        }
+        if (row < 0) return "";
+        for (String v : s.rows.get(row)) {
+            if (v.trim().matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) return v.trim();
+        }
+        return "";
     }
 
     /** Saves the form; returns false if the ticket has no subject yet. */

@@ -59,7 +59,7 @@ final class TicketDb extends SQLiteOpenHelper {
     }
 
     private TicketDb(Context c) {
-        super(c, "tickets.db", null, 3);
+        super(c, "tickets.db", null, 4);
     }
 
     @Override
@@ -71,6 +71,13 @@ final class TicketDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE notes (_id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER,"
                 + " time INTEGER, text TEXT)");
         createProviders(db);
+        createSent(db);
+    }
+
+    private static void createSent(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS sent (_id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER,"
+                + " client_name TEXT, client_phone TEXT, time INTEGER, to_addr TEXT, cc_addr TEXT,"
+                + " subject TEXT, body TEXT)");
     }
 
     private static void createProviders(SQLiteDatabase db) {
@@ -86,6 +93,7 @@ final class TicketDb extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 4) createSent(db);
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE tickets ADD COLUMN provider TEXT");
             createProviders(db);
@@ -281,6 +289,55 @@ final class TicketDb extends SQLiteOpenHelper {
             if (t.mac.isEmpty() || seen.contains(t.mac)) continue;
             seen.add(t.mac);
             out.add(new String[]{t.mac, t.equipment});
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ sent emails
+
+    static final class Sent {
+        long id, ticketId, time;
+        String clientName = "", clientPhone = "", to = "", cc = "", subject = "", body = "";
+    }
+
+    void addSent(Sent m) {
+        ContentValues v = new ContentValues();
+        v.put("ticket_id", m.ticketId);
+        v.put("client_name", m.clientName);
+        v.put("client_phone", m.clientPhone);
+        v.put("time", System.currentTimeMillis());
+        v.put("to_addr", m.to);
+        v.put("cc_addr", m.cc);
+        v.put("subject", m.subject);
+        v.put("body", m.body);
+        getWritableDatabase().insert("sent", null, v);
+    }
+
+    void deleteSent(long id) {
+        getWritableDatabase().delete("sent", "_id=?", new String[]{String.valueOf(id)});
+    }
+
+    /** Emails sent about this client (matched by phone or name), newest first. */
+    List<Sent> sentForClient(String name, List<String> phoneKeys) {
+        List<Sent> out = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("sent", new String[]{"_id", "ticket_id", "client_name",
+                "client_phone", "time", "to_addr", "cc_addr", "subject", "body"}, null, null, null, null, "time DESC")) {
+            while (c.moveToNext()) {
+                Sent m = new Sent();
+                m.id = c.getLong(0);
+                m.ticketId = c.getLong(1);
+                m.clientName = str(c, 2);
+                m.clientPhone = str(c, 3);
+                m.time = c.getLong(4);
+                m.to = str(c, 5);
+                m.cc = str(c, 6);
+                m.subject = str(c, 7);
+                m.body = str(c, 8);
+                String k = ClientStore.key(m.clientPhone);
+                boolean byPhone = k.length() >= 7 && phoneKeys.contains(k);
+                boolean byName = name != null && !name.isEmpty() && name.equalsIgnoreCase(m.clientName.trim());
+                if (byPhone || byName) out.add(m);
+            }
         }
         return out;
     }

@@ -124,6 +124,10 @@ public class DetailActivity extends Activity {
         }
         box.addView(details, Ui.cardParams(this));
 
+        sentBox = new LinearLayout(this);
+        sentBox.setOrientation(LinearLayout.VERTICAL);
+        box.addView(sentBox);
+
         calBox = new LinearLayout(this);
         calBox.setOrientation(LinearLayout.VERTICAL);
         box.addView(calBox);
@@ -226,13 +230,14 @@ public class DetailActivity extends Activity {
                 .show();
     }
 
-    private LinearLayout ticketBox, calBox;
+    private LinearLayout ticketBox, calBox, sentBox;
     private int row = -1;
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshTickets();
+        refreshSent();
         refreshCalendar();
     }
 
@@ -259,6 +264,50 @@ public class DetailActivity extends Activity {
                     .show());
             calBox.addView(card, Ui.cardParams(this));
         }
+    }
+
+    /** Emails sent to service providers about this client: view and send again. */
+    private void refreshSent() {
+        if (sentBox == null || row < 0) return;
+        sentBox.removeAllViews();
+        ClientStore s = Data.get(this);
+        if (row >= s.rows.size()) return;
+        List<TicketDb.Sent> list = TicketDb.get(this).sentForClient(s.name(row), s.keysForRow(row));
+        if (list.isEmpty()) return;
+        sentBox.addView(Ui.sectionTitle(this, "\uD83D\uDCE8 \u05DE\u05D9\u05D9\u05DC\u05D9\u05DD \u05E9\u05E0\u05E9\u05DC\u05D7\u05D5 (" + list.size() + ")"));
+        for (final TicketDb.Sent m : list) {
+            String sub = TicketDb.fmt(m.time) + "  \u2022  \u05D0\u05DC: " + m.to + (m.cc.isEmpty() ? "" : "\n\u05D4\u05E2\u05EA\u05E7 \u05DC\u05DC\u05E7\u05D5\u05D7: " + m.cc);
+            sentBox.addView(Ui.rowCard(this, m.subject, sub, m.cc.isEmpty() ? "" : "\u05D4\u05E2\u05EA\u05E7 \u05DC\u05DC\u05E7\u05D5\u05D7", Ui.GREEN,
+                    v -> showSent(m)), Ui.cardParams(this));
+        }
+    }
+
+    private void showSent(final TicketDb.Sent m) {
+        new AlertDialog.Builder(this)
+                .setTitle(m.subject)
+                .setMessage("\u05E0\u05E9\u05DC\u05D7: " + TicketDb.fmt(m.time) + "\n\u05D0\u05DC: " + m.to
+                        + (m.cc.isEmpty() ? "" : "\n\u05D4\u05E2\u05EA\u05E7: " + m.cc)
+                        + (m.ticketId > 0 ? "\n\u05E7\u05E8\u05D9\u05D0\u05D4 #" + m.ticketId : "") + "\n\n" + m.body)
+                .setPositiveButton("\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1", (d, w) -> {
+                    TicketDb.Sent again = new TicketDb.Sent();
+                    again.ticketId = m.ticketId;
+                    again.clientName = m.clientName;
+                    again.clientPhone = m.clientPhone;
+                    again.to = m.to;
+                    again.cc = m.cc;
+                    again.subject = m.subject;
+                    again.body = m.body;
+                    TicketDb.get(this).addSent(again);
+                    if (m.ticketId > 0) TicketDb.get(this).addNote(m.ticketId, "\u05DE\u05D9\u05D9\u05DC \u05E0\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1 \u05D0\u05DC " + m.to
+                            + (m.cc.isEmpty() ? "" : " (\u05D4\u05E2\u05EA\u05E7: " + m.cc + ")"));
+                    TicketActivity.openEmail(this, m.to, m.cc, m.subject, m.body);
+                })
+                .setNeutralButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05E8\u05E9\u05D9\u05DE\u05D4", (d, w) -> {
+                    TicketDb.get(this).deleteSent(m.id);
+                    refreshSent();
+                })
+                .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
+                .show();
     }
 
     private void refreshTickets() {
