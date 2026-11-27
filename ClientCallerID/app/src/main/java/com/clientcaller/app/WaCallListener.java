@@ -28,9 +28,12 @@ public class WaCallListener extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         try {
             String pkg = sbn.getPackageName();
-            if ("com.google.android.gm".equals(pkg)) {
-                String r = QuoteApprovals.fromGmail(this, sbn.getNotification());
-                if (r != null) log("Gmail \u2192 " + r);
+            if ("com.google.android.gm".equals(pkg) || "com.samsung.android.email.provider".equals(pkg)
+                    || "com.microsoft.office.outlook".equals(pkg)) {
+                Notification gn = sbn.getNotification();
+                if ((gn.flags & Notification.FLAG_GROUP_SUMMARY) != 0) return;
+                String r = QuoteApprovals.fromGmail(this, gn);
+                if (r != null) log((pkg.endsWith(".gm") ? "Gmail" : "\u05DE\u05D9\u05D9\u05DC") + " \u2192 " + r);
                 return;
             }
             if (!"com.whatsapp".equals(pkg) && !"com.whatsapp.w4b".equals(pkg)) return;

@@ -130,27 +130,48 @@ final class QuoteApprovals {
         return "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D4: " + (yes > 0 ? "\u05D0\u05D5\u05E9\u05E8\u05D4" : "\u05E0\u05D3\u05D7\u05EA\u05D4");
     }
 
-    /** Gmail notification (reply to a quote email). Returns a log line if handled, else null. */
+    /** Email notification (Gmail / Samsung Email / Outlook) replying to a quote. Returns a log line, or null if unrelated. */
     static String fromGmail(Context c, Notification n) {
         Bundle ex = n.extras;
-        CharSequence ti = ex.getCharSequence(Notification.EXTRA_TITLE);
-        CharSequence tx = ex.getCharSequence(Notification.EXTRA_TEXT);
-        CharSequence big = ex.getCharSequence(Notification.EXTRA_BIG_TEXT);
-        String sender = ti == null ? "" : ti.toString().trim();
-        String all = (tx == null ? "" : tx.toString()) + "\n" + (big == null ? "" : big.toString());
+        String sender = str(ex.getCharSequence(Notification.EXTRA_TITLE));
+        String text = str(ex.getCharSequence(Notification.EXTRA_TEXT));
+        String big = str(ex.getCharSequence(Notification.EXTRA_BIG_TEXT));
+        StringBuilder lines = new StringBuilder();
+        CharSequence[] tl = ex.getCharSequenceArray(Notification.EXTRA_TEXT_LINES);
+        if (tl != null) for (CharSequence l : tl) if (l != null) lines.append(l).append('\n');
+        String all = text + "\n" + big + "\n" + lines;
         Matcher m = QUOTE_NO.matcher(all);
         long id = m.find() ? Long.parseLong(m.group(1)) : 0;
-        // The reply text is what comes after the subject line.
-        String body = big == null ? (tx == null ? "" : tx.toString()) : big.toString();
-        String[] lines = body.split("\n");
-        String reply = lines.length > 1 ? body.substring(body.indexOf('\n') + 1) : body;
-        reply = reply.split("(?i)(\u05D1-.{0,40}\u05DB\u05EA\u05D1|wrote:|-----)")[0];
-        int yes = intent(reply);
-        if (yes == 0) return null;
+        if (id == 0 && !all.contains("\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8")) return null; // not about a quote
+        // The reply itself: big text (or text) without the subject line, cut before quoted history / signature.
+        String body = big.isEmpty() ? text : big;
+        int yes = 0;
+        String said = "";
+        for (String raw : body.split("\n")) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+            if (QUOTE_NO.matcher(line).find() || line.toLowerCase(Locale.ROOT).startsWith("re:")
+                    || line.toLowerCase(Locale.ROOT).startsWith("fwd:") || (!big.isEmpty() && line.equals(text.trim()) && QUOTE_NO.matcher(text).find())) continue;
+            String head = line.split("(?i)(\u05D1\u05EA\u05D0\u05E8\u05D9\u05DA|\u05D1-?\u05D9\u05D5\u05DD [\u05D0-\u05E9]|\\bon .{0,80}wrote|wrote:|\u05DB\u05EA\u05D1:|\u05DB\u05EA\u05D1/\u05D4|\u05DB\u05EA\u05D1\u05D4:|-----|\\s>|^>|from:|\u05DE\u05D0\u05EA:|\u05E0\u05E9\u05DC\u05D7 \u05DE|sent from|\\s--\\s)")[0].trim();
+            if (head.isEmpty()) break;
+            yes = intent(head);
+            said = head;
+            break; // only the first line of the reply counts
+        }
+        if (yes == 0) return "\u05DE\u05D9\u05D9\u05DC \u05E2\u05DC \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8" + (id > 0 ? " " + id : "") + " \u05DE-" + sender + ": \u05DC\u05D0 \u05D6\u05D5\u05D4\u05D4 \u05D0\u05D9\u05E9\u05D5\u05E8/\u05D3\u05D7\u05D9\u05D9\u05D4 (" + cut(said) + ")";
         QuoteDb.Quote q = findQuote(c, sender, null, sender, id);
-        if (q == null) return null;
-        apply(c, q, yes, "\u05D1\u05DE\u05D9\u05D9\u05DC: " + reply.trim());
-        return "\u05EA\u05E9\u05D5\u05D1\u05D4 \u05D1\u05DE\u05D9\u05D9\u05DC \u05DC\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id;
+        if (q == null) return "\u05D6\u05D5\u05D4\u05D4 " + (yes > 0 ? "\u05D0\u05D9\u05E9\u05D5\u05E8" : "\u05D3\u05D7\u05D9\u05D9\u05D4") + " \u05D1\u05DE\u05D9\u05D9\u05DC \u05DE-" + sender
+                + (id > 0 ? " \u05DC\u05D4\u05E6\u05E2\u05D4 " + id + ", \u05D0\u05D1\u05DC \u05D4\u05D9\u05D0 \u05DC\u05D0 \u05D1\u05DE\u05E6\u05D1 \u05E0\u05E9\u05DC\u05D7\u05D4/\u05D8\u05D9\u05D5\u05D8\u05D4" : ", \u05D0\u05D1\u05DC \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4 \u05D4\u05E6\u05E2\u05D4 \u05E4\u05EA\u05D5\u05D7\u05D4 (\u05D0\u05D9\u05DF \u05DE\u05E1\u05E4\u05E8 \u05D4\u05E6\u05E2\u05D4 \u05D1\u05E0\u05D5\u05E9\u05D0)");
+        apply(c, q, yes, "\u05D1\u05DE\u05D9\u05D9\u05DC: " + said);
+        return "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D4 \u05DE\u05D4\u05DE\u05D9\u05D9\u05DC: " + (yes > 0 ? "\u05D0\u05D5\u05E9\u05E8\u05D4" : "\u05E0\u05D3\u05D7\u05EA\u05D4");
+    }
+
+    private static String str(CharSequence cs) {
+        return cs == null ? "" : cs.toString();
+    }
+
+    private static String cut(String s) {
+        return s.length() > 40 ? s.substring(0, 40) + "\u2026" : s;
     }
 
     /** An open quote of this client (by quote number, phone, name or email); null if none or not certain. */
