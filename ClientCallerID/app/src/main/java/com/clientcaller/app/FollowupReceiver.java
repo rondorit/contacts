@@ -22,6 +22,11 @@ public class FollowupReceiver extends BroadcastReceiver {
             Followups.rescheduleAll(context);
             Backup.scheduleReminder(context);
             Daily.schedule(context);
+            try { Tasks.rescheduleAll(context); } catch (Exception ignored) { }
+            return;
+        }
+        if (Tasks.ACTION_REMIND.equals(action) || Tasks.ACTION_DONE.equals(action) || Tasks.ACTION_SNOOZE.equals(action)) {
+            Tasks.onReceive(context, intent);
             return;
         }
         if (Daily.ACTION.equals(action)) {

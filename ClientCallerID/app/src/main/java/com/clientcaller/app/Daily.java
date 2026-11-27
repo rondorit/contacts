@@ -77,13 +77,22 @@ final class Daily {
         }
         int quotes = 0;
         for (QuoteDb.Quote q : QuoteDb.get(c).all()) if ("Sent".equals(q.status)) quotes++;
-        if (open == 0 && quotes == 0) return;
+        if (open == 0 && quotes == 0 && Tasks.openCount(c) == 0) return;
         StringBuilder head = new StringBuilder();
         head.append(open).append(" \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA");
         if (overdue > 0) head.append(" \u2022 ").append(overdue).append(" \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8");
         if (today > 0) head.append(" \u2022 ").append(today).append(" \u05DC\u05D4\u05D9\u05D5\u05DD");
         StringBuilder more = new StringBuilder(lines);
         if (stuck > 0) more.append("\uD83C\uDFE2 ").append(stuck).append(" \u05D0\u05E6\u05DC \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5 \u05DE\u05E2\u05DC 3 \u05D9\u05DE\u05D9\u05DD \u05D1\u05DC\u05D9 \u05E2\u05D3\u05DB\u05D5\u05DF\n");
+        int tasksDue = 0;
+        for (Tasks.Task tk : Tasks.all(c)) {
+            if (tk.isDone()) continue;
+            if (tk.isOverdue() || tk.isToday()) {
+                tasksDue++;
+                if (tasksDue <= 4) more.append(tk.isOverdue() ? "⏰ " : "✅ ").append(tk.title).append('
+');
+            }
+        }
         if (quotes > 0) more.append("\uD83E\uDDFE ").append(quotes).append(" \u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8 \u05DE\u05DE\u05EA\u05D9\u05E0\u05D5\u05EA \u05DC\u05EA\u05E9\u05D5\u05D1\u05D4\n");
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel("daily", "\u05E1\u05D9\u05DB\u05D5\u05DD \u05D1\u05D5\u05E7\u05E8", NotificationManager.IMPORTANCE_DEFAULT));

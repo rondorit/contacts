@@ -59,7 +59,7 @@ final class TicketDb extends SQLiteOpenHelper {
     }
 
     private TicketDb(Context c) {
-        super(c, "tickets.db", null, 8);
+        super(c, "tickets.db", null, 9);
     }
 
     @Override
@@ -74,6 +74,7 @@ final class TicketDb extends SQLiteOpenHelper {
         createSent(db);
         createItems(db);
         createMore(db);
+        Tasks.create(db);
     }
 
     private static void createSent(SQLiteDatabase db) {
@@ -159,6 +160,7 @@ final class TicketDb extends SQLiteOpenHelper {
         if (oldVersion < 6) db.execSQL("ALTER TABLE tickets ADD COLUMN out_status TEXT");
         if (oldVersion < 7) createItems(db);
         if (oldVersion < 8) createMore(db);
+        if (oldVersion < 9) Tasks.create(db);
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE tickets ADD COLUMN provider TEXT");
             createProviders(db);

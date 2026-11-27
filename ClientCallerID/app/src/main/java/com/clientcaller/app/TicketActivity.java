@@ -216,6 +216,14 @@ public class TicketActivity extends Activity {
         label(box, "\u270D\uFE0F \u05E1\u05D9\u05D5\u05DD \u05E2\u05D1\u05D5\u05D3\u05D4");
         tSigned = Ui.text(this, "", 14, Ui.MUTED, false);
         box.addView(tSigned);
+        LinearLayout tkRow = row(box);
+        rowButton(tkRow, "\u2705 \u05DE\u05E9\u05D9\u05DE\u05D4 \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4", v -> {
+            readForm();
+            if (!persist()) return;
+            startActivity(new Intent(this, TasksActivity.class).putExtra("new", true)
+                    .putExtra(EXTRA_TICKET, t.id).putExtra(EXTRA_NAME, t.clientName).putExtra(EXTRA_PHONE, t.clientPhone)
+                    .putExtra("title", ""));
+        });
         LinearLayout sgRow = row(box);
         rowButton(sgRow, "\u270D\uFE0F \u05D7\u05EA\u05D9\u05DE\u05EA \u05DC\u05E7\u05D5\u05D7", v -> { readForm(); if (persist()) Media.sign(this, t, who -> { showSigned(); showHistory(); askSendReport(); }); });
         rowButton(sgRow, "\uD83D\uDCC4 \u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4", v -> { readForm(); if (persist()) sendReport(); });

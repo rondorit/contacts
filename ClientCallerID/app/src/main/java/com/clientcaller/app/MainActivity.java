@@ -234,6 +234,8 @@ public class MainActivity extends Activity {
         quick.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, TicketActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuotesActivity.class))));
+        int openTasks = Tasks.openCount(this);
+        quick.add(Ui.tile(this, "\u2705", "\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA", openTasks == 0 ? "" : openTasks + " \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", 0, v -> startActivity(new Intent(this, TasksActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCC8", "\u05DC\u05D5\u05D7 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", "", 0, v -> startActivity(new Intent(this, StatsActivity.class))));
         long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
@@ -387,6 +389,7 @@ public class MainActivity extends Activity {
         svc.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF", "", 0, v -> startActivity(new Intent(this, CatalogActivity.class))));
         svc.add(Ui.tile(this, "\u2709\uFE0F", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "", 0, v -> startActivity(new Intent(this, TemplatesActivity.class))));
         svc.add(Ui.tile(this, "\uD83C\uDFE2", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ProvidersActivity.class))));
+        svc.add(Ui.tile(this, "\u2705", "\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, TasksActivity.class))));
         int recCount = Recurring.all(this).size();
         svc.add(Ui.tile(this, "\uD83D\uDD01", "\u05EA\u05D7\u05D6\u05D5\u05E7\u05D4 \u05DE\u05D7\u05D6\u05D5\u05E8\u05D9\u05EA", recCount == 0 ? "" : recCount + " \u05DE\u05E9\u05D9\u05DE\u05D5\u05EA", 0, v -> Recurring.manage(this)));
         int teamSize = Team.list(this).size();

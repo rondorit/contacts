@@ -77,6 +77,10 @@
             android:name=".StatsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".TasksActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".TicketsWidget"
             android:exported="true"
