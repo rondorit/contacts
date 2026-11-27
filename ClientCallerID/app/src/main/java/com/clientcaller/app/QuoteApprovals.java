@@ -196,6 +196,7 @@ final class QuoteApprovals {
         String prev = q.status;
         String status = yes > 0 ? "Approved" : "Rejected";
         setStatus(c, q.id, status, false);
+        recordReply(c, q.id, status, said);
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel("quote_replies", "\u05EA\u05E9\u05D5\u05D1\u05D5\u05EA \u05DC\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8",
                 NotificationManager.IMPORTANCE_HIGH));
@@ -207,7 +208,7 @@ final class QuoteApprovals {
         Intent open = new Intent(c, QuoteActivity.class).putExtra(QuoteActivity.EXTRA_QUOTE, q.id)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pOpen = PendingIntent.getActivity(c, nid, open, flags);
-        Notification n = new Notification.Builder(c, "quote_replies")
+        Notification.Builder nb = new Notification.Builder(c, "quote_replies")
                 .setSmallIcon(android.R.drawable.ic_menu_info_details)
                 .setContentTitle((yes > 0 ? "\u2705 " : "\u274C ") + "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " \u05E1\u05D5\u05DE\u05E0\u05D4 \u05DB"
                         + QuoteDb.statusHe(status) + " - " + q.clientName)
@@ -215,10 +216,36 @@ final class QuoteApprovals {
                 .setStyle(new Notification.BigTextStyle().bigText(said + "\n\u05E1\u05D4\"\u05DB: " + QuoteDb.money(q.total())))
                 .setContentIntent(pOpen)
                 .addAction(new Notification.Action.Builder(null, "\u21A9 \u05D1\u05D8\u05DC (\u05D4\u05D7\u05D6\u05E8 \u05DC" + QuoteDb.statusHe(prev) + ")", pUndo).build())
-                .addAction(new Notification.Action.Builder(null, "\u05E4\u05EA\u05D7 \u05D4\u05E6\u05E2\u05D4", pOpen).build())
-                .setAutoCancel(true)
-                .build();
-        nm.notify(nid, n);
+                .addAction(new Notification.Action.Builder(null, "\u05E4\u05EA\u05D7 \u05D4\u05E6\u05E2\u05D4", pOpen).build());
+        if (yes > 0) {
+            Intent mk = new Intent(c, QuoteActivity.class).putExtra(QuoteActivity.EXTRA_QUOTE, q.id)
+                    .putExtra(QuoteActivity.EXTRA_MAKE_TICKET, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            nb.addAction(new Notification.Action.Builder(null, "\uD83D\uDEE0\uFE0F \u05E6\u05D5\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05E9\u05D9\u05E8\u05D5\u05EA", PendingIntent.getActivity(c, nid + 1, mk, flags)).build());
+        }
+        nm.notify(nid, nb.setAutoCancel(true).build());
+    }
+
+    static final String PREFS_REPLIES = "quote_replies";
+
+    /** Keeps the client's reply (time, status, channel and words) so the quote screen can show it. */
+    static void recordReply(Context c, long id, String status, String said) {
+        try {
+            org.json.JSONObject o = new org.json.JSONObject();
+            o.put("t", System.currentTimeMillis());
+            o.put("status", status);
+            o.put("said", said);
+            c.getSharedPreferences(PREFS_REPLIES, Context.MODE_PRIVATE).edit().putString("r_" + id, o.toString()).apply();
+        } catch (Exception ignored) { }
+    }
+
+    /** The stored reply of a quote, or null. */
+    static org.json.JSONObject reply(Context c, long id) {
+        try {
+            String s = c.getSharedPreferences(PREFS_REPLIES, Context.MODE_PRIVATE).getString("r_" + id, null);
+            return s == null ? null : new org.json.JSONObject(s);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static void offer(Context c, QuoteDb.Quote q, int yes, String said) {

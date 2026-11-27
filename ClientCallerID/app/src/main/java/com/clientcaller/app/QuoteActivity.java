@@ -35,6 +35,7 @@ import java.util.Locale;
 public class QuoteActivity extends Activity {
     static final String EXTRA_QUOTE = "quote";
     static final String EXTRA_TICKET = "ticket";
+    static final String EXTRA_MAKE_TICKET = "make_ticket";
 
     private QuoteDb db;
     private QuoteDb.Quote q;
@@ -79,6 +80,7 @@ public class QuoteActivity extends Activity {
                 : "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05D7\u05D3\u05E9\u05D4", 20, Ui.TEXT, true);
         box.addView(head);
         if (q.ticketId > 0) box.addView(Ui.text(this, "\u05DE\u05E7\u05D5\u05E9\u05E8\u05EA \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4 #" + q.ticketId, 13, Ui.MUTED, false));
+        addReplyCard(box);
 
         eTitle = field(box, "\u05E0\u05D5\u05E9\u05D0 \u05D4\u05D4\u05E6\u05E2\u05D4", q.title, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         label(box, "\u05DC\u05DB\u05D1\u05D5\u05D3");
@@ -158,6 +160,13 @@ public class QuoteActivity extends Activity {
         slp.topMargin = dp(16);
         box.addView(save, slp);
 
+        if (q.id > 0) {
+            box.addView(Ui.sectionTitle(this, "\u05D1\u05D9\u05E6\u05D5\u05E2"));
+            LinearLayout w = new LinearLayout(this);
+            rowButton(w, "\uD83D\uDEE0\uFE0F \u05E6\u05D5\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05E9\u05D9\u05E8\u05D5\u05EA \u05DE\u05D4\u05D4\u05E6\u05E2\u05D4", v -> makeTicket());
+            if (q.ticketId > 0) rowButton(w, "\uD83C\uDFAB \u05E4\u05EA\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D4 #" + q.ticketId, v -> openTicket(q.ticketId));
+            box.addView(w);
+        }
         box.addView(Ui.sectionTitle(this, "\u05E9\u05DC\u05D9\u05D7\u05D4 \u05DC\u05DC\u05E7\u05D5\u05D7"));
         LinearLayout s1 = new LinearLayout(this);
         rowButton(s1, "\uD83D\uDCC4 PDF \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> send(true, true));
@@ -185,6 +194,125 @@ public class QuoteActivity extends Activity {
         setContentView(sv);
         He.rtl(this);
         showLines();
+        if (getIntent().getBooleanExtra(EXTRA_MAKE_TICKET, false) && q.id > 0) {
+            getIntent().removeExtra(EXTRA_MAKE_TICKET);
+            makeTicket();
+        }
+    }
+
+    // ------------------------------------------------------------------ client reply / service ticket
+
+    /** Shows the client's approval/decline reply (WhatsApp or email) with a shortcut back to the conversation. */
+    private void addReplyCard(LinearLayout box) {
+        if (q.id == 0) return;
+        org.json.JSONObject r = QuoteApprovals.reply(this, q.id);
+        if (r == null) return;
+        String status = r.optString("status");
+        String said = r.optString("said");
+        boolean ok = "Approved".equals(status);
+        boolean mail = said.startsWith("\u05D1\u05DE\u05D9\u05D9\u05DC");
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(12), dp(10), dp(12), dp(10));
+        card.setBackground(Ui.rounded(ok ? 0xFFE3F4E6 : 0xFFFBE4E4, 12, this));
+        card.addView(Ui.text(this, (ok ? "\u2705 \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D0\u05D9\u05E9\u05E8" : "\u274C \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D3\u05D7\u05D4") + (mail ? " \u05D1\u05DE\u05D9\u05D9\u05DC" : " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
+                + "  \u2022  " + TicketDb.fmt(r.optLong("t")), 15, Ui.TEXT, true));
+        String words = said.replaceFirst("^(\u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4|\u05D1\u05DE\u05D9\u05D9\u05DC):\\s*", "");
+        card.addView(Ui.text(this, "\u201E" + words + "\u201C", 15, Ui.TEXT, false));
+        Button open = new Button(this);
+        open.setAllCaps(false);
+        open.setText(mail ? "\u2709\uFE0F \u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05DE\u05D9\u05D9\u05DC" : "\uD83D\uDCAC \u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05E9\u05D9\u05D7\u05D4 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
+        open.setOnClickListener(v -> openReply(mail));
+        card.addView(open);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(10);
+        box.addView(card, lp);
+    }
+
+    private void openReply(boolean mail) {
+        try {
+            if (mail) {
+                String subj = "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id;
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com/mail/u/0/#search/"
+                        + Uri.encode("subject:\"" + subj + "\"")));
+                i.setPackage("com.google.android.gm");
+                try {
+                    startActivity(i);
+                } catch (Exception e) {
+                    Intent g = getPackageManager().getLaunchIntentForPackage("com.google.android.gm");
+                    if (g == null) throw e;
+                    startActivity(g);
+                    toast("\u05D7\u05E4\u05E9 \u05D1-Gmail: " + subj);
+                }
+            } else {
+                String ph = ePhone.getText().toString().trim();
+                if (ph.isEmpty()) { toast("\u05D0\u05D9\u05DF \u05DE\u05E1\u05E4\u05E8 \u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05D4\u05E6\u05E2\u05D4"); return; }
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + DetailActivity.whatsAppNumber(ph))));
+            }
+        } catch (Exception e) {
+            toast("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E4\u05EA\u05D5\u05D7: " + e.getMessage());
+        }
+    }
+
+    private void openTicket(long id) {
+        startActivity(new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, id));
+    }
+
+    /** Builds a service ticket from the quote (client, title, items, total) and links them. */
+    private void makeTicket() {
+        if (!"Approved".equals(QuoteDb.STATUSES[sStatus.getSelectedItemPosition()])) {
+            new AlertDialog.Builder(this)
+                    .setMessage("\u05D4\u05D4\u05E6\u05E2\u05D4 \u05E2\u05D3\u05D9\u05D9\u05DF \u05DC\u05D0 \u05E1\u05D5\u05DE\u05E0\u05D4 \u05DB\u05DE\u05D0\u05D5\u05E9\u05E8\u05EA. \u05DC\u05E1\u05DE\u05DF \u05D0\u05D5\u05EA\u05D4 \u05DB\"\u05D0\u05D5\u05E9\u05E8\u05D4\" \u05D5\u05DC\u05D9\u05E6\u05D5\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05E9\u05D9\u05E8\u05D5\u05EA?")
+                    .setPositiveButton("\u05E1\u05DE\u05DF \u05D5\u05E6\u05D5\u05E8", (d, w) -> {
+                        sStatus.setSelection(java.util.Arrays.asList(QuoteDb.STATUSES).indexOf("Approved"));
+                        makeTicketNow();
+                    })
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                    .show();
+            return;
+        }
+        if (q.ticketId > 0) {
+            new AlertDialog.Builder(this)
+                    .setMessage("\u05D4\u05D4\u05E6\u05E2\u05D4 \u05DB\u05D1\u05E8 \u05DE\u05E7\u05D5\u05E9\u05E8\u05EA \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4 #" + q.ticketId + ".")
+                    .setPositiveButton("\u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05E7\u05E8\u05D9\u05D0\u05D4", (d, w) -> openTicket(q.ticketId))
+                    .setNeutralButton("\u05E6\u05D5\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05D7\u05D3\u05E9", (d, w) -> makeTicketNow())
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                    .show();
+            return;
+        }
+        makeTicketNow();
+    }
+
+    private void makeTicketNow() {
+        if (!persist()) return;
+        TicketDb tdb = TicketDb.get(this);
+        TicketDb.Ticket t = new TicketDb.Ticket();
+        t.clientName = q.clientName;
+        t.clientPhone = q.clientPhone;
+        t.title = "\u05D1\u05D9\u05E6\u05D5\u05E2 \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + (q.title.isEmpty() ? "" : " - " + q.title);
+        StringBuilder d = new StringBuilder();
+        d.append("\u05DC\u05E4\u05D9 \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 ").append(q.id).append(" \u05E9\u05D0\u05D5\u05E9\u05E8\u05D4");
+        org.json.JSONObject r = QuoteApprovals.reply(this, q.id);
+        if (r != null && "Approved".equals(r.optString("status"))) d.append(" (").append(TicketDb.fmt(r.optLong("t"))).append(")");
+        d.append(".\n\n\u05E4\u05E8\u05D9\u05D8\u05D9\u05DD \u05DC\u05D1\u05D9\u05E6\u05D5\u05E2:\n");
+        for (QuoteDb.Line l : q.lines) {
+            d.append("\u2022 ").append(l.name);
+            if (l.qty != 1) d.append(" \u00D7 ").append(QuoteDb.qty(l.qty));
+            d.append('\n');
+        }
+        d.append("\n\u05E1\u05D4\"\u05DB \u05DB\u05D5\u05DC\u05DC \u05DE\u05E2\"\u05DE: ").append(QuoteDb.money(q.total()));
+        if (!q.notes.isEmpty()) d.append("\n\n\u05D4\u05E2\u05E8\u05D5\u05EA: ").append(q.notes);
+        t.description = d.toString();
+        long oldTicket = q.ticketId;
+        tdb.save(t);
+        tdb.addNote(t.id, "\u05E0\u05E4\u05EA\u05D7 \u05DE\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " (" + QuoteDb.money(q.total()) + ")");
+        if (oldTicket > 0) tdb.addNote(oldTicket, "\u05E0\u05E4\u05EA\u05D7 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E6\u05D5\u05E2 #" + t.id + " \u05DC\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id);
+        q.ticketId = t.id;
+        db.save(q);
+        toast("\u05E0\u05E4\u05EA\u05D7 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id);
+        openTicket(t.id);
+        finish();
     }
 
     private void fillFromRow(ClientStore s, int row) {
