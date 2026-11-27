@@ -817,7 +817,8 @@ public class MainActivity extends Activity {
                 "\uD83D\uDCE4 \u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive",
                 "\uD83D\uDCC1 \u05E9\u05DE\u05D5\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF (\u05EA\u05D9\u05E7\u05D9\u05D9\u05EA \u05D4\u05D5\u05E8\u05D3\u05D5\u05EA)",
                 "\uD83D\uDCBE \u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9",
-                "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E9\u05E0\u05D1\u05D7\u05E8: " + describe(source)};
+                "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E9\u05E0\u05D1\u05D7\u05E8: " + describe(source),
+                "\uD83D\uDCE7 \u05E9\u05DC\u05D7 \u05D1\u05DE\u05D9\u05D9\u05DC (Gmail)"};
         new AlertDialog.Builder(this)
                 .setTitle("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E0\u05E7\u05E8\u05D0 (" + (size / 1024) + " KB). \u05D0\u05D9\u05E4\u05D4 \u05DC\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05D4\u05DE\u05E2\u05D5\u05D3\u05DB\u05DF?")
                 .setItems(opts, (d, w) -> {
@@ -833,8 +834,10 @@ public class MainActivity extends Activity {
                         String ext = AccessImport.extension(new File(getFilesDir(), Data.ACCESS_COPY));
                         i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + "." + ext);
                         startActivityForResult(i, REQ_ACCESS_SAVE);
-                    } else {
+                    } else if (w == 3) {
                         runAccessUpdate(source);
+                    } else {
+                        runAccessUpdate(Uri.parse("gmail:"));
                     }
                 })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
@@ -880,7 +883,9 @@ public class MainActivity extends Activity {
     }
 
     /** Reads the newest Access file, writes the app's changes into it, and saves it to target. */
-    private void runAccessUpdate(final Uri target) {
+    private void runAccessUpdate(final Uri targetIn) {
+        final boolean viaGmail = targetIn != null && "gmail".equals(targetIn.getScheme());
+        final Uri target = viaGmail ? null : targetIn;
         Toast.makeText(this, "\u05DE\u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access\u2026", Toast.LENGTH_SHORT).show();
         final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
         new Thread(() -> {
@@ -1003,7 +1008,20 @@ public class MainActivity extends Activity {
                                 .putExtra(Intent.EXTRA_STREAM, u)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         si.setClipData(android.content.ClipData.newRawUri("", u));
-                        startActivity(Intent.createChooser(si, "\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access (\u05D1\u05D7\u05E8: \u05E9\u05DE\u05D9\u05E8\u05D4 \u05D1-Drive)"));
+                        if (viaGmail) {
+                            si.setPackage("com.google.android.gm");
+                            si.putExtra(Intent.EXTRA_SUBJECT, "\u05D1\u05D3\u05D9\u05E7\u05EA Access");
+                            si.putExtra(Intent.EXTRA_TEXT, "\u05E7\u05D5\u05D1\u05E5 Access \u05DE\u05E2\u05D5\u05D3\u05DB\u05DF: " + sharedFile.getName()
+                                    + " (" + (sharedFile.length() / 1024) + " KB)");
+                            try {
+                                startActivity(si);
+                            } catch (Exception e) {
+                                si.setPackage(null);
+                                startActivity(Intent.createChooser(si, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5"));
+                            }
+                        } else {
+                            startActivity(Intent.createChooser(si, "\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access (\u05D1\u05D7\u05E8: \u05E9\u05DE\u05D9\u05E8\u05D4 \u05D1-Drive)"));
+                        }
                     }
                     new AlertDialog.Builder(this).setTitle("\u05D4\u05E2\u05D3\u05DB\u05D5\u05DF \u05D4\u05D5\u05E9\u05DC\u05DD").setMessage(msg)
                             .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show();
