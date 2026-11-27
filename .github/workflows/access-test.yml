@@ -24,5 +24,5 @@ jobs:
           curl -sfL -o lib/lang3.jar $M/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar
           curl -sfL -o lib/logging.jar $M/commons-logging/commons-logging/1.2/commons-logging-1.2.jar
           S=ClientCallerID/app/src/main/java/com/clientcaller/app
-          javac -encoding UTF-8 -cp "lib/*" -d out $S/ClientStore.java $S/AccessImport.java $S/AccessExport.java ClientCallerID/tools/AccessTest.java
-          java -cp "out:lib/*" AccessTest
+          javac -encoding UTF-8 -cp "lib/*" -d out $S/ClientStore.java $S/AccessImport.java $S/AccessExport.java ClientCallerID/tools/AccessTest.java > javac.log 2>&1 || { grep -A2 "error:" javac.log | head -30 | sed "s/^/::error::/"; exit 1; }
+          java -cp "out:lib/*" AccessTest > run.log 2>&1; rc=$?; cat run.log; grep -v "^::" run.log | head -20 | sed "s/^/::warning::/"; exit $rc
