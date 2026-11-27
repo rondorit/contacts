@@ -490,8 +490,12 @@ public class QuoteActivity extends Activity {
                     i.putExtra(Intent.EXTRA_EMAIL, new String[]{email})
                             .putExtra(Intent.EXTRA_SUBJECT, subject)
                             .putExtra(Intent.EXTRA_TEXT, caption + "\n\n" + Issuer.signature(this));
-                    i.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
-                    startActivity(Intent.createChooser(i, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05E6\u05E2\u05EA \u05D4\u05DE\u05D7\u05D9\u05E8"));
+                    // A mailto selector together with an attachment fails on some phones ("No apps can perform this action"),
+                    // so open an email app directly, and fall back to the regular share sheet.
+                    if (!startWith(i, "com.google.android.gm") && !startWith(i, "com.samsung.android.email.provider")
+                            && !startWith(i, "com.microsoft.office.outlook")) {
+                        startActivity(Intent.createChooser(i, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05E6\u05E2\u05EA \u05D4\u05DE\u05D7\u05D9\u05E8"));
+                    }
                 }
             } else if (whatsapp) {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
