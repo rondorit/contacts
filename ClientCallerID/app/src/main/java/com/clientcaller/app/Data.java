@@ -36,6 +36,19 @@ final class Data {
         CallLogger.prefs(ctx).edit().putBoolean(KEY_EDITED, true).apply();
     }
 
+    static final String KEY_HIDDEN = "hidden_cols";   // column titles not shown in the client card
+
+    static java.util.List<String> hiddenColumns(Context ctx) {
+        String saved = CallLogger.prefs(ctx).getString(KEY_HIDDEN, "\u05DE\u05D6\u05D4\u05D4");
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String x : saved.split("\t")) if (!x.trim().isEmpty()) out.add(x.trim());
+        return out;
+    }
+
+    static void saveHiddenColumns(Context ctx, java.util.List<String> names) {
+        CallLogger.prefs(ctx).edit().putString(KEY_HIDDEN, String.join("\t", names)).apply();
+    }
+
     static synchronized void reset() {
         cache = null;
     }

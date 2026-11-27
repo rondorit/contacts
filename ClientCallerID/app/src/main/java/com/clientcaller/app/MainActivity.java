@@ -323,6 +323,9 @@ public class MainActivity extends Activity {
         data.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
         data.add(Ui.tile(this, "\uD83D\uDD24", "\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD", s.headers.isEmpty() ? "" : s.headers.get(s.nameCol), info, v -> chooseNameColumn()));
         data.add(Ui.tile(this, "\uD83D\uDCDE", "\u05E2\u05DE\u05D5\u05D3\u05D5\u05EA \u05D8\u05DC\u05E4\u05D5\u05DF", cols.toString(), info, v -> choosePhoneColumns()));
+        List<String> hiddenCols = Data.hiddenColumns(this);
+        data.add(Ui.tile(this, "\uD83D\uDE48", "\u05E9\u05D3\u05D5\u05EA \u05DE\u05D5\u05E1\u05EA\u05E8\u05D9\u05DD", hiddenCols.isEmpty() ? "\u05D0\u05D9\u05DF" : String.join(", ", hiddenCols),
+                info, v -> chooseHiddenColumns()));
         Ui.grid(this, p, data, 3);
 
         p.addView(Ui.sectionTitle(this, "\u05E9\u05D9\u05E8\u05D5\u05EA \u05D5\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5"));
@@ -685,6 +688,30 @@ public class MainActivity extends Activity {
         i.putExtra(Intent.EXTRA_TITLE, "backup-service-" + date + ".zip");
         Toast.makeText(this, "\u05D1\u05D7\u05E8 \u05D4\u05D9\u05DB\u05DF \u05DC\u05E9\u05DE\u05D5\u05E8 - \u05DE\u05D5\u05DE\u05DC\u05E5 Google Drive", Toast.LENGTH_LONG).show();
         startActivityForResult(i, REQ_BACKUP);
+    }
+
+    /** Which Excel columns to hide in the client card. */
+    private void chooseHiddenColumns() {
+        final ClientStore s = Data.get(this);
+        if (s.headers.isEmpty()) {
+            Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String[] names = s.headers.toArray(new String[0]);
+        final boolean[] checked = new boolean[names.length];
+        List<String> hidden = Data.hiddenColumns(this);
+        for (int i = 0; i < names.length; i++) checked[i] = hidden.contains(names[i].trim());
+        new AlertDialog.Builder(this)
+                .setTitle("\u05E1\u05DE\u05DF \u05E9\u05D3\u05D5\u05EA \u05E9\u05DC\u05D0 \u05D9\u05D5\u05E6\u05D2\u05D5 \u05D1\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D4\u05DC\u05E7\u05D5\u05D7")
+                .setMultiChoiceItems(names, checked, (d, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", (d, w) -> {
+                    List<String> chosen = new ArrayList<>();
+                    for (int i = 0; i < names.length; i++) if (checked[i]) chosen.add(names[i].trim());
+                    Data.saveHiddenColumns(this, chosen);
+                    refresh();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
     }
 
     private void chooseNameColumn() {

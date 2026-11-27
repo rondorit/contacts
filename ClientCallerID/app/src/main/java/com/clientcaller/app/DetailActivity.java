@@ -89,9 +89,10 @@ public class DetailActivity extends Activity {
         box.addView(Ui.sectionTitle(this, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7"));
         LinearLayout details = Ui.card(this);
         boolean first = true;
+        List<String> hidden = Data.hiddenColumns(this);
         for (int c = 0; c < s.headers.size(); c++) {
             String value = row.get(c);
-            if (c == s.nameCol || value.isEmpty()) continue;
+            if (c == s.nameCol || value.isEmpty() || hidden.contains(s.headers.get(c).trim())) continue;
             if (!first) {
                 View line = new View(this);
                 line.setBackgroundColor(0xFFE5E7EB);
