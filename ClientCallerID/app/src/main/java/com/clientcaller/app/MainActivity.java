@@ -856,6 +856,8 @@ public class MainActivity extends Activity {
                 AccessExport.Result res = AccessExport.apply(work, table, s.headers, changed, dels,
                         Data.ID_COL, s.headers.get(s.nameCol));
 
+                if (src.length == 0) throw new IOException("\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E7\u05D5\u05E8 \u05E9\u05E0\u05E7\u05E8\u05D0 \u05DE-Drive \u05E8\u05D9\u05E7 (0 \u05D1\u05EA\u05D9\u05DD). \u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E4\u05E2\u05DD \u05D0\u05D7\u05EA \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D9\u05EA Drive \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D5\u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1.");
+                final long srcLen = src.length;
                 // 2b. Make sure the result opens and reads completely before writing it anywhere.
                 int rowsAfter;
                 try {
@@ -873,6 +875,7 @@ public class MainActivity extends Activity {
                 try (InputStream in = new java.io.FileInputStream(work)) {
                     out = ClientStore.readAll(in);
                 }
+                if (out.length == 0) throw new IOException("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E2\u05D5\u05D3\u05DB\u05DF \u05E8\u05D9\u05E7 - \u05DC\u05D0 \u05E0\u05E9\u05DE\u05E8");
                 final String where;
                 final String verifiedText;
                 final boolean drive;
@@ -910,7 +913,8 @@ public class MainActivity extends Activity {
                 Data.clearAccessChanges(this);
                 CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
 
-                final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + "  " + verifiedText + "\n\n"
+                final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + "  " + verifiedText + "\n"
+                        + "\u05D2\u05D5\u05D3\u05DC: \u05DE\u05E7\u05D5\u05E8 " + (srcLen / 1024) + " KB \u2190 \u05DE\u05E2\u05D5\u05D3\u05DB\u05DF " + (out.length / 1024) + " KB\n\n"
                         + (drive ? "Google Drive \u05DE\u05E1\u05E0\u05DB\u05E8\u05DF \u05DC\u05DE\u05D7\u05E9\u05D1 \u05EA\u05D5\u05DA \u05D3\u05E7\u05D4-\u05E9\u05EA\u05D9\u05D9\u05DD. \u05D0\u05DD \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E4\u05EA\u05D5\u05D7 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1, \u05E1\u05D2\u05D5\u05E8 \u05D0\u05D5\u05EA\u05D5 - "
                         + "\u05D0\u05D7\u05E8\u05EA Drive \u05D9\u05E9\u05DE\u05D5\u05E8 \u05E2\u05D5\u05EA\u05E7 \u05E0\u05D5\u05E1\u05E3 \u05D1\u05E9\u05DD \u05E2\u05DD (1).\n\n" : "")
                         + "\u05D1\u05E7\u05D5\u05D1\u05E5 " + rowsAfter + " \u05E8\u05E9\u05D5\u05DE\u05D5\u05EA.\n"
