@@ -92,7 +92,8 @@ public class DetailActivity extends Activity {
         List<String> hidden = Data.hiddenColumns(this);
         for (int c = 0; c < s.headers.size(); c++) {
             String value = row.get(c);
-            if (c == s.nameCol || value.isEmpty() || hidden.contains(s.headers.get(c).trim())) continue;
+            if (c == s.nameCol || value.trim().isEmpty() || value.trim().matches("0+([.,]0+)?")
+                    || hidden.contains(s.headers.get(c).trim())) continue;
             if (!first) {
                 View line = new View(this);
                 line.setBackgroundColor(0xFFE5E7EB);
