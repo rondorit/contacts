@@ -49,6 +49,7 @@ final class Daily {
             try { Recurring.runDue(c); } catch (Throwable ignored) { }
             try { if (CallLogger.prefs(c).getBoolean(KEY_SUMMARY, true)) summary(c); } catch (Throwable ignored) { }
             try { autoBackupIfDue(c); } catch (Throwable ignored) { }
+            try { TicketsWidget.updateAll(c); } catch (Throwable ignored) { }
         }).start();
     }
 

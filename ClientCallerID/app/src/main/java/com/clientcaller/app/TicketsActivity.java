@@ -150,6 +150,12 @@ public class TicketsActivity extends Activity {
         return card;
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        TicketsWidget.updateAll(this);
+    }
+
     private void refresh() {
         List<TicketDb.Ticket> all = TicketDb.get(this).all();
         int[] counts = new int[4];

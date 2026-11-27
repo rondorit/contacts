@@ -235,6 +235,7 @@ public class MainActivity extends Activity {
         quick.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuotesActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        quick.add(Ui.tile(this, "\uD83D\uDCC8", "\u05DC\u05D5\u05D7 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", "", 0, v -> startActivity(new Intent(this, StatsActivity.class))));
         long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
         boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
         quick.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : TicketDb.fmt(lastBk).substring(0, 10),
@@ -375,6 +376,13 @@ public class MainActivity extends Activity {
         p.addView(Ui.sectionTitle(this, "\u05E9\u05D9\u05E8\u05D5\u05EA \u05D5\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5"));
         List<View> svc = new ArrayList<>();
         svc.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        svc.add(Ui.tile(this, "\uD83D\uDCC8", "\u05DC\u05D5\u05D7 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", "", 0, v -> startActivity(new Intent(this, StatsActivity.class))));
+        final boolean surveyOn = sp.getBoolean("survey_on", true);
+        svc.add(Ui.tile(this, "\u2B50", "\u05E1\u05E7\u05E8 \u05E9\u05D1\u05D9\u05E2\u05D5\u05EA \u05E8\u05E6\u05D5\u05DF", surveyOn ? "\u05D1\u05E1\u05D9\u05DB\u05D5\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7" : "\u05DB\u05D1\u05D5\u05D9", surveyOn ? ok : info, v -> {
+            sp.edit().putBoolean("survey_on", !surveyOn).apply();
+            Toast.makeText(this, !surveyOn ? "\u05D1\u05E7\u05E9\u05EA \u05D3\u05D9\u05E8\u05D5\u05D2 \u05EA\u05E6\u05D5\u05E8\u05E3 \u05DC\u05E1\u05D9\u05DB\u05D5\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7" : "\u05D1\u05E7\u05E9\u05EA \u05D4\u05D3\u05D9\u05E8\u05D5\u05D2 \u05DB\u05D5\u05D1\u05EA\u05D4", Toast.LENGTH_SHORT).show();
+            refresh();
+        }));
         svc.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuotesActivity.class))));
         svc.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF", "", 0, v -> startActivity(new Intent(this, CatalogActivity.class))));
         svc.add(Ui.tile(this, "\u2709\uFE0F", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "", 0, v -> startActivity(new Intent(this, TemplatesActivity.class))));
