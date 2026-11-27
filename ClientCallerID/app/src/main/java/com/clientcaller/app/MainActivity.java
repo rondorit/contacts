@@ -136,6 +136,14 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         He.rtl(this);
+        installCrashCatcher();
+        String lastCrash = CallLogger.prefs(this).getString("last_crash", "");
+        if (!lastCrash.isEmpty()) {
+            CallLogger.prefs(this).edit().remove("last_crash").commit();
+            new AlertDialog.Builder(this).setTitle("\u05D4\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05E0\u05E1\u05D2\u05E8\u05D4 \u05D1\u05D2\u05DC\u05DC \u05E9\u05D2\u05D9\u05D0\u05D4")
+                    .setMessage("\u05E6\u05DC\u05DD \u05D0\u05EA \u05D4\u05DE\u05E1\u05DA \u05D5\u05E9\u05DC\u05D7 \u05DC\u05E7\u05DC\u05D5\u05D3:\n\n" + lastCrash)
+                    .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show();
+        }
         Backup.scheduleReminder(this);
         showTab(0);
         if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
@@ -804,8 +812,8 @@ public class MainActivity extends Activity {
                 }
                 final int size = bytes.length;
                 runOnUiThread(() -> showSaveOptions(uri, size));
-            } catch (Exception e) {
-                final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+            } catch (Throwable e) {
+                final String msg = errorText(e);
                 runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E7\u05E8\u05D5\u05D0 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5")
                         .setMessage(msg).setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show());
             }
@@ -1027,8 +1035,8 @@ public class MainActivity extends Activity {
                             .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show();
                     refresh();
                 });
-            } catch (Exception e) {
-                final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+            } catch (Throwable e) {
+                final String msg = errorText(e);
                 runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("\u05D4\u05E2\u05D3\u05DB\u05D5\u05DF \u05E0\u05DB\u05E9\u05DC")
                         .setMessage(msg + "\n\n\u05D0\u05E4\u05E9\u05E8 \u05DC\u05E0\u05E1\u05D5\u05EA \"\u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9\".")
                         .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show());
@@ -1048,6 +1056,50 @@ public class MainActivity extends Activity {
                 : auth.contains("externalstorage") || auth.contains("media") || auth.contains("downloads") ? "\u05D6\u05D9\u05DB\u05E8\u05D5\u05DF \u05D4\u05D8\u05DC\u05E4\u05D5\u05DF"
                 : auth.contains("onedrive") || auth.contains("skydrive") ? "OneDrive" : auth;
         return name + " (" + place + ")";
+    }
+
+    private void installCrashCatcher() {
+        final Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        if (prev instanceof CrashSaver) return;
+        Thread.setDefaultUncaughtExceptionHandler(new CrashSaver(getApplicationContext(), prev));
+    }
+
+    static final class CrashSaver implements Thread.UncaughtExceptionHandler {
+        private final android.content.Context ctx;
+        private final Thread.UncaughtExceptionHandler prev;
+
+        CrashSaver(android.content.Context c, Thread.UncaughtExceptionHandler p) {
+            ctx = c;
+            prev = p;
+        }
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            try {
+                CallLogger.prefs(ctx).edit().putString("last_crash", errorText(e)).commit();
+            } catch (Throwable ignored) { }
+            if (prev != null) prev.uncaughtException(t, e);
+        }
+    }
+
+    /** Full error text for troubleshooting: type, message, cause and where it happened. */
+    static String errorText(Throwable e) {
+        StringBuilder sb = new StringBuilder();
+        Throwable t = e;
+        int depth = 0;
+        while (t != null && depth < 3) {
+            if (depth > 0) sb.append("\n\u2190 ");
+            sb.append(t.getClass().getSimpleName());
+            if (t.getMessage() != null) sb.append(": ").append(t.getMessage());
+            StackTraceElement[] st = t.getStackTrace();
+            for (int k = 0; k < Math.min(3, st.length); k++) {
+                sb.append("\n   at ").append(st[k].getClassName().replace("com.healthmarketscience.jackcess.", "jk."))
+                        .append('.').append(st[k].getMethodName()).append(':').append(st[k].getLineNumber());
+            }
+            t = t.getCause();
+            depth++;
+        }
+        return sb.toString();
     }
 
     private void startBackup() {
