@@ -78,6 +78,7 @@ public class TicketsActivity extends Activity {
         search = new EditText(this);
         search.setHint("\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7, \u05E0\u05D5\u05E9\u05D0, \u05E6\u05D9\u05D5\u05D3\u2026");
         search.setSingleLine(true);
+        search.setCompoundDrawablePadding(dp(8));
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
@@ -93,11 +94,7 @@ public class TicketsActivity extends Activity {
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<>()) {
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
-                android.view.View v = super.getView(position, convertView, parent);
-                v.setPadding(dp(14), dp(14), dp(14), dp(14));
-                v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
-                v.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
-                return v;
+                return ticketCard(position, getItem(position));
             }
         };
         list.setDivider(new android.graphics.drawable.ColorDrawable(0x00000000));
@@ -119,6 +116,38 @@ public class TicketsActivity extends Activity {
         refresh();
     }
 
+    private final List<Integer> shownColors = new ArrayList<>();
+
+    /** A white card with a coloured status stripe; the first line (number + status) is bold and coloured. */
+    private android.view.View ticketCard(int pos, String text) {
+        int color = pos < shownColors.size() ? shownColors.get(pos) : Ui.PRIMARY;
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setBackground(Ui.rounded(0xFFFFFFFF, 14, this));
+        card.setElevation(dp(2));
+        android.view.View stripe = new android.view.View(this);
+        stripe.setBackground(Ui.rounded(color, 3, this));
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(dp(5), ViewGroup.LayoutParams.MATCH_PARENT);
+        slp.setMargins(dp(6), dp(10), dp(6), dp(10));
+        card.addView(stripe, slp);
+        TextView tv = new TextView(this);
+        android.text.SpannableString sp = new android.text.SpannableString(text);
+        int nl = text.indexOf('\n');
+        int end = nl < 0 ? text.length() : nl;
+        sp.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 0, end, 0);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(color), 0, end, 0);
+        sp.setSpan(new android.text.style.RelativeSizeSpan(1.1f), 0, end, 0);
+        tv.setText(sp);
+        tv.setTextSize(15);
+        tv.setTextColor(Ui.TEXT);
+        tv.setLineSpacing(dp(2), 1f);
+        tv.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
+        tv.setPadding(dp(6), dp(12), dp(12), dp(12));
+        card.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        card.setLayoutDirection(android.view.View.LAYOUT_DIRECTION_RTL);
+        return card;
+    }
+
     private void refresh() {
         List<TicketDb.Ticket> all = TicketDb.get(this).all();
         int[] counts = new int[4];
@@ -130,7 +159,9 @@ public class TicketsActivity extends Activity {
         for (int i = 0; i < 4; i++) {
             tabs[i].setText(NAMES[i] + " (" + counts[i] + ")");
             tabs[i].setTypeface(null, i == filter ? Typeface.BOLD : Typeface.NORMAL);
-            tabs[i].setTextColor(i == filter ? 0xFF1E88E5 : (i == OVERDUE && counts[i] > 0 ? 0xFFD32F2F : 0xFF444444));
+            tabs[i].setTextColor(i == filter ? 0xFFFFFFFF : (i == OVERDUE && counts[i] > 0 ? 0xFFD32F2F : Ui.PRIMARY_DARK));
+            tabs[i].setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33000000),
+                    Ui.rounded(i == filter ? Ui.PRIMARY : 0xFFE3EDFB, 20, this), null));
         }
 
         String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
@@ -159,9 +190,11 @@ public class TicketsActivity extends Activity {
         }
 
         shown.clear();
+        shownColors.clear();
         List<String> items = new ArrayList<>();
         for (TicketDb.Ticket t : sel) {
             shown.add(t.id);
+            shownColors.add(Ui.statusColor(t.status, t.isOverdue()));
             StringBuilder sb = new StringBuilder();
             if (t.isOverdue()) sb.append("\u26A0 \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8  ");
             if ("Urgent".equals(t.priority)) sb.append("\uD83D\uDD34 \u05D3\u05D7\u05D5\u05E3  ");

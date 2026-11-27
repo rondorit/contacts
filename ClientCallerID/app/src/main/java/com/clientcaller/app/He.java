@@ -22,6 +22,12 @@ final class He {
 
     static void rtl(Activity a) {
         a.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        android.app.ActionBar bar = a.getActionBar();
+        if (bar != null) {
+            bar.setBackgroundDrawable(new android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.RIGHT_LEFT, new int[]{0xFF0D47A1, 0xFF1E88E5}));
+            bar.setElevation(0);
+        }
         Ui.polish(a.getWindow().getDecorView());
     }
 }

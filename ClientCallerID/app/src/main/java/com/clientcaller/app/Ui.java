@@ -22,6 +22,9 @@ final class Ui {
     static final int RED = 0xFFD32F2F;
     static final int GREEN = 0xFF2E7D32;
     static final int ORANGE = 0xFFEF6C00;
+    static final int LABEL = 0xFF475569;
+    static final int FIELD = 0xFFF5F8FD;
+    static final int FIELD_LINE = 0xFFD6E0EE;
 
     private Ui() { }
 
@@ -183,8 +186,19 @@ final class Ui {
                 ((ViewGroup.MarginLayoutParams) lp).setMargins(m, m, m, m);
                 b.setLayoutParams(lp);
             }
+        } else if (v instanceof android.widget.EditText) {
+            styleField((android.widget.EditText) v);
+        } else if (v instanceof android.widget.Spinner) {
+            styleSpinner((android.widget.Spinner) v);
         } else if (v instanceof TextView && !(v instanceof android.widget.Button)) {
             TextView t = (TextView) v;
+            float sp = t.getResources().getDisplayMetrics().scaledDensity;
+            int col = t.getCurrentTextColor();
+            // Small grey form labels -> darker, bold labels.
+            if (Math.abs(t.getTextSize() - 13 * sp) < 0.6f * sp && (col == 0xFF777777 || col == MUTED)) {
+                t.setTextColor(LABEL);
+                t.setTypeface(Typeface.DEFAULT_BOLD);
+            }
             int hg = t.getGravity() & Gravity.HORIZONTAL_GRAVITY_MASK;
             if (t.getTextAlignment() == View.TEXT_ALIGNMENT_GRAVITY && hg != Gravity.CENTER_HORIZONTAL) {
                 t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -193,6 +207,100 @@ final class Ui {
             ViewGroup g = (ViewGroup) v;
             for (int i = 0; i < g.getChildCount(); i++) polish(g.getChildAt(i));
         }
+    }
+
+    /** Rounded light input box; the border turns blue while typing. */
+    static android.graphics.drawable.Drawable fieldBg(Context c) {
+        GradientDrawable normal = rounded(FIELD, 10, c);
+        normal.setStroke(dp(c, 1), FIELD_LINE);
+        GradientDrawable focused = rounded(Color.WHITE, 10, c);
+        focused.setStroke(dp(c, 2), PRIMARY);
+        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, focused);
+        s.addState(new int[]{}, normal);
+        return s;
+    }
+
+    static void styleField(android.widget.EditText e) {
+        Context c = e.getContext();
+        if (e.getTag(R_STYLED) != null) return;
+        e.setTag(R_STYLED, Boolean.TRUE);
+        e.setBackground(fieldBg(c));
+        e.setPadding(dp(c, 12), dp(c, 10), dp(c, 12), dp(c, 10));
+        e.setTextColor(TEXT);
+        e.setHintTextColor(0xFF9AA5B5);
+        ViewGroup.LayoutParams lp = e.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
+            if (m.topMargin == 0) m.topMargin = dp(c, 4);
+            if (m.bottomMargin == 0) m.bottomMargin = dp(c, 2);
+            e.setLayoutParams(m);
+        }
+    }
+
+    static void styleSpinner(android.widget.Spinner s) {
+        Context c = s.getContext();
+        if (s.getTag(R_STYLED) != null) return;
+        s.setTag(R_STYLED, Boolean.TRUE);
+        s.setBackground(new SpinnerBg(c));
+        s.setPadding(dp(c, 8), dp(c, 6), dp(c, 8), dp(c, 6));
+        s.setPopupBackgroundDrawable(rounded(Color.WHITE, 10, c));
+        ViewGroup.LayoutParams lp = s.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
+            if (m.topMargin == 0) m.topMargin = dp(c, 4);
+            s.setLayoutParams(m);
+        }
+    }
+
+    private static final int R_STYLED = 0x7f0f0001 + 0x1234;
+
+    /** Rounded box with a small chevron on the left side (RTL end). */
+    static final class SpinnerBg extends android.graphics.drawable.Drawable {
+        private final GradientDrawable box;
+        private final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final float d;
+
+        SpinnerBg(Context c) {
+            box = rounded(FIELD, 10, c);
+            box.setStroke(dp(c, 1), FIELD_LINE);
+            d = c.getResources().getDisplayMetrics().density;
+            p.setColor(PRIMARY);
+            p.setStyle(android.graphics.Paint.Style.STROKE);
+            p.setStrokeWidth(2 * d);
+            p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+        }
+
+        @Override public void draw(android.graphics.Canvas cv) {
+            android.graphics.Rect r = getBounds();
+            box.setBounds(r);
+            box.draw(cv);
+            float cx = r.left + 16 * d, cy = r.exactCenterY();
+            android.graphics.Path path = new android.graphics.Path();
+            path.moveTo(cx - 5 * d, cy - 2.5f * d);
+            path.lineTo(cx, cy + 2.5f * d);
+            path.lineTo(cx + 5 * d, cy - 2.5f * d);
+            cv.drawPath(path, p);
+        }
+
+        @Override public void setAlpha(int a) { }
+        @Override public void setColorFilter(android.graphics.ColorFilter f) { }
+        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
+
+        @Override public boolean getPadding(android.graphics.Rect pad) {
+            pad.set((int) (30 * d), (int) (6 * d), (int) (10 * d), (int) (6 * d));
+            return true;
+        }
+    }
+
+    /** Status colour for ticket cards. */
+    static int statusColor(String status, boolean overdue) {
+        if (overdue) return RED;
+        if ("Open".equals(status)) return PRIMARY;
+        if ("In progress".equals(status)) return ORANGE;
+        if ("Waiting for client".equals(status)) return 0xFF7B1FA2;
+        if ("Waiting for outsourcing".equals(status)) return 0xFF00897B;
+        return 0xFF9E9E9E;
     }
 
     /** Puts a form inside a white rounded card on the light background. */
