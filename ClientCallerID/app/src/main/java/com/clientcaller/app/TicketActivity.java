@@ -40,6 +40,7 @@ public class TicketActivity extends Activity {
     private LinearLayout history;
     private Spinner sProvider;
     private TextView tAssignee;
+    private Spinner sOutStatus;
     private final java.util.List<String> providerNames = new java.util.ArrayList<>();
     private long followupAt;
 
@@ -134,6 +135,13 @@ public class TicketActivity extends Activity {
         pRow.addView(sProvider, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         rowButton(pRow, "\u05E0\u05D9\u05D4\u05D5\u05DC", v -> startActivity(new Intent(this, ProvidersActivity.class)));
         loadProviders(t.provider);
+        label(box, "\u05E1\u05D8\u05D8\u05D5\u05E1 \u05D0\u05E6\u05DC \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D4\u05D7\u05D5\u05E5");
+        sOutStatus = new Spinner(this);
+        ArrayAdapter<String> osa = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, Outsource.LABELS);
+        osa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sOutStatus.setAdapter(osa);
+        sOutStatus.setSelection(Math.max(0, java.util.Arrays.asList(Outsource.KEYS).indexOf(t.outStatus)));
+        box.addView(sOutStatus);
         eOutsource = field(box, "\u05E4\u05E8\u05D8\u05D9\u05DD \u05DC\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5 (\u05DE\u05E1\u05E4\u05E8 \u05E7\u05E8\u05D9\u05D0\u05D4 \u05D0\u05E6\u05DC\u05DD, \u05D0\u05D9\u05E9 \u05E7\u05E9\u05E8)", t.outsource,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         LinearLayout sendRow = row(box);
@@ -257,6 +265,7 @@ public class TicketActivity extends Activity {
         int pi = sProvider.getSelectedItemPosition();
         t.provider = pi <= 0 || pi > providerNames.size() ? "" : providerNames.get(pi - 1);
         t.followupAt = followupAt;
+        if (sOutStatus != null) t.outStatus = Outsource.KEYS[sOutStatus.getSelectedItemPosition()];
     }
 
     @Override
@@ -478,7 +487,13 @@ public class TicketActivity extends Activity {
             db.addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC" + t.provider + " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" + follow);
             showHistory();
         }
-        String text = tpl == null ? db.summary(t) : Templates.fill(this, t, tpl.body);
+        if (whatsapp && (t.outStatus.isEmpty())) {
+            t.outStatus = "Sent";
+            sOutStatus.setSelection(1);
+            db.save(t);
+        }
+        final String text = (tpl == null ? (whatsapp ? Outsource.details(this, t) : db.summary(t)) : Templates.fill(this, t, tpl.body))
+                + (whatsapp ? Outsource.footer(t) : "");
         String subject = tpl == null || tpl.subject.trim().isEmpty()
                 ? "\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id + " - " + t.title : Templates.fill(this, t, tpl.subject);
         if (whatsapp) {

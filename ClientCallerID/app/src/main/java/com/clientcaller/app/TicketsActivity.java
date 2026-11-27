@@ -170,6 +170,7 @@ public class TicketsActivity extends Activity {
             if (t.followupAt > 0 && t.isOpen()) sb.append("\n\u05DE\u05E2\u05E7\u05D1: ").append(TicketDb.fmt(t.followupAt));
             if (!t.provider.isEmpty() || !t.outsource.isEmpty())
                 sb.append("\n\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5: ").append(t.provider).append(t.provider.isEmpty() || t.outsource.isEmpty() ? "" : " - ").append(t.outsource);
+            if (!t.outStatus.isEmpty()) sb.append("  [").append(Outsource.label(t.outStatus)).append("]");
             if (!t.assignee.isEmpty()) sb.append("\n\uD83D\uDC77 ").append(t.assignee);
             items.add(sb.toString());
         }

@@ -58,6 +58,7 @@ public class WaCallListener extends NotificationListenerService {
             String result;
             if (!isCall) {
                 String q = Team.fromWhatsApp(this, n, title);
+                if (q == null) q = Outsource.fromWhatsApp(this, n, title);
                 if (q == null) q = QuoteApprovals.fromWhatsApp(this, n, title);
                 result = q != null ? q : WaMessages.onNotification(this, n, title);
             } else {
