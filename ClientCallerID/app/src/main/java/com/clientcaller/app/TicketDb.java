@@ -59,7 +59,7 @@ final class TicketDb extends SQLiteOpenHelper {
     }
 
     private TicketDb(Context c) {
-        super(c, "tickets.db", null, 7);
+        super(c, "tickets.db", null, 8);
     }
 
     @Override
@@ -73,6 +73,7 @@ final class TicketDb extends SQLiteOpenHelper {
         createProviders(db);
         createSent(db);
         createItems(db);
+        createMore(db);
     }
 
     private static void createSent(SQLiteDatabase db) {
@@ -90,6 +91,13 @@ final class TicketDb extends SQLiteOpenHelper {
             v.put("email", "");
             db.insert("providers", null, v);
         }
+    }
+
+    private static void createMore(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS equipment (_id INTEGER PRIMARY KEY AUTOINCREMENT, client TEXT, type TEXT,"
+                + " model TEXT, serial TEXT, mac TEXT, warranty INTEGER, notes TEXT, created INTEGER)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS recurring (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, client TEXT,"
+                + " phone TEXT, category TEXT, every_days INTEGER, next_at INTEGER, active INTEGER)");
     }
 
     private static void createItems(SQLiteDatabase db) {
@@ -150,6 +158,7 @@ final class TicketDb extends SQLiteOpenHelper {
         if (oldVersion < 5) db.execSQL("ALTER TABLE tickets ADD COLUMN assignee TEXT");
         if (oldVersion < 6) db.execSQL("ALTER TABLE tickets ADD COLUMN out_status TEXT");
         if (oldVersion < 7) createItems(db);
+        if (oldVersion < 8) createMore(db);
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE tickets ADD COLUMN provider TEXT");
             createProviders(db);

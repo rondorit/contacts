@@ -96,6 +96,10 @@ public class DetailActivity extends Activity {
         ticketBox.setOrientation(LinearLayout.VERTICAL);
         box.addView(ticketBox);
 
+        equipBox = new LinearLayout(this);
+        equipBox.setOrientation(LinearLayout.VERTICAL);
+        box.addView(equipBox);
+
         // Details
         box.addView(Ui.sectionTitle(this, "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DC\u05E7\u05D5\u05D7"));
         LinearLayout details = Ui.card(this);
@@ -260,6 +264,7 @@ public class DetailActivity extends Activity {
 
     private LinearLayout ticketBox, calBox, sentBox;
     private int row = -1;
+    private LinearLayout equipBox;
 
     @Override
     protected void onResume() {
@@ -267,6 +272,16 @@ public class DetailActivity extends Activity {
         refreshTickets();
         refreshSent();
         refreshCalendar();
+        if (equipBox != null && row >= 0) {
+            ClientStore st = Data.get(this);
+            String ph = "";
+            for (int pc : st.phoneCols) {
+                java.util.List<String> rr = st.rows.get(row);
+                String v = pc < rr.size() ? rr.get(pc) : "";
+                if (v != null && !v.trim().isEmpty()) { ph = v.trim(); break; }
+            }
+            Equipment.show(this, equipBox, st.name(row), ph);
+        }
     }
 
     /** This client's calendar events (call log, follow-ups); tap one to delete it. */

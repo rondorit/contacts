@@ -30,6 +30,8 @@ public class TicketActivity extends Activity {
     static final String EXTRA_PHONE = "client_phone";
     static final String EXTRA_DESC = "description";
     static final String EXTRA_SUMMARY = "send_summary";
+    static final String EXTRA_EQUIP = "equipment";
+    static final String EXTRA_MAC = "mac";
 
     private TicketDb db;
     private TicketDb.Ticket t;
@@ -66,6 +68,8 @@ public class TicketActivity extends Activity {
                 if (ph != null) t.clientPhone = ph;
             }
         }
+        if (t.id == 0 && getIntent().getStringExtra(EXTRA_EQUIP) != null) t.equipment = getIntent().getStringExtra(EXTRA_EQUIP);
+        if (t.id == 0 && getIntent().getStringExtra(EXTRA_MAC) != null) t.mac = getIntent().getStringExtra(EXTRA_MAC);
         if (t.id == 0 && getIntent().getStringExtra(EXTRA_DESC) != null) {
             t.description = getIntent().getStringExtra(EXTRA_DESC);
         }
@@ -116,6 +120,12 @@ public class TicketActivity extends Activity {
         });
         mRow.addView(eMac, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         rowButton(mRow, "\u05D1\u05D7\u05E8", v -> chooseMac());
+        rowButton(mRow, "\uD83D\uDCF7", v -> Scanner.scan(this, code -> eMac.setText(TicketDb.formatMac(code))));
+        LinearLayout eqScan = row(box);
+        rowButton(eqScan, "\uD83D\uDCF7 \u05E1\u05E8\u05D5\u05E7 \u05DE\u05E1\u05E4\u05E8 \u05E1\u05D9\u05D3\u05D5\u05E8\u05D9 \u05DC\u05E6\u05D9\u05D5\u05D3", v -> Scanner.scan(this, code -> {
+            String cur = eEquip.getText().toString().trim();
+            eEquip.setText(cur.isEmpty() ? "S/N " + code : cur + " S/N " + code);
+        }));
         label(box, "\uD83D\uDC77 \u05D0\u05D7\u05E8\u05D0\u05D9 \u05D1\u05D9\u05E6\u05D5\u05E2 (\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA)");
         LinearLayout asRow = row(box);
         tAssignee = new TextView(this);
