@@ -265,6 +265,7 @@ final class QuoteDb extends SQLiteOpenHelper {
         sb.append("\n\u05E1\u05D4\"\u05DB \u05DC\u05EA\u05E9\u05DC\u05D5\u05DD: ").append(money(q.total()));
         sb.append("\n\n\u05D4\u05D4\u05E6\u05E2\u05D4 \u05D1\u05EA\u05D5\u05E7\u05E3 \u05DC-").append(q.validDays).append(" \u05D9\u05D5\u05DD.");
         if (!q.notes.isEmpty()) sb.append("\n\n").append(q.notes);
+        sb.append("\n\n\u05DC\u05D0\u05D9\u05E9\u05D5\u05E8 \u05D4\u05D4\u05E6\u05E2\u05D4 \u05D0\u05E4\u05E9\u05E8 \u05E4\u05E9\u05D5\u05D8 \u05DC\u05D4\u05E9\u05D9\u05D1 \u05DC\u05D4\u05D5\u05D3\u05E2\u05D4 \u05D6\u05D5: \"\u05DE\u05D0\u05E9\u05E8/\u05EA\".");
         sb.append("\n\n").append(Issuer.signature(c));
         return sb.toString();
     }

@@ -28,6 +28,11 @@ public class WaCallListener extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         try {
             String pkg = sbn.getPackageName();
+            if ("com.google.android.gm".equals(pkg)) {
+                String r = QuoteApprovals.fromGmail(this, sbn.getNotification());
+                if (r != null) log("Gmail \u2192 " + r);
+                return;
+            }
             if (!"com.whatsapp".equals(pkg) && !"com.whatsapp.w4b".equals(pkg)) return;
             Notification n = sbn.getNotification();
             Bundle ex = n.extras;
@@ -49,7 +54,8 @@ public class WaCallListener extends NotificationListenerService {
                     || (!isMessage && (low.contains("call") || low.contains("\u05E9\u05D9\u05D7\u05D4") || low.contains("\u05E9\u05D9\u05D7\u05EA")));
             String result;
             if (!isCall) {
-                result = WaMessages.onNotification(this, n, title);
+                String q = QuoteApprovals.fromWhatsApp(this, n, title);
+                result = q != null ? q : WaMessages.onNotification(this, n, title);
             } else {
                 List<String> names = new ArrayList<>();
                 for (String c : new String[]{person, title, bigTitle, conv}) {

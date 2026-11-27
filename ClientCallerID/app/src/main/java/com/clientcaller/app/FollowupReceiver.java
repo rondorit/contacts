@@ -31,6 +31,10 @@ public class FollowupReceiver extends BroadcastReceiver {
             Backup.remindIfNeeded(context);
             return;
         }
+        if (QuoteApprovals.ACTION_SET.equals(action)) {
+            QuoteApprovals.setStatus(context, intent.getLongExtra(QuoteActivity.EXTRA_QUOTE, 0), intent.getStringExtra("status"));
+            return;
+        }
         if (ACTION_QUOTE.equals(action)) {
             quoteReminder(context, intent.getLongExtra(QuoteActivity.EXTRA_QUOTE, 0));
             return;
