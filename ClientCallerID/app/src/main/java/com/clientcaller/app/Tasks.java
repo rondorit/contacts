@@ -27,7 +27,13 @@ final class Tasks {
     static final class Task {
         long id, dueAt, created, doneAt, ticketId;
         boolean remind = true;
-        String title = "", notes = "", priority = "Normal", client = "", phone = "", assignee = "";
+        String title = "", notes = "", priority = "Normal", client = "", phone = "", assignee = "", place = "";
+        double lat, lng;
+        int radius;
+
+        boolean hasPlace() {
+            return !place.isEmpty() && (lat != 0 || lng != 0);
+        }
 
         boolean isDone() {
             return doneAt > 0;
@@ -50,11 +56,18 @@ final class Tasks {
     static void create(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS tasks (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, notes TEXT, priority TEXT,"
                 + " due_at INTEGER, remind INTEGER, client TEXT, phone TEXT, assignee TEXT, ticket_id INTEGER,"
-                + " created INTEGER, done_at INTEGER)");
+                + " created INTEGER, done_at INTEGER, place TEXT, lat REAL, lng REAL, radius INTEGER)");
+    }
+
+    static void addPlace(SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE tasks ADD COLUMN place TEXT");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN lat REAL");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN lng REAL");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN radius INTEGER");
     }
 
     private static final String[] COLS = {"_id", "title", "notes", "priority", "due_at", "remind", "client", "phone", "assignee",
-            "ticket_id", "created", "done_at"};
+            "ticket_id", "created", "done_at", "place", "lat", "lng", "radius"};
 
     private static Task read(Cursor c) {
         Task t = new Task();
@@ -70,6 +83,10 @@ final class Tasks {
         t.ticketId = c.getLong(9);
         t.created = c.getLong(10);
         t.doneAt = c.getLong(11);
+        t.place = s(c, 12);
+        t.lat = c.getDouble(13);
+        t.lng = c.getDouble(14);
+        t.radius = c.getInt(15);
         return t;
     }
 
@@ -123,14 +140,20 @@ final class Tasks {
         if (t.created == 0) t.created = System.currentTimeMillis();
         v.put("created", t.created);
         v.put("done_at", t.doneAt);
+        v.put("place", t.place);
+        v.put("lat", t.lat);
+        v.put("lng", t.lng);
+        v.put("radius", t.radius);
         if (t.id == 0) t.id = TicketDb.get(c).getWritableDatabase().insert("tasks", null, v);
         else TicketDb.get(c).getWritableDatabase().update("tasks", v, "_id=?", new String[]{String.valueOf(t.id)});
         schedule(c, t);
+        Geo.sync(c, t);
         TicketsWidget.updateAll(c);
     }
 
     static void delete(Context c, long id) {
         cancel(c, id);
+        Geo.remove(c, id);
         TicketDb.get(c).getWritableDatabase().delete("tasks", "_id=?", new String[]{String.valueOf(id)});
     }
 
@@ -170,7 +193,10 @@ final class Tasks {
     }
 
     static void rescheduleAll(Context c) {
-        for (Task t : all(c)) schedule(c, t);
+        for (Task t : all(c)) {
+            schedule(c, t);
+            Geo.sync(c, t);
+        }
     }
 
     /** Receiver entry point for the reminder / done / snooze actions. */
@@ -192,7 +218,7 @@ final class Tasks {
         notify(c, t);
     }
 
-    private static void notify(Context c, Task t) {
+    static void notify(Context c, Task t) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel("tasks", "\u05EA\u05D6\u05DB\u05D5\u05E8\u05D5\u05EA \u05DE\u05E9\u05D9\u05DE\u05D5\u05EA", NotificationManager.IMPORTANCE_HIGH));
         int nid = 800000 + (int) t.id;

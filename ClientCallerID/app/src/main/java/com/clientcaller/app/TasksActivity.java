@@ -159,6 +159,7 @@ public class TasksActivity extends Activity {
         if (t.dueAt > 0) sub.append(t.isOverdue() ? "\u23F0 \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8 \u2022 " : "\uD83D\uDCC5 ").append(TicketDb.fmt(t.dueAt));
         if (!t.client.isEmpty()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83D\uDC64 ").append(t.client);
         if (!t.assignee.isEmpty()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83D\uDC77 ").append(t.assignee);
+        if (t.hasPlace()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83D\uDCCD ").append(t.place);
         if (t.ticketId > 0) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83C\uDFAB #").append(t.ticketId);
         if (sub.length() > 0) txt.addView(Ui.text(this, sub.toString(), 13, t.isOverdue() ? Ui.RED : Ui.MUTED, false));
         if (!t.notes.isEmpty()) txt.addView(Ui.text(this, t.notes, 13, Ui.MUTED, false));
@@ -193,6 +194,17 @@ public class TasksActivity extends Activity {
         remind.setChecked(t.remind);
         lay.addView(remind);
 
+        final String[] place = {t.place};
+        final double[] ll = {t.lat, t.lng};
+        final int[] rad = {t.radius};
+        final TextView plTv = link(lay, t.hasPlace() ? "\uD83D\uDCCD \u05D1\u05D4\u05D2\u05E2\u05D4 \u05DC" + t.place + " \u25BE" : "\uD83D\uDCCD \u05EA\u05D6\u05DB\u05D5\u05E8\u05EA \u05D1\u05D4\u05D2\u05E2\u05D4 \u05DC\u05DE\u05E7\u05D5\u05DD \u25BE");
+        plTv.setOnClickListener(v -> Geo.pick(this, client(lay), (name, lat, lng, r) -> {
+            place[0] = name;
+            ll[0] = lat;
+            ll[1] = lng;
+            rad[0] = r;
+            plTv.setText(name.isEmpty() ? "\uD83D\uDCCD \u05EA\u05D6\u05DB\u05D5\u05E8\u05EA \u05D1\u05D4\u05D2\u05E2\u05D4 \u05DC\u05DE\u05E7\u05D5\u05DD \u25BE" : "\uD83D\uDCCD \u05D1\u05D4\u05D2\u05E2\u05D4 \u05DC" + name + " \u25BE");
+        }));
         final String[] pr = {t.priority};
         final TextView prTv = link(lay, "\u05E2\u05D3\u05D9\u05E4\u05D5\u05EA: " + Tasks.priorityHe(pr[0]) + " \u25BE");
         prTv.setOnClickListener(v -> new AlertDialog.Builder(this).setItems(Tasks.PRIORITY_HE, (d, w) -> {
@@ -225,6 +237,10 @@ public class TasksActivity extends Activity {
                     t.remind = remind.isChecked();
                     t.priority = pr[0];
                     t.client = client.getText().toString().trim();
+                    t.place = place[0];
+                    t.lat = ll[0];
+                    t.lng = ll[1];
+                    t.radius = rad[0];
                     boolean newAssignee = !who[0].isEmpty() && !who[0].equals(t.assignee);
                     t.assignee = who[0];
                     Tasks.save(this, t);
@@ -234,6 +250,26 @@ public class TasksActivity extends Activity {
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null);
         if (t.id > 0) b.setNeutralButton("\u05E2\u05D5\u05D3\u2026", (d, w) -> more(t));
         b.show();
+    }
+
+    /** The client typed in the editor (the EditText after the "client" hint). */
+    private String client(LinearLayout lay) {
+        for (int i = 0; i < lay.getChildCount(); i++) {
+            View v = lay.getChildAt(i);
+            if (v instanceof EditText && "\u05DC\u05E7\u05D5\u05D7 (\u05DC\u05D0 \u05D7\u05D5\u05D1\u05D4)".contentEquals(((EditText) v).getHint())) return ((EditText) v).getText().toString().trim();
+        }
+        return "";
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(req, perms, res);
+        if (req == Geo.REQ_FINE) {
+            android.widget.Toast.makeText(this, Geo.fineGranted(this) ? "\u05D4\u05D4\u05E8\u05E9\u05D0\u05D4 \u05D0\u05D5\u05E9\u05E8\u05D4 \u2013 \u05D1\u05D7\u05E8 \u05E9\u05D5\u05D1 \u05DE\u05E7\u05D5\u05DD" : "\u05D1\u05DC\u05D9 \u05D4\u05E8\u05E9\u05D0\u05EA \u05DE\u05D9\u05E7\u05D5\u05DD \u05D0\u05D9\u05DF \u05EA\u05D6\u05DB\u05D5\u05E8\u05EA \u05DC\u05E4\u05D9 \u05DE\u05E7\u05D5\u05DD",
+                    android.widget.Toast.LENGTH_LONG).show();
+        } else if (req == Geo.REQ_BACKGROUND) {
+            for (Tasks.Task t : Tasks.all(this)) Geo.sync(this, t);
+        }
     }
 
     private TextView link(LinearLayout lay, String text) {
