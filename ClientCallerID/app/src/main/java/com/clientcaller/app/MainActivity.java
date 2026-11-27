@@ -748,6 +748,7 @@ public class MainActivity extends Activity {
         final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
         final String[] opts = {
                 "\uD83D\uDCE4 \u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive (\u05DE\u05D5\u05DE\u05DC\u05E5)",
+                "\uD83D\uDCC1 \u05E9\u05DE\u05D5\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF (\u05EA\u05D9\u05E7\u05D9\u05D9\u05EA \u05D4\u05D5\u05E8\u05D3\u05D5\u05EA)",
                 "\uD83D\uDCBE \u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9",
                 "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9" + (uriStr.isEmpty() ? " (\u05DC\u05D0 \u05D6\u05DE\u05D9\u05DF)" : "")};
         new AlertDialog.Builder(this)
@@ -756,6 +757,8 @@ public class MainActivity extends Activity {
                     if (w == 0) {
                         runAccessUpdate(null);
                     } else if (w == 1) {
+                        runAccessUpdate(Uri.parse("downloads:"));
+                    } else if (w == 2) {
                         String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
                         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                         i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -890,6 +893,22 @@ public class MainActivity extends Activity {
                     }
                     where = shared.getName() + " (\u05DC\u05E9\u05D9\u05EA\u05D5\u05E3)";
                     verifiedText = "\u2713 " + (out.length / 1024) + " KB";
+                    drive = false;
+                } else if ("downloads".equals(target.getScheme())) {
+                    String date = new java.text.SimpleDateFormat("yyyy-MM-dd-HHmm", java.util.Locale.US).format(new java.util.Date());
+                    String name = "clients-" + date + "." + AccessImport.extension(work);
+                    android.content.ContentValues cv = new android.content.ContentValues();
+                    cv.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    cv.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream");
+                    cv.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Download/");
+                    Uri dl = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                    if (dl == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05D9\u05E6\u05D5\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D1\u05EA\u05D9\u05E7\u05D9\u05D9\u05EA \u05D4\u05D4\u05D5\u05E8\u05D3\u05D5\u05EA");
+                    try (java.io.OutputStream os = getContentResolver().openOutputStream(dl)) {
+                        if (os == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05DB\u05EA\u05D5\u05D1");
+                        os.write(out);
+                    }
+                    verifiedText = "\u2713 " + (readLength(dl) / 1024) + " KB";
+                    where = name + " (\u05D4\u05E7\u05D1\u05E6\u05D9\u05DD \u05E9\u05DC\u05D9 \u2190 \u05D4\u05D5\u05E8\u05D3\u05D5\u05EA)";
                     drive = false;
                 } else {
                     verifiedText = writeDocument(target, out);
