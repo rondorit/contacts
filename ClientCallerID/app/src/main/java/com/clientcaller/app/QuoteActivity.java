@@ -76,8 +76,8 @@ public class QuoteActivity extends Activity {
         int p = dp(16);
         box.setPadding(p, p, p, p);
 
-        TextView head = Ui.text(this, q.id > 0 ? "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05DE\u05E1' " + q.id + "  \u2022  " + TicketDb.fmt(q.created).substring(0, 10)
-                : "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05D7\u05D3\u05E9\u05D4", 20, Ui.TEXT, true);
+        TextView head = Theme.text(this, q.id > 0 ? "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05DE\u05E1' " + q.id + "  \u2022  " + TicketDb.fmt(q.created).substring(0, 10)
+                : "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05D7\u05D3\u05E9\u05D4", Theme.TITLE, Theme.TEXT_PRIMARY, 2);
         box.addView(head);
         if (q.ticketId > 0) box.addView(Ui.text(this, "\u05DE\u05E7\u05D5\u05E9\u05E8\u05EA \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4 #" + q.ticketId, 13, Ui.MUTED, false));
         addReplyCard(box);
@@ -110,12 +110,14 @@ public class QuoteActivity extends Activity {
             @Override public void afterTextChanged(Editable e) { showTotals(); }
         });
         totals = new TextView(this);
-        totals.setTextSize(16);
-        totals.setPadding(dp(12), dp(10), dp(12), dp(10));
-        totals.setBackground(Ui.rounded(0xFFE3EDFB, 12, this));
+        totals.setTextSize(Theme.BODY);
+        totals.setTextColor(Theme.TEXT_SECONDARY);
+        totals.setLineSpacing(dp(4), 1f);
+        totals.setPadding(dp(16), dp(16), dp(16), dp(16));
+        totals.setBackground(Theme.raisedBg(this));
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = dp(10);
+        tlp.topMargin = dp(12);
         box.addView(totals, tlp);
 
         eValid = field(box, "\u05EA\u05D5\u05E7\u05E3 \u05D4\u05D4\u05E6\u05E2\u05D4 (\u05D9\u05DE\u05D9\u05DD)", String.valueOf(q.validDays), InputType.TYPE_CLASS_NUMBER);
@@ -213,12 +215,14 @@ public class QuoteActivity extends Activity {
         boolean mail = said.startsWith("\u05D1\u05DE\u05D9\u05D9\u05DC");
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(12), dp(10), dp(12), dp(10));
-        card.setBackground(Ui.rounded(ok ? 0xFFE3F4E6 : 0xFFFBE4E4, 12, this));
-        card.addView(Ui.text(this, (ok ? "\u2705 \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D0\u05D9\u05E9\u05E8" : "\u274C \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D3\u05D7\u05D4") + (mail ? " \u05D1\u05DE\u05D9\u05D9\u05DC" : " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
-                + "  \u2022  " + TicketDb.fmt(r.optLong("t")), 15, Ui.TEXT, true));
+        card.setPadding(dp(12), dp(8), dp(12), dp(8));
+        card.setBackground(Theme.shape(ok ? Theme.MINT_CONTAINER : Theme.SURFACE_RAISED, Theme.R_FIELD, this));
+        android.graphics.drawable.GradientDrawable replyBg = (android.graphics.drawable.GradientDrawable) card.getBackground();
+        if (!ok) replyBg.setStroke(dp(1), Theme.DANGER);
+        card.addView(Theme.text(this, (ok ? "\u2705 \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D0\u05D9\u05E9\u05E8" : "\u274C \u05D4\u05DC\u05E7\u05D5\u05D7 \u05D3\u05D7\u05D4") + (mail ? " \u05D1\u05DE\u05D9\u05D9\u05DC" : " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
+                + "  \u2022  " + TicketDb.fmt(r.optLong("t")), Theme.BODY, Theme.TEXT_PRIMARY, 2));
         String words = said.replaceFirst("^(\u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4|\u05D1\u05DE\u05D9\u05D9\u05DC):\\s*", "");
-        card.addView(Ui.text(this, "\u201E" + words + "\u201C", 15, Ui.TEXT, false));
+        card.addView(Theme.body(this, "\u201E" + words + "\u201C", Theme.TEXT_PRIMARY));
         Button open = new Button(this);
         open.setAllCaps(false);
         open.setText(mail ? "\u2709\uFE0F \u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05DE\u05D9\u05D9\u05DC" : "\uD83D\uDCAC \u05E4\u05EA\u05D7 \u05D0\u05EA \u05D4\u05E9\u05D9\u05D7\u05D4 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
@@ -226,7 +230,7 @@ public class QuoteActivity extends Activity {
         card.addView(open);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.topMargin = dp(10);
+        lp.topMargin = dp(12);
         box.addView(card, lp);
     }
 
@@ -375,7 +379,7 @@ public class QuoteActivity extends Activity {
             LinearLayout card = Ui.rowCard(this, (i + 1) + ". " + l.name,
                     QuoteDb.qty(l.qty) + " \u00D7 " + QuoteDb.money(l.price) + " = " + QuoteDb.money(l.total()),
                     "", 0, v -> editLine(idx));
-            card.setBackground(Ui.rounded(0xFFF3F6FB, 12, this));
+            card.setBackground(Theme.raisedBg(this));
             card.setElevation(0);
             linesBox.addView(card, Ui.cardParams(this));
         }
@@ -398,8 +402,14 @@ public class QuoteActivity extends Activity {
         sb.append("\u05E1\u05DB\u05D5\u05DD \u05DC\u05E4\u05E0\u05D9 \u05DE\u05E2\"\u05DE: ").append(QuoteDb.money(q.subtotal()));
         if (q.discountPct > 0) sb.append("\n\u05D4\u05E0\u05D7\u05D4 ").append(QuoteDb.qty(q.discountPct)).append("%: -").append(QuoteDb.money(q.discount()));
         sb.append("\n\u05DE\u05E2\"\u05DE 18%: ").append(QuoteDb.money(q.vat()));
-        sb.append("\n\u05E1\u05D4\"\u05DB \u05DC\u05EA\u05E9\u05DC\u05D5\u05DD: ").append(QuoteDb.money(q.total()));
-        totals.setText(sb.toString());
+        String breakdown = sb.toString();
+        String hero = "\u05E1\u05D4\"\u05DB \u05DC\u05EA\u05E9\u05DC\u05D5\u05DD: " + QuoteDb.money(q.total());
+        android.text.SpannableStringBuilder sp = new android.text.SpannableStringBuilder(breakdown + "\n\n" + hero);
+        int start = breakdown.length() + 2;
+        sp.setSpan(new android.text.style.RelativeSizeSpan(1.87f), start, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sp.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(Theme.MINT), start, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        totals.setText(sp);
     }
 
     private void editLine(final int idx) {
@@ -651,7 +661,7 @@ public class QuoteActivity extends Activity {
     // ------------------------------------------------------------------ helpers
 
     private void label(LinearLayout box, String text) {
-        TextView l = Ui.text(this, text, 13, Ui.MUTED, false);
+        TextView l = Theme.label(this, text, Theme.TEXT_SECONDARY);
         l.setPadding(0, dp(12), 0, 0);
         box.addView(l);
     }

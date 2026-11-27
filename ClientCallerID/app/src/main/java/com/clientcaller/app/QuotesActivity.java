@@ -27,6 +27,7 @@ public class QuotesActivity extends Activity {
         page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 60));
+        page.addView(Theme.header(this, "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8"));
         ScrollView sv = new ScrollView(this);
         sv.addView(page);
         setContentView(sv);
@@ -65,10 +66,11 @@ public class QuotesActivity extends Activity {
         for (int i = 0; i < FILTERS.length; i++) {
             final int f = i;
             int count = i == 0 ? open : i == 1 ? approved : i == 2 ? rejected : all.size();
-            TextView t = Ui.text(this, FILTERS[i] + " (" + count + ")", 14, i == filter ? 0xFFFFFFFF : Ui.PRIMARY_DARK, i == filter);
+            TextView t = Theme.text(this, FILTERS[i] + " (" + count + ")", 14,
+                    i == filter ? Theme.MINT : Theme.TEXT_SECONDARY, i == filter ? 1 : 0);
             t.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             t.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
-            t.setBackground(Ui.rounded(i == filter ? Ui.PRIMARY : 0xFFE3EDFB, 18, this));
+            t.setBackground(Theme.pillBg(this, i == filter ? Theme.MINT_CONTAINER : Theme.SURFACE_RAISED));
             t.setOnClickListener(v -> setFilter(f));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             lp.setMargins(Ui.dp(this, 3), Ui.dp(this, 10), Ui.dp(this, 3), Ui.dp(this, 6));

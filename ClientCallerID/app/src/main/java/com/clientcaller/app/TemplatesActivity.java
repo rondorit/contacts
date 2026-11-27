@@ -31,14 +31,16 @@ public class TemplatesActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         int p = dp(12);
         root.setPadding(p, p, p, p);
+        root.addView(Theme.header(this, "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4 \u05DC\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA"));
 
-        TextView hint = new TextView(this);
+        TextView hint = Theme.body(this, "", Theme.TEXT_SECONDARY);
         hint.setText("\u05D1\u05EA\u05D1\u05E0\u05D9\u05EA \u05D0\u05E4\u05E9\u05E8 \u05DC\u05E9\u05D9\u05DD \u05E9\u05D3\u05D5\u05EA \u05DB\u05DE\u05D5 {\u05DC\u05E7\u05D5\u05D7} \u05D0\u05D5 {MAC}, \u05D5\u05D2\u05DD \u05DB\u05DC \u05E2\u05DE\u05D5\u05D3\u05D4 \u05DE\u05D4\u05D0\u05E7\u05E1\u05DC, \u05DC\u05DE\u05E9\u05DC {\u05DB\u05EA\u05D5\u05D1\u05EA}. "
                 + "\u05D1\u05E9\u05DC\u05D9\u05D7\u05D4 \u05D4\u05DD \u05D9\u05D5\u05D7\u05DC\u05E4\u05D5 \u05D1\u05E0\u05EA\u05D5\u05E0\u05D9 \u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D5\u05D4\u05DC\u05E7\u05D5\u05D7.");
         root.addView(hint);
 
         Button add = new Button(this);
         add.setAllCaps(false);
+        add.setTextSize(18);
         add.setText("+ \u05EA\u05D1\u05E0\u05D9\u05EA \u05D7\u05D3\u05E9\u05D4");
         add.setOnClickListener(v -> edit(-1));
         root.addView(add);
@@ -48,9 +50,15 @@ public class TemplatesActivity extends Activity {
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
                 android.view.View v = super.getView(position, convertView, parent);
-                v.setPadding(dp(14), dp(14), dp(14), dp(14));
-                v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
+                v.setPadding(dp(16), dp(16), dp(16), dp(16));
+                v.setBackground(Theme.cardBg(getContext()));
                 v.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
+                TextView rowText = (TextView) v;
+                rowText.setTextColor(Theme.TEXT_PRIMARY);
+                rowText.setTextSize(Theme.BODY);
+                rowText.setTypeface(Theme.typeface(0));
+                rowText.setLetterSpacing(0f);
+                rowText.setLineSpacing(dp(4), 1f);
                 return v;
             }
         };
@@ -139,10 +147,7 @@ public class TemplatesActivity extends Activity {
     }
 
     private EditText field(LinearLayout box, String label, String value, boolean multi) {
-        TextView l = new TextView(this);
-        l.setText(label);
-        l.setTextSize(13);
-        l.setTextColor(0xFF777777);
+        TextView l = Theme.label(this, label, Theme.TEXT_SECONDARY);
         box.addView(l);
         EditText e = new EditText(this);
         e.setInputType(InputType.TYPE_CLASS_TEXT | (multi ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));

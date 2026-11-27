@@ -78,10 +78,7 @@ public class TicketActivity extends Activity {
         int p = dp(16);
         box.setPadding(p, p, p, p);
 
-        TextView head = new TextView(this);
-        head.setTextSize(20);
-        head.setTypeface(null, Typeface.BOLD);
-        head.setText(t.id > 0 ? "\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "  \u00B7  \u05E0\u05E4\u05EA\u05D7\u05D4 " + TicketDb.fmt(t.created) : "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
+        TextView head = Theme.title(this, t.id > 0 ? "\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "  \u00B7  \u05E0\u05E4\u05EA\u05D7\u05D4 " + TicketDb.fmt(t.created) : "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", Theme.TEXT_PRIMARY);
         box.addView(head);
 
         eClient = field(box, "\u05DC\u05E7\u05D5\u05D7 (\u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4 - \u05E2\u05E8\u05D9\u05DB\u05EA \u05DB\u05E8\u05D8\u05D9\u05E1 \u05D4\u05DC\u05E7\u05D5\u05D7)", t.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
@@ -120,7 +117,8 @@ public class TicketActivity extends Activity {
         label(box, "\uD83D\uDC77 \u05D0\u05D7\u05E8\u05D0\u05D9 \u05D1\u05D9\u05E6\u05D5\u05E2 (\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA)");
         LinearLayout asRow = row(box);
         tAssignee = new TextView(this);
-        tAssignee.setTextSize(17);
+        tAssignee.setTextSize(Theme.SUBTITLE);
+        tAssignee.setTextColor(Theme.TEXT_PRIMARY);
         asRow.addView(tAssignee, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         rowButton(asRow, "\u05E9\u05D9\u05D9\u05DA", v -> assign());
         rowButton(asRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC\u05D5", v -> {
@@ -150,7 +148,8 @@ public class TicketActivity extends Activity {
 
         label(box, "\u05DE\u05E2\u05E7\u05D1");
         tFollow = new TextView(this);
-        tFollow.setTextSize(17);
+        tFollow.setTextSize(Theme.SUBTITLE);
+        tFollow.setTextColor(Theme.TEXT_PRIMARY);
         box.addView(tFollow);
         LinearLayout fRow = row(box);
         rowButton(fRow, "\u05D1\u05D7\u05E8 \u05EA\u05D0\u05E8\u05D9\u05DA \u05D5\u05E9\u05E2\u05D4", v -> pickFollowup());
@@ -384,15 +383,18 @@ public class TicketActivity extends Activity {
         history.removeAllViews();
         java.util.List<TicketDb.Note> notes = t.id > 0 ? db.notes(t.id) : new java.util.ArrayList<>();
         if (notes.isEmpty()) {
-            TextView none = new TextView(this);
-            none.setText("\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF.");
+            TextView none = Theme.body(this, "\u05D0\u05D9\u05DF \u05D4\u05E2\u05E8\u05D5\u05EA \u05E2\u05D3\u05D9\u05D9\u05DF.", Theme.TEXT_SECONDARY);
             history.addView(none);
             return;
         }
         for (final TicketDb.Note n : notes) {
             TextView tv = new TextView(this);
             tv.setText(TicketDb.fmt(n.time) + "\n" + n.text);
-            tv.setTextSize(15);
+            tv.setTextSize(Theme.BODY);
+            tv.setTextColor(Theme.TEXT_PRIMARY);
+            tv.setTypeface(Theme.typeface(0));
+            tv.setLetterSpacing(0f);
+            tv.setLineSpacing(dp(4), 1f);
             tv.setPadding(0, dp(8), 0, dp(8));
             tv.setOnClickListener(v -> new AlertDialog.Builder(this)
                     .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E9\u05D5\u05E8\u05D4 \u05D4\u05D6\u05D0\u05EA \u05DE\u05D4\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4?\n\n" + n.text)
@@ -404,7 +406,7 @@ public class TicketActivity extends Activity {
                     .show());
             history.addView(tv);
             android.view.View line = new android.view.View(this);
-            line.setBackgroundColor(0xFFDDDDDD);
+            line.setBackgroundColor(Theme.HAIRLINE);
             history.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1) / 2 + 1)));
         }
     }
@@ -688,11 +690,8 @@ public class TicketActivity extends Activity {
     // ------------------------------------------------------------------ small UI helpers
 
     private void label(LinearLayout box, String text) {
-        TextView l = new TextView(this);
-        l.setText(text);
-        l.setTextSize(13);
-        l.setTextColor(0xFF777777);
-        l.setPadding(0, dp(14), 0, 0);
+        TextView l = Theme.label(this, text, Theme.TEXT_SECONDARY);
+        l.setPadding(0, dp(16), 0, 0);
         box.addView(l);
     }
 

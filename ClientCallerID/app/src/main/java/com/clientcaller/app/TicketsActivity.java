@@ -42,6 +42,7 @@ public class TicketsActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         int p = dp(12);
         root.setPadding(p, p, p, p);
+        root.addView(Theme.header(this, "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA"));
 
         LinearLayout tabRow = new LinearLayout(this);
         for (int i = 0; i < 4; i++) {
@@ -86,7 +87,7 @@ public class TicketsActivity extends Activity {
         });
         root.addView(search);
 
-        empty = new TextView(this);
+        empty = Theme.body(this, "", Theme.TEXT_SECONDARY);
         empty.setPadding(0, dp(12), 0, 0);
         root.addView(empty);
 
@@ -123,12 +124,12 @@ public class TicketsActivity extends Activity {
         int color = pos < shownColors.size() ? shownColors.get(pos) : Ui.PRIMARY;
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setBackground(Ui.rounded(0xFFFFFFFF, 14, this));
-        card.setElevation(dp(2));
+        card.setBackground(Theme.cardBg(this));
+        card.setElevation(0);
         android.view.View stripe = new android.view.View(this);
         stripe.setBackground(Ui.rounded(color, 3, this));
-        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(dp(5), ViewGroup.LayoutParams.MATCH_PARENT);
-        slp.setMargins(dp(6), dp(10), dp(6), dp(10));
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT);
+        slp.setMargins(dp(8), dp(12), dp(8), dp(12));
         card.addView(stripe, slp);
         TextView tv = new TextView(this);
         android.text.SpannableString sp = new android.text.SpannableString(text);
@@ -140,9 +141,10 @@ public class TicketsActivity extends Activity {
         tv.setText(sp);
         tv.setTextSize(15);
         tv.setTextColor(Ui.TEXT);
-        tv.setLineSpacing(dp(2), 1f);
+        tv.setLineSpacing(dp(4), 1f);
         tv.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
-        tv.setPadding(dp(6), dp(12), dp(12), dp(12));
+        tv.setPadding(dp(8), dp(12), dp(12), dp(12));
+        tv.setLetterSpacing(0f);
         card.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         card.setLayoutDirection(android.view.View.LAYOUT_DIRECTION_RTL);
         return card;
@@ -159,9 +161,9 @@ public class TicketsActivity extends Activity {
         for (int i = 0; i < 4; i++) {
             tabs[i].setText(NAMES[i] + " (" + counts[i] + ")");
             tabs[i].setTypeface(null, i == filter ? Typeface.BOLD : Typeface.NORMAL);
-            tabs[i].setTextColor(i == filter ? 0xFFFFFFFF : (i == OVERDUE && counts[i] > 0 ? 0xFFD32F2F : Ui.PRIMARY_DARK));
-            tabs[i].setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33000000),
-                    Ui.rounded(i == filter ? Ui.PRIMARY : 0xFFE3EDFB, 20, this), null));
+            tabs[i].setTextColor(i == filter ? Theme.MINT : (i == OVERDUE && counts[i] > 0 ? Theme.DANGER : Theme.TEXT_SECONDARY));
+            tabs[i].setBackground(Theme.ripple(this,
+                    Theme.pillBg(this, i == filter ? Theme.MINT_CONTAINER : Theme.SURFACE_RAISED)));
         }
 
         String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
