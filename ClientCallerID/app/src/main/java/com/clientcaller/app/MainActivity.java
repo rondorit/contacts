@@ -217,10 +217,7 @@ public class MainActivity extends Activity {
         List<View> quick = new ArrayList<>();
         quick.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, TicketActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
-        quick.add(Ui.tile(this, "\uD83D\uDD0D", "\u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7", "", 0, v -> {
-            showTab(1);
-            search.requestFocus();
-        }));
+        quick.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuotesActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
         long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
         boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
@@ -342,6 +339,8 @@ public class MainActivity extends Activity {
         p.addView(Ui.sectionTitle(this, "\u05E9\u05D9\u05E8\u05D5\u05EA \u05D5\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5"));
         List<View> svc = new ArrayList<>();
         svc.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
+        svc.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuotesActivity.class))));
+        svc.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF", "", 0, v -> startActivity(new Intent(this, CatalogActivity.class))));
         svc.add(Ui.tile(this, "\u2709\uFE0F", "\u05EA\u05D1\u05E0\u05D9\u05D5\u05EA \u05D4\u05D5\u05D3\u05E2\u05D4", "", 0, v -> startActivity(new Intent(this, TemplatesActivity.class))));
         svc.add(Ui.tile(this, "\uD83C\uDFE2", "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ProvidersActivity.class))));
         svc.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, CategoriesActivity.class))));

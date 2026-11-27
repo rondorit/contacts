@@ -192,6 +192,12 @@ public class TicketActivity extends Activity {
             else open(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(ph))));
         });
         rowButton(aRow, "\u05E9\u05EA\u05E3 / \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5", v -> share());
+        LinearLayout quoteRow = row(box);
+        rowButton(quoteRow, "\uD83D\uDCB0 \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4", v -> {
+            readForm();
+            if (!persist()) return;
+            startActivity(new Intent(this, QuoteActivity.class).putExtra(QuoteActivity.EXTRA_TICKET, t.id));
+        });
         LinearLayout sumRow = row(box);
         rowButton(sumRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05E1\u05D9\u05DB\u05D5\u05DD \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> {
             readForm();

@@ -74,6 +74,8 @@ public class DetailActivity extends Activity {
                 .putExtra(EXTRA_ROW, clientRow))));
         acts.add(Ui.tile(this, "\uD83C\uDFD8\uFE0F", "\u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4", pc < 0 ? "" : plotVal.isEmpty() ? "\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4" : same + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA",
                 Ui.MUTED, v -> showSamePlot(clientRow)));
+        acts.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuoteActivity.class)
+                .putExtra(EXTRA_ROW, clientRow))));
         acts.add(Ui.tile(this, "\u270F\uFE0F", "\u05E2\u05E8\u05D9\u05DB\u05D4", "", 0, v -> {
             startActivity(new Intent(this, ClientEditActivity.class).putExtra(EXTRA_ROW, clientRow));
             finish();

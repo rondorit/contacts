@@ -36,9 +36,11 @@ final class Backup {
 
     static void write(Context c, OutputStream out) throws Exception {
         TicketDb.get(c).close();  // writes all pending changes into the database file
+        QuoteDb.get(c).close();
         SharedPreferences p = CallLogger.prefs(c);
         try (ZipOutputStream z = new ZipOutputStream(out)) {
             addFile(z, DB, c.getDatabasePath(DB));
+            addFile(z, "quotes.db", c.getDatabasePath("quotes.db"));
             addFile(z, Data.FILE, new File(c.getFilesDir(), Data.FILE));
             JSONObject j = new JSONObject();
             for (Map.Entry<String, ?> e : p.getAll().entrySet()) {
@@ -79,6 +81,12 @@ final class Backup {
             throw new IOException("\u05D6\u05D4 \u05DC\u05D0 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9 \u05E9\u05DC \u05D4\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4");
         }
         TicketDb.get(c).close();
+        QuoteDb.get(c).close();
+        if (files.containsKey("quotes.db")) {
+            File q = c.getDatabasePath("quotes.db");
+            for (String suffix : new String[]{"-wal", "-shm", "-journal"}) new File(q.getPath() + suffix).delete();
+            writeFile(q, files.get("quotes.db"));
+        }
         if (files.containsKey(DB)) {
             File db = c.getDatabasePath(DB);
             File dir = db.getParentFile();

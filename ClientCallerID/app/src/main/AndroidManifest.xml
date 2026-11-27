@@ -74,6 +74,26 @@
             android:exported="false" />
 
         <activity
+            android:name=".QuotesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".QuoteActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".CatalogActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <provider
+            android:name=".FilesProvider"
+            android:authorities="com.clientcaller.app.files"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <activity
             android:name=".TemplatesActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
