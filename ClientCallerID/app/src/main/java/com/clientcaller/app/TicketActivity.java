@@ -29,6 +29,7 @@ public class TicketActivity extends Activity {
     static final String EXTRA_NAME = "client_name";
     static final String EXTRA_PHONE = "client_phone";
     static final String EXTRA_DESC = "description";
+    static final String EXTRA_SUMMARY = "send_summary";
 
     private TicketDb db;
     private TicketDb.Ticket t;
@@ -38,6 +39,7 @@ public class TicketActivity extends Activity {
     private TextView tFollow;
     private LinearLayout history;
     private Spinner sProvider;
+    private TextView tAssignee;
     private final java.util.List<String> providerNames = new java.util.ArrayList<>();
     private long followupAt;
 
@@ -114,6 +116,18 @@ public class TicketActivity extends Activity {
         });
         mRow.addView(eMac, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
         rowButton(mRow, "\u05D1\u05D7\u05E8", v -> chooseMac());
+        label(box, "\uD83D\uDC77 \u05D0\u05D7\u05E8\u05D0\u05D9 \u05D1\u05D9\u05E6\u05D5\u05E2 (\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA)");
+        LinearLayout aRow = row(box);
+        tAssignee = new TextView(this);
+        tAssignee.setTextSize(17);
+        aRow.addView(tAssignee, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(aRow, "\u05E9\u05D9\u05D9\u05DA", v -> assign());
+        rowButton(aRow, "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC\u05D5", v -> {
+            if (t.assignee.isEmpty()) { assign(); return; }
+            readForm();
+            if (persist()) Team.send(this, t);
+        });
+        showAssignee();
         label(box, "\u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA (\u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5)");
         LinearLayout pRow = row(box);
         sProvider = new Spinner(this);
@@ -223,6 +237,10 @@ public class TicketActivity extends Activity {
         sv.addView(Ui.wrapCard(this, box));
         setContentView(sv);
         He.rtl(this);
+        if (getIntent().getBooleanExtra(EXTRA_SUMMARY, false) && t.id > 0) {
+            getIntent().removeExtra(EXTRA_SUMMARY);
+            sendClientSummary();
+        }
     }
 
     private void readForm() {
@@ -523,6 +541,28 @@ public class TicketActivity extends Activity {
             if (v.trim().matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) return v.trim();
         }
         return "";
+    }
+
+    private void showAssignee() {
+        tAssignee.setText(t.assignee.isEmpty() ? "\u05DC\u05DC\u05D0 \u05E9\u05D9\u05D5\u05DA" : "\uD83D\uDC77 " + t.assignee);
+    }
+
+    private void assign() {
+        Team.choose(this, t.assignee, name -> {
+            readForm();
+            String prev = t.assignee;
+            t.assignee = name;
+            if (!persist()) { t.assignee = prev; return; }
+            if (!name.equals(prev)) db.addNote(t.id, name.isEmpty() ? "\u05D4\u05E9\u05D9\u05D5\u05DA \u05DC\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA \u05D1\u05D5\u05D8\u05DC" : "\u05E9\u05D5\u05D9\u05DA \u05DC\u05D0\u05D9\u05E9 \u05D4\u05E6\u05D5\u05D5\u05EA " + name);
+            showAssignee();
+            showHistory();
+            if (name.isEmpty()) return;
+            new AlertDialog.Builder(this)
+                    .setMessage("\u05DC\u05E9\u05DC\u05D5\u05D7 \u05D0\u05EA \u05E4\u05E8\u05D8\u05D9 \u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05DC" + name + " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4?")
+                    .setPositiveButton("\uD83D\uDCAC \u05E9\u05DC\u05D7", (d, w) -> Team.send(this, t))
+                    .setNegativeButton("\u05DC\u05D0 \u05E2\u05DB\u05E9\u05D9\u05D5", null)
+                    .show();
+        });
     }
 
     /** Saves the form; returns false if the ticket has no subject yet. */

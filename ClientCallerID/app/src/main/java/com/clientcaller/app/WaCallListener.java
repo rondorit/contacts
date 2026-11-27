@@ -57,7 +57,8 @@ public class WaCallListener extends NotificationListenerService {
                     || (!isMessage && (low.contains("call") || low.contains("\u05E9\u05D9\u05D7\u05D4") || low.contains("\u05E9\u05D9\u05D7\u05EA")));
             String result;
             if (!isCall) {
-                String q = QuoteApprovals.fromWhatsApp(this, n, title);
+                String q = Team.fromWhatsApp(this, n, title);
+                if (q == null) q = QuoteApprovals.fromWhatsApp(this, n, title);
                 result = q != null ? q : WaMessages.onNotification(this, n, title);
             } else {
                 List<String> names = new ArrayList<>();

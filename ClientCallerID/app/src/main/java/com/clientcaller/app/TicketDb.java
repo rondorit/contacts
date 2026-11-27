@@ -25,7 +25,7 @@ final class TicketDb extends SQLiteOpenHelper {
         long id;
         String clientName = "", clientPhone = "", title = "", description = "";
         String status = "Open", priority = "Normal", category = "Other";
-        String equipment = "", outsource = "", provider = "", mac = "";
+        String equipment = "", outsource = "", provider = "", mac = "", assignee = "";
         long created, updated, followupAt, eventId;
 
         boolean isOpen() {
@@ -59,7 +59,7 @@ final class TicketDb extends SQLiteOpenHelper {
     }
 
     private TicketDb(Context c) {
-        super(c, "tickets.db", null, 4);
+        super(c, "tickets.db", null, 5);
     }
 
     @Override
@@ -67,7 +67,7 @@ final class TicketDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE tickets (_id INTEGER PRIMARY KEY AUTOINCREMENT, client_name TEXT,"
                 + " client_phone TEXT, title TEXT, description TEXT, status TEXT, priority TEXT,"
                 + " category TEXT, equipment TEXT, outsource TEXT, created INTEGER, updated INTEGER,"
-                + " followup_at INTEGER, event_id INTEGER, provider TEXT, mac TEXT)");
+                + " followup_at INTEGER, event_id INTEGER, provider TEXT, mac TEXT, assignee TEXT)");
         db.execSQL("CREATE TABLE notes (_id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER,"
                 + " time INTEGER, text TEXT)");
         createProviders(db);
@@ -94,6 +94,7 @@ final class TicketDb extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 4) createSent(db);
+        if (oldVersion < 5) db.execSQL("ALTER TABLE tickets ADD COLUMN assignee TEXT");
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE tickets ADD COLUMN provider TEXT");
             createProviders(db);
@@ -107,7 +108,7 @@ final class TicketDb extends SQLiteOpenHelper {
 
     private static final String[] COLS = {"_id", "client_name", "client_phone", "title", "description",
             "status", "priority", "category", "equipment", "outsource", "created", "updated",
-            "followup_at", "event_id", "provider", "mac"};
+            "followup_at", "event_id", "provider", "mac", "assignee"};
 
     private static Ticket read(Cursor c) {
         Ticket t = new Ticket();
@@ -127,6 +128,7 @@ final class TicketDb extends SQLiteOpenHelper {
         t.eventId = c.getLong(13);
         t.provider = str(c, 14);
         t.mac = str(c, 15);
+        t.assignee = str(c, 16);
         return t;
     }
 
@@ -155,6 +157,7 @@ final class TicketDb extends SQLiteOpenHelper {
         v.put("event_id", t.eventId);
         v.put("provider", t.provider);
         v.put("mac", t.mac);
+        v.put("assignee", t.assignee);
         SQLiteDatabase db = getWritableDatabase();
         if (t.id == 0) {
             t.id = db.insert("tickets", null, v);
