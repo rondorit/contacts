@@ -118,13 +118,16 @@ final class Ui {
     /** Lays views out in rows of `cols` equal-width cells. */
     static void grid(Context c, LinearLayout parent, List<View> cells, int cols) {
         LinearLayout row = null;
+        int fullCells = cells.size() - (cells.size() % cols);
         for (int i = 0; i < cells.size(); i++) {
             if (i % cols == 0) {
                 row = new LinearLayout(c);
                 row.setOrientation(LinearLayout.HORIZONTAL);
-                parent.addView(row);
+                parent.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+            // A partial last row must size its tiles to their content, otherwise they collapse to the spacer height.
+            int h = i < fullCells ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT;
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, h, 1f);
             int m = dp(c, 5);
             lp.setMargins(m, m, m, m);
             row.addView(cells.get(i), lp);
@@ -133,7 +136,7 @@ final class Ui {
         if (rest != 0 && row != null) {
             for (int i = rest; i < cols; i++) {
                 View spacer = new View(c);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, 1, 1f);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, 0, 1f);
                 int m = dp(c, 5);
                 lp.setMargins(m, m, m, m);
                 row.addView(spacer, lp);

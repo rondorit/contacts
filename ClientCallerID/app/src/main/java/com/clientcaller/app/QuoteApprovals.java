@@ -69,7 +69,12 @@ final class QuoteApprovals {
             phone = PhoneContacts.numbersForName(c, name).get(0);
         }
         QuoteDb.Quote q = findQuote(c, name, phone, null, 0);
-        if (q == null) return null;
+        if (q == null) {
+            // Diagnostic for the log: an approval/decline word arrived but no open quote matched this sender.
+            return "\u05D6\u05D5\u05D4\u05EA\u05D4 " + (yes > 0 ? "\u05D0\u05D9\u05E9\u05D5\u05E8" : "\u05D3\u05D7\u05D9\u05D9\u05D4")
+                    + " \u05DE-" + name + (phone != null ? " (" + phone + ")" : "")
+                    + ", \u05D0\u05D1\u05DC \u05D0\u05D9\u05DF \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05E4\u05EA\u05D5\u05D7\u05D4 \u05E9\u05DE\u05EA\u05D0\u05D9\u05DE\u05D4 \u05DC\u05E9\u05D5\u05DC\u05D7";
+        }
         offer(c, q, yes, "\u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4: " + text.trim());
         return "\u05EA\u05E9\u05D5\u05D1\u05D4 \u05DC\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + ": " + (yes > 0 ? "\u05D0\u05D9\u05E9\u05D5\u05E8" : "\u05D3\u05D7\u05D9\u05D9\u05D4");
     }
