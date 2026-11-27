@@ -98,8 +98,8 @@ public class QuoteActivity extends Activity {
         LinearLayout issRow = new LinearLayout(this);
         tIssuer = Ui.text(this, "", 16, Ui.TEXT, false);
         issRow.addView(tIssuer, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
-        rowButton(issRow, "\u05D1\u05D7\u05E8 \u05DE\u05E6\u05D9\u05E2", v -> Issuer.choose(this, q.issuer.isEmpty() ? Issuer.defaultId(this) : q.issuer, id -> {
-            q.issuer = id;
+        rowButton(issRow, "\u05D1\u05D7\u05E8 \u05DE\u05E6\u05D9\u05E2", v -> Issuer.choose(this, q.issuer.isEmpty() ? Issuer.defaultId(this) : q.issuer, pid -> {
+            q.issuer = pid;
             showIssuer();
         }));
         box.addView(issRow);

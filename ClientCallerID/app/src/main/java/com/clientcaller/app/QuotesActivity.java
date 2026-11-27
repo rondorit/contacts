@@ -100,32 +100,4 @@ public class QuotesActivity extends Activity {
         filter = f;
         refresh();
     }
-
-    private void editIssuer() {
-        LinearLayout lay = new LinearLayout(this);
-        lay.setOrientation(LinearLayout.VERTICAL);
-        lay.setPadding(Ui.dp(this, 16), Ui.dp(this, 8), Ui.dp(this, 16), 0);
-        lay.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        final EditText[] fields = new EditText[Issuer.KEYS.length];
-        for (int i = 0; i < Issuer.KEYS.length; i++) {
-            lay.addView(Ui.text(this, Issuer.LABELS[i], 12, Ui.MUTED, false));
-            EditText e = new EditText(this);
-            e.setInputType(i == 3 ? InputType.TYPE_CLASS_PHONE : i == 4
-                    ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS : InputType.TYPE_CLASS_TEXT);
-            e.setText(Issuer.get(this, i));
-            lay.addView(e);
-            fields[i] = e;
-        }
-        ScrollView sv = new ScrollView(this);
-        sv.addView(lay);
-        new AlertDialog.Builder(this)
-                .setTitle("\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DE\u05E6\u05D9\u05E2 (\u05DE\u05D5\u05E4\u05D9\u05E2\u05D9\u05DD \u05D1\u05D4\u05E6\u05E2\u05D4)")
-                .setView(sv)
-                .setPositiveButton("\u05E9\u05DE\u05D5\u05E8", (d, w) -> {
-                    for (int i = 0; i < fields.length; i++) Issuer.set(this, i, fields[i].getText().toString().trim());
-                    refresh();
-                })
-                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                .show();
-    }
 }
