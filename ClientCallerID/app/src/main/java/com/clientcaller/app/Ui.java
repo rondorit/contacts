@@ -1,7 +1,6 @@
 package com.clientcaller.app;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
@@ -12,66 +11,46 @@ import android.widget.TextView;
 
 import java.util.List;
 
-/** Shared look: colors, cards and icon tiles. */
+/** Shared look: Deep Focus colours, cards, pills and icon tiles. */
 final class Ui {
-    static final int PRIMARY = 0xFF1565C0;
-    static final int PRIMARY_DARK = 0xFF0D47A1;
-    static final int BG = 0xFFF3F6FB;
-    static final int TEXT = 0xFF1F2937;
-    static final int MUTED = 0xFF6B7280;
-    static final int RED = 0xFFD32F2F;
-    static final int GREEN = 0xFF2E7D32;
-    static final int ORANGE = 0xFFEF6C00;
-    static final int LABEL = 0xFF475569;
-    static final int FIELD = 0xFFF5F8FD;
-    static final int FIELD_LINE = 0xFFD6E0EE;
+    // Semantic aliases kept for the existing screens; all resolve to Theme tokens.
+    static final int PRIMARY = Theme.MINT;
+    static final int PRIMARY_DARK = Theme.MINT;
+    static final int BG = Theme.CANVAS;
+    static final int TEXT = Theme.TEXT_PRIMARY;
+    static final int MUTED = Theme.TEXT_SECONDARY;
+    static final int RED = Theme.DANGER;
+    static final int GREEN = Theme.MINT;
+    static final int ORANGE = Theme.WARNING;
+    static final int LABEL = Theme.TEXT_SECONDARY;
+    static final int FIELD = Theme.SURFACE_RAISED;
+    static final int FIELD_LINE = Theme.HAIRLINE;
 
     private Ui() { }
 
     static int dp(Context c, float v) {
-        return (int) (v * c.getResources().getDisplayMetrics().density);
+        return Theme.dp(c, v);
     }
 
     static GradientDrawable rounded(int color, float radiusDp, Context c) {
-        GradientDrawable g = new GradientDrawable();
-        g.setColor(color);
-        g.setCornerRadius(dp(c, radiusDp));
-        return g;
+        return Theme.shape(color, radiusDp, c);
     }
 
-    /** White rounded card with a soft shadow. */
+    /** Lifted surface card with a hairline; no heavy shadow on the dark canvas. */
     static LinearLayout card(Context c) {
-        LinearLayout l = new LinearLayout(c);
-        l.setOrientation(LinearLayout.VERTICAL);
-        l.setBackground(rounded(Color.WHITE, 14, c));
-        l.setElevation(dp(c, 2));
-        int p = dp(c, 14);
-        l.setPadding(p, p, p, p);
-        return l;
+        return Theme.card(c);
     }
 
     static LinearLayout.LayoutParams cardParams(Context c) {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        int m = dp(c, 5);
-        lp.setMargins(m, m, m, m);
-        return lp;
+        return Theme.cardParams(c);
     }
 
     static TextView text(Context c, String s, float size, int color, boolean bold) {
-        TextView t = new TextView(c);
-        t.setText(s);
-        t.setTextSize(size);
-        t.setTextColor(color);
-        if (bold) t.setTypeface(null, Typeface.BOLD);
-        t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        return t;
+        return Theme.text(c, s, size, color, bold ? 2 : 0);
     }
 
     static TextView sectionTitle(Context c, String s) {
-        TextView t = text(c, s, 15, PRIMARY_DARK, true);
-        t.setPadding(dp(c, 6), dp(c, 16), dp(c, 6), dp(c, 4));
-        return t;
+        return Theme.sectionHeader(c, s);
     }
 
     /** Square-ish tile: big icon, title, optional small status line. */
@@ -79,17 +58,17 @@ final class Ui {
         LinearLayout t = card(c);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
         t.setMinimumHeight(dp(c, 104));
-        TextView i = text(c, icon, 28, TEXT, false);
+        TextView i = Theme.text(c, icon, 26, Theme.TEXT_PRIMARY, 0);
         i.setGravity(Gravity.CENTER);
         i.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(i);
-        TextView ti = text(c, title, 14, TEXT, true);
+        TextView ti = Theme.label(c, title, Theme.TEXT_PRIMARY);
         ti.setGravity(Gravity.CENTER);
         ti.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        ti.setPadding(0, dp(c, 4), 0, 0);
+        ti.setPadding(0, dp(c, Theme.S1), 0, 0);
         t.addView(ti);
         if (sub != null && !sub.isEmpty()) {
-            TextView s = text(c, sub, 12, subColor, false);
+            TextView s = Theme.caption(c, sub, subColor == 0 ? Theme.TEXT_SECONDARY : subColor);
             s.setGravity(Gravity.CENTER);
             s.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             s.setMaxLines(2);
@@ -97,7 +76,7 @@ final class Ui {
         }
         t.setClickable(true);
         t.setOnClickListener(l);
-        t.setForeground(c.getDrawable(android.R.drawable.list_selector_background));
+        t.setForeground(Theme.pressable(c, null));
         return t;
     }
 
@@ -105,16 +84,17 @@ final class Ui {
     static LinearLayout stat(Context c, String icon, String number, String label, int color, View.OnClickListener l) {
         LinearLayout t = card(c);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
-        TextView n = text(c, icon + "  " + number, 26, color, true);
+        TextView n = Theme.display(c, icon + "  " + number, color);
         n.setGravity(Gravity.CENTER);
         n.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(n);
-        TextView lb = text(c, label, 13, MUTED, false);
+        TextView lb = Theme.caption(c, label, Theme.TEXT_SECONDARY);
         lb.setGravity(Gravity.CENTER);
         lb.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         t.addView(lb);
         t.setClickable(true);
         t.setOnClickListener(l);
+        t.setForeground(Theme.pressable(c, null));
         return t;
     }
 
@@ -131,7 +111,7 @@ final class Ui {
             // A partial last row must size its tiles to their content, otherwise they collapse to the spacer height.
             int h = i < fullCells ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT;
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, h, 1f);
-            int m = dp(c, 5);
+            int m = dp(c, Theme.S1);
             lp.setMargins(m, m, m, m);
             row.addView(cells.get(i), lp);
         }
@@ -140,7 +120,7 @@ final class Ui {
             for (int i = rest; i < cols; i++) {
                 View spacer = new View(c);
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, 0, 1f);
-                int m = dp(c, 5);
+                int m = dp(c, Theme.S1);
                 lp.setMargins(m, m, m, m);
                 row.addView(spacer, lp);
             }
@@ -151,38 +131,32 @@ final class Ui {
     static LinearLayout rowCard(Context c, String title, String sub, String badge, int badgeColor, View.OnClickListener l) {
         LinearLayout t = card(c);
         if (badge != null && !badge.isEmpty()) {
-            TextView b = text(c, badge, 12, Color.WHITE, true);
-            b.setBackground(rounded(badgeColor, 10, c));
-            b.setPadding(dp(c, 8), dp(c, 2), dp(c, 8), dp(c, 2));
+            TextView b = Theme.badge(c, badge, badgeColor == 0 ? Theme.MINT : badgeColor);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            lp.bottomMargin = dp(c, 4);
+            lp.bottomMargin = dp(c, Theme.S1);
             t.addView(b, lp);
         }
-        t.addView(text(c, title, 16, TEXT, true));
-        if (sub != null && !sub.isEmpty()) t.addView(text(c, sub, 14, MUTED, false));
+        t.addView(Theme.subtitle(c, title, Theme.TEXT_PRIMARY));
+        if (sub != null && !sub.isEmpty()) t.addView(Theme.body(c, sub, Theme.TEXT_SECONDARY));
         t.setClickable(true);
         t.setOnClickListener(l);
+        t.setForeground(Theme.pressable(c, null));
         return t;
     }
 
-    /** Rounded, colored buttons everywhere (big buttons = filled primary). Walks the view tree. */
+    /** Applies the Deep Focus skin to every standard widget in the tree. */
     static void polish(View v) {
         if (v instanceof android.widget.Button && !(v instanceof android.widget.CompoundButton)) {
             android.widget.Button b = (android.widget.Button) v;
             Context c = b.getContext();
             float sp = c.getResources().getDisplayMetrics().scaledDensity;
             boolean primary = b.getTextSize() >= 17.5f * sp;
-            GradientDrawable shape = rounded(primary ? PRIMARY : 0xFFE3EDFB, 12, c);
-            b.setBackground(new android.graphics.drawable.RippleDrawable(
-                    android.content.res.ColorStateList.valueOf(0x33000000), shape, null));
-            b.setTextColor(primary ? Color.WHITE : PRIMARY_DARK);
-            b.setStateListAnimator(null);
-            b.setPadding(dp(c, 10), dp(c, 10), dp(c, 10), dp(c, 10));
+            Theme.styleButton(b, primary);
             if (!b.isEnabled()) b.setAlpha(0.4f);
             ViewGroup.LayoutParams lp = b.getLayoutParams();
             if (lp instanceof ViewGroup.MarginLayoutParams) {
-                int m = dp(c, 4);
+                int m = dp(c, Theme.S1);
                 ((ViewGroup.MarginLayoutParams) lp).setMargins(m, m, m, m);
                 b.setLayoutParams(lp);
             }
@@ -194,10 +168,14 @@ final class Ui {
             TextView t = (TextView) v;
             float sp = t.getResources().getDisplayMetrics().scaledDensity;
             int col = t.getCurrentTextColor();
-            // Small grey form labels -> darker, bold labels.
-            if (Math.abs(t.getTextSize() - 13 * sp) < 0.6f * sp && (col == 0xFF777777 || col == MUTED)) {
-                t.setTextColor(LABEL);
-                t.setTypeface(Typeface.DEFAULT_BOLD);
+            t.setTextSize(Theme.normalizeTextSize(t.getTextSize() / sp));
+            t.setLetterSpacing(0f);
+            t.setLineSpacing(dp(t.getContext(), 4), 1f);
+            // Small grey form labels -> secondary, medium labels.
+            if (Math.abs(t.getTextSize() - 13 * sp) < 0.6f * sp
+                    && (col == 0xFF777777 || col == MUTED || col == Theme.TEXT_SECONDARY)) {
+                t.setTextColor(Theme.TEXT_SECONDARY);
+                t.setTypeface(Theme.typeface(1));
             }
             int hg = t.getGravity() & Gravity.HORIZONTAL_GRAVITY_MASK;
             if (t.getTextAlignment() == View.TEXT_ALIGNMENT_GRAVITY && hg != Gravity.CENTER_HORIZONTAL) {
@@ -209,31 +187,29 @@ final class Ui {
         }
     }
 
-    /** Rounded light input box; the border turns blue while typing. */
     static android.graphics.drawable.Drawable fieldBg(Context c) {
-        GradientDrawable normal = rounded(FIELD, 10, c);
-        normal.setStroke(dp(c, 1), FIELD_LINE);
-        GradientDrawable focused = rounded(Color.WHITE, 10, c);
-        focused.setStroke(dp(c, 2), PRIMARY);
-        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
-        s.addState(new int[]{android.R.attr.state_focused}, focused);
-        s.addState(new int[]{}, normal);
-        return s;
+        return Theme.fieldBg(c);
     }
 
     static void styleField(android.widget.EditText e) {
         Context c = e.getContext();
         if (e.getTag(R_STYLED) != null) return;
         e.setTag(R_STYLED, Boolean.TRUE);
-        e.setBackground(fieldBg(c));
-        e.setPadding(dp(c, 12), dp(c, 10), dp(c, 12), dp(c, 10));
-        e.setTextColor(TEXT);
-        e.setHintTextColor(0xFF9AA5B5);
+        e.setBackground(Theme.fieldBg(c));
+        e.setPadding(dp(c, Theme.S3), dp(c, Theme.S3), dp(c, Theme.S3), dp(c, Theme.S3));
+        e.setTextColor(Theme.TEXT_PRIMARY);
+        e.setHintTextColor(Theme.TEXT_TERTIARY);
+        e.setTextSize(Theme.BODY);
+        e.setTypeface(Theme.typeface(0));
+        e.setLetterSpacing(0f);
+        e.setLineSpacing(dp(c, 4), 1f);
+        e.setMinHeight(dp(c, 48));
+        e.setMinimumHeight(dp(c, 48));
         ViewGroup.LayoutParams lp = e.getLayoutParams();
         if (lp instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
-            if (m.topMargin == 0) m.topMargin = dp(c, 4);
-            if (m.bottomMargin == 0) m.bottomMargin = dp(c, 2);
+            if (m.topMargin == 0) m.topMargin = dp(c, Theme.S1);
+            if (m.bottomMargin == 0) m.bottomMargin = dp(c, Theme.S1);
             e.setLayoutParams(m);
         }
     }
@@ -243,29 +219,29 @@ final class Ui {
         if (s.getTag(R_STYLED) != null) return;
         s.setTag(R_STYLED, Boolean.TRUE);
         s.setBackground(new SpinnerBg(c));
-        s.setPadding(dp(c, 8), dp(c, 6), dp(c, 8), dp(c, 6));
-        s.setPopupBackgroundDrawable(rounded(Color.WHITE, 10, c));
+        s.setPadding(dp(c, Theme.S2), dp(c, Theme.S2), dp(c, Theme.S2), dp(c, Theme.S2));
+        s.setPopupBackgroundDrawable(Theme.raisedBg(c));
         ViewGroup.LayoutParams lp = s.getLayoutParams();
         if (lp instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
-            if (m.topMargin == 0) m.topMargin = dp(c, 4);
+            if (m.topMargin == 0) m.topMargin = dp(c, Theme.S1);
             s.setLayoutParams(m);
         }
     }
 
     private static final int R_STYLED = 0x7f0f0001 + 0x1234;
 
-    /** Rounded box with a small chevron on the left side (RTL end). */
+    /** Raised box with a small mint chevron on the left side (RTL end). */
     static final class SpinnerBg extends android.graphics.drawable.Drawable {
         private final GradientDrawable box;
         private final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final float d;
 
         SpinnerBg(Context c) {
-            box = rounded(FIELD, 10, c);
-            box.setStroke(dp(c, 1), FIELD_LINE);
+            box = Theme.shape(Theme.SURFACE_RAISED, Theme.R_FIELD, c);
+            box.setStroke(Theme.dp(c, 1), Theme.HAIRLINE);
             d = c.getResources().getDisplayMetrics().density;
-            p.setColor(PRIMARY);
+            p.setColor(Theme.MINT);
             p.setStyle(android.graphics.Paint.Style.STROKE);
             p.setStrokeWidth(2 * d);
             p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
@@ -295,21 +271,21 @@ final class Ui {
 
     /** Status colour for ticket cards. */
     static int statusColor(String status, boolean overdue) {
-        if (overdue) return RED;
-        if ("Open".equals(status)) return PRIMARY;
-        if ("In progress".equals(status)) return ORANGE;
-        if ("Waiting for client".equals(status)) return 0xFF7B1FA2;
-        if ("Waiting for outsourcing".equals(status)) return 0xFF00897B;
-        return 0xFF9E9E9E;
+        if (overdue) return Theme.DANGER;
+        if ("Open".equals(status)) return Theme.MINT;
+        if ("In progress".equals(status)) return Theme.WARNING;
+        if ("Waiting for client".equals(status)) return Theme.CALL_FG;
+        if ("Waiting for outsourcing".equals(status)) return Theme.TEXT_SECONDARY;
+        return Theme.TEXT_TERTIARY;
     }
 
-    /** Puts a form inside a white rounded card on the light background. */
+    /** Puts a form inside a raised card on the charcoal canvas. */
     static View wrapCard(Context c, LinearLayout box) {
         LinearLayout outer = new LinearLayout(c);
         outer.setOrientation(LinearLayout.VERTICAL);
-        outer.setPadding(dp(c, 8), dp(c, 8), dp(c, 8), dp(c, 40));
-        box.setBackground(rounded(Color.WHITE, 16, c));
-        box.setElevation(dp(c, 2));
+        outer.setPadding(dp(c, Theme.S3), dp(c, Theme.S3), dp(c, Theme.S3), dp(c, Theme.S6));
+        box.setBackground(Theme.cardBg(c));
+        box.setElevation(0);
         outer.addView(box, cardParams(c));
         return outer;
     }

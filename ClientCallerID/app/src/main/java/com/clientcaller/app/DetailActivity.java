@@ -36,24 +36,21 @@ public class DetailActivity extends Activity {
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(10), dp(10), dp(10), dp(40));
+        box.setPadding(dp(12), dp(12), dp(12), dp(24));
 
         // Header card
         final String phone1 = s.firstPhone(r);
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.VERTICAL);
-        android.graphics.drawable.GradientDrawable hg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{Ui.PRIMARY_DARK, Ui.PRIMARY});
-        hg.setCornerRadius(dp(16));
-        head.setBackground(hg);
-        head.setPadding(dp(18), dp(16), dp(18), dp(16));
-        TextView name = Ui.text(this, s.name(r), 24, 0xFFFFFFFF, true);
+        head.setBackground(Theme.raisedBg(this));
+        head.setPadding(dp(20), dp(16), dp(20), dp(16));
+        TextView name = Theme.text(this, s.name(r), 24, Theme.TEXT_PRIMARY, 2);
         name.setTextIsSelectable(true);
         head.addView(name);
         int pc = plotColumn(s);
         String plotVal = pc >= 0 ? row.get(pc).trim() : "";
         String sub = (phone1.isEmpty() ? "" : "\uD83D\uDCDE " + phone1) + (plotVal.isEmpty() ? "" : "    \uD83C\uDFD8\uFE0F \u05D7\u05DC\u05E7\u05D4 " + plotVal);
-        if (!sub.isEmpty()) head.addView(Ui.text(this, sub, 15, 0xDDFFFFFF, false));
+        if (!sub.isEmpty()) head.addView(Theme.body(this, sub, Theme.TEXT_SECONDARY));
         box.addView(head, Ui.cardParams(this));
 
         // Action tiles
@@ -110,7 +107,7 @@ public class DetailActivity extends Activity {
                     || hidden.contains(s.headers.get(c).trim())) continue;
             if (!first) {
                 View line = new View(this);
-                line.setBackgroundColor(0xFFE5E7EB);
+                line.setBackgroundColor(Theme.HAIRLINE);
                 LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1)));
                 llp.setMargins(0, dp(8), 0, dp(8));
                 details.addView(line, llp);

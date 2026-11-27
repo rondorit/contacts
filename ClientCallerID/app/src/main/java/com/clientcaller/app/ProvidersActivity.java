@@ -29,13 +29,15 @@ public class ProvidersActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         int p = dp(12);
         root.setPadding(p, p, p, p);
+        root.addView(Theme.header(this, "\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA - \u05DE\u05D9\u05E7\u05D5\u05E8 \u05D7\u05D5\u05E5"));
 
-        TextView hint = new TextView(this);
+        TextView hint = Theme.body(this, "", Theme.TEXT_SECONDARY);
         hint.setText("\u05DC\u05D7\u05E5 \u05E2\u05DC \u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA \u05DB\u05D3\u05D9 \u05DC\u05E2\u05D3\u05DB\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF (\u05DC\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4) \u05D5\u05DE\u05D9\u05D9\u05DC.");
         root.addView(hint);
 
         Button add = new Button(this);
         add.setAllCaps(false);
+        add.setTextSize(18);
         add.setText("+ \u05E0\u05D5\u05EA\u05DF \u05E9\u05D9\u05E8\u05D5\u05EA \u05D7\u05D3\u05E9");
         add.setOnClickListener(v -> edit(new TicketDb.Provider()));
         root.addView(add);
@@ -45,9 +47,15 @@ public class ProvidersActivity extends Activity {
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
                 android.view.View v = super.getView(position, convertView, parent);
-                v.setPadding(dp(14), dp(14), dp(14), dp(14));
-                v.setBackground(Ui.rounded(0xFFFFFFFF, 12, getContext()));
+                v.setPadding(dp(16), dp(16), dp(16), dp(16));
+                v.setBackground(Theme.cardBg(getContext()));
                 v.setTextAlignment(android.view.View.TEXT_ALIGNMENT_VIEW_START);
+                TextView rowText = (TextView) v;
+                rowText.setTextColor(Theme.TEXT_PRIMARY);
+                rowText.setTextSize(Theme.BODY);
+                rowText.setTypeface(Theme.typeface(0));
+                rowText.setLetterSpacing(0f);
+                rowText.setLineSpacing(dp(4), 1f);
                 return v;
             }
         };
@@ -122,10 +130,7 @@ public class ProvidersActivity extends Activity {
     }
 
     private EditText field(LinearLayout box, String label, String value, int type) {
-        TextView l = new TextView(this);
-        l.setText(label);
-        l.setTextSize(13);
-        l.setTextColor(0xFF777777);
+        TextView l = Theme.label(this, label, Theme.TEXT_SECONDARY);
         box.addView(l);
         EditText e = new EditText(this);
         e.setInputType(type);

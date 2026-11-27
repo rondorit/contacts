@@ -33,6 +33,7 @@ public class CatalogActivity extends Activity {
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 60));
+        page.addView(Theme.header(this, "\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF"));
 
         List<View> tools = new ArrayList<>();
         tools.add(Ui.tile(this, "\u2795", "\u05E4\u05E8\u05D9\u05D8 \u05D7\u05D3\u05E9", "", 0, v -> edit(new QuoteDb.Item())));
@@ -48,7 +49,9 @@ public class CatalogActivity extends Activity {
         search = new EditText(this);
         search.setHint("\uD83D\uDD0D  \u05D7\u05D9\u05E4\u05D5\u05E9 \u05D1\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF\u2026");
         search.setSingleLine(true);
-        search.setBackground(Ui.rounded(0xFFFFFFFF, 12, this));
+        search.setBackground(Theme.fieldBg(this));
+        search.setTextColor(Theme.TEXT_PRIMARY);
+        search.setHintTextColor(Theme.TEXT_TERTIARY);
         search.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }

@@ -218,13 +218,11 @@ public class ReportActivity extends Activity {
 
         results.removeAllViews();
         for (final TicketDb.Ticket t : found) {
-            TextView tv = new TextView(this);
-            tv.setText("#" + t.id + "  " + day(t.created) + "  " + He.status(t.status)
+            TextView tv = Theme.body(this, "#" + t.id + "  " + day(t.created) + "  " + He.status(t.status)
                     + "\n" + (t.clientName.isEmpty() ? "(\u05DC\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7)" : t.clientName) + " \u2014 " + t.title
-                    + "\n" + He.category(t.category) + (t.provider.isEmpty() ? "" : "  |  " + t.provider));
-            tv.setTextSize(15);
-            tv.setPadding(dp(12), dp(10), dp(12), dp(10));
-            tv.setBackground(Ui.rounded(0xFFF3F6FB, 10, this));
+                    + "\n" + He.category(t.category) + (t.provider.isEmpty() ? "" : "  |  " + t.provider), Theme.TEXT_PRIMARY);
+            tv.setPadding(dp(12), dp(8), dp(12), dp(8));
+            tv.setBackground(Theme.raisedBg(this));
             tv.setOnClickListener(v -> startActivity(new Intent(this, TicketActivity.class)
                     .putExtra(TicketActivity.EXTRA_TICKET, t.id)));
             results.addView(tv);
@@ -359,10 +357,7 @@ public class ReportActivity extends Activity {
     }
 
     private void label(LinearLayout box, String text) {
-        TextView l = new TextView(this);
-        l.setText(text);
-        l.setTextSize(13);
-        l.setTextColor(0xFF777777);
+        TextView l = Theme.label(this, text, Theme.TEXT_SECONDARY);
         l.setPadding(0, dp(12), 0, 0);
         box.addView(l);
     }

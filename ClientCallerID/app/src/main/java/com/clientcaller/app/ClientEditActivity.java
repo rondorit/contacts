@@ -40,17 +40,11 @@ public class ClientEditActivity extends Activity {
         int p = dp(16);
         box.setPadding(p, p, p, p);
 
-        TextView head = new TextView(this);
-        head.setText(row < 0 ? "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9" : "\u05E2\u05E8\u05D9\u05DB\u05EA " + s.name(row));
-        head.setTextSize(22);
-        head.setTypeface(null, Typeface.BOLD);
+        TextView head = Theme.text(this, row < 0 ? "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9" : "\u05E2\u05E8\u05D9\u05DB\u05EA " + s.name(row), 22, Theme.TEXT_PRIMARY, 2);
         box.addView(head);
 
         for (int c = 0; c < s.headers.size(); c++) {
-            TextView l = new TextView(this);
-            l.setText(s.headers.get(c));
-            l.setTextSize(13);
-            l.setTextColor(0xFF777777);
+            TextView l = Theme.label(this, s.headers.get(c), Theme.TEXT_SECONDARY);
             l.setPadding(0, dp(12), 0, 0);
             box.addView(l);
             EditText e = new EditText(this);

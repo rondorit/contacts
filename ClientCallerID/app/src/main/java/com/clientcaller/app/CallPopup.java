@@ -149,31 +149,23 @@ final class CallPopup {
         box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         int p = (int) (16 * d);
         box.setPadding(p, p, p, p);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE);
-        bg.setCornerRadius(18 * d);
-        bg.setStroke((int) (2 * d), 0xFF43A047);
+        int accent = tagOverride != null ? Theme.WA_FG : Theme.CALL_FG;
+        GradientDrawable bg = Theme.shape(Theme.SURFACE, Theme.R_CARD, app);
+        bg.setStroke((int) (1 * d), Theme.HAIRLINE);
         box.setBackground(bg);
-        box.setElevation(12 * d);
+        box.setElevation(0);
 
-        TextView tag = new TextView(app);
-        tag.setText(tagOverride != null ? tagOverride : "\u05DE\u05EA\u05E7\u05E9\u05E8 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF");
+        TextView tag = Theme.badge(app, tagOverride != null ? tagOverride : "\u05DE\u05EA\u05E7\u05E9\u05E8 \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E7\u05E9\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF", accent);
         tagOverride = null;
-        tag.setTextColor(0xFF43A047);
-        tag.setTextSize(13);
-        box.addView(tag);
+        LinearLayout.LayoutParams tagParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tagParams.bottomMargin = Theme.dp(app, Theme.S2);
+        box.addView(tag, tagParams);
 
-        TextView nm = new TextView(app);
-        nm.setText(name);
-        nm.setTextColor(Color.BLACK);
-        nm.setTextSize(22);
-        nm.setTypeface(null, Typeface.BOLD);
+        TextView nm = Theme.text(app, name, 22, Theme.TEXT_PRIMARY, 2);
         box.addView(nm);
 
-        TextView ph = new TextView(app);
-        ph.setText(number);
-        ph.setTextColor(0xFF333333);
-        ph.setTextSize(15);
+        TextView ph = Theme.body(app, number, Theme.TEXT_SECONDARY);
         ph.setPadding(0, (int) (4 * d), 0, (int) (8 * d));
         box.addView(ph);
 
@@ -190,8 +182,8 @@ final class CallPopup {
             if (openCount > 0) {
                 TextView tk = new TextView(app);
                 tk.setText("\u1F3AB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA: " + openCount + "\n" + last);
-                tk.setTextColor(0xFFD32F2F);
-                tk.setTextSize(15);
+                tk.setTextColor(Theme.DANGER);
+                tk.setTextSize(Theme.BODY);
                 tk.setPadding(0, 0, 0, (int) (8 * d));
                 box.addView(tk);
             }
@@ -201,6 +193,7 @@ final class CallPopup {
         Button ticket = new Button(app);
         ticket.setText("\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         ticket.setAllCaps(false);
+        ticket.setTextSize(18);
         ticket.setOnClickListener(v -> {
             removeOverlay();
             Intent i = new Intent(app, TicketActivity.class)
@@ -247,31 +240,23 @@ final class CallPopup {
         box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         int p = (int) (16 * d);
         box.setPadding(p, p, p, p);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE);
-        bg.setCornerRadius(18 * d);
-        bg.setStroke((int) (2 * d), 0xFF1E88E5);
+        int accent = tagOverride != null ? Theme.WA_FG : Theme.CALL_FG;
+        GradientDrawable bg = Theme.shape(Theme.SURFACE, Theme.R_CARD, app);
+        bg.setStroke((int) (1 * d), Theme.HAIRLINE);
         box.setBackground(bg);
-        box.setElevation(12 * d);
+        box.setElevation(0);
 
-        TextView tag = new TextView(app);
-        tag.setText(tagOverride != null ? tagOverride : "\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8");
+        TextView tag = Theme.badge(app, tagOverride != null ? tagOverride : "\u05DC\u05E7\u05D5\u05D7 \u05DE\u05EA\u05E7\u05E9\u05E8", accent);
         tagOverride = null;
-        tag.setTextColor(0xFF1E88E5);
-        tag.setTextSize(13);
-        box.addView(tag);
+        LinearLayout.LayoutParams tagParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tagParams.bottomMargin = Theme.dp(app, Theme.S2);
+        box.addView(tag, tagParams);
 
-        TextView name = new TextView(app);
-        name.setText(s.name(row));
-        name.setTextColor(Color.BLACK);
-        name.setTextSize(22);
-        name.setTypeface(null, Typeface.BOLD);
+        TextView name = Theme.text(app, s.name(row), 22, Theme.TEXT_PRIMARY, 2);
         box.addView(name);
 
-        TextView body = new TextView(app);
-        body.setText(s.details(row));
-        body.setTextColor(0xFF333333);
-        body.setTextSize(15);
+        TextView body = Theme.body(app, s.details(row), Theme.TEXT_SECONDARY);
         body.setMaxLines(10);
         body.setEllipsize(TextUtils.TruncateAt.END);
         body.setPadding(0, (int) (6 * d), 0, (int) (8 * d));
@@ -289,8 +274,8 @@ final class CallPopup {
             if (openCount > 0) {
                 TextView tk = new TextView(app);
                 tk.setText("\uD83C\uDFAB \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA: " + openCount + "\n" + last);
-                tk.setTextColor(0xFFD32F2F);
-                tk.setTextSize(15);
+                tk.setTextColor(Theme.DANGER);
+                tk.setTextSize(Theme.BODY);
                 tk.setPadding(0, 0, 0, (int) (8 * d));
                 box.addView(tk);
             }
@@ -301,6 +286,7 @@ final class CallPopup {
         Button ticket = new Button(app);
         ticket.setText("\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         ticket.setAllCaps(false);
+        ticket.setTextSize(18);
         ticket.setOnClickListener(v -> {
             removeOverlay();
             Intent i = new Intent(app, TicketActivity.class)

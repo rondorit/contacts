@@ -53,6 +53,7 @@ public class ShareActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 10), Ui.dp(this, 40));
+        box.addView(Theme.header(this, "\u05E6\u05D9\u05E8\u05D5\u05E3 \u05DC\u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA"));
 
         box.addView(Ui.sectionTitle(this, "\u05D4\u05D8\u05E7\u05E1\u05D8 \u05E9\u05D4\u05EA\u05E7\u05D1\u05DC"));
         LinearLayout preview = Ui.card(this);
@@ -69,7 +70,9 @@ public class ShareActivity extends Activity {
         search = new EditText(this);
         search.setHint("\uD83D\uDD0D  \u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E7\u05D5\u05D7 \u05D0\u05D5 \u05E0\u05D5\u05E9\u05D0\u2026");
         search.setSingleLine(true);
-        search.setBackground(Ui.rounded(0xFFFFFFFF, 12, this));
+        search.setBackground(Theme.fieldBg(this));
+        search.setTextColor(Theme.TEXT_PRIMARY);
+        search.setHintTextColor(Theme.TEXT_TERTIARY);
         search.setPadding(Ui.dp(this, 14), Ui.dp(this, 12), Ui.dp(this, 14), Ui.dp(this, 12));
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }

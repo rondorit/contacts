@@ -1,17 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#1565C0</color>
-    <color name="primary_dark">#0D47A1</color>
-    <color name="bg">#F3F6FB</color>
-    <color name="icon_bg">#1565C0</color>
+    <!-- Deep Focus palette -->
+    <color name="canvas">#0F1314</color>
+    <color name="surface">#181E20</color>
+    <color name="surface_raised">#212A2C</color>
+    <color name="hairline">#2C3739</color>
+    <color name="mint">#3FDCA8</color>
+    <color name="mint_container">#16332B</color>
+    <color name="on_mint">#06231B</color>
+    <color name="text_primary">#F3F7F6</color>
+    <color name="text_secondary">#9AAAA8</color>
+    <color name="text_tertiary">#6E7F7D</color>
+    <color name="danger">#FF7A7A</color>
+    <color name="warning">#FFC46B</color>
 
-    <style name="AppTheme" parent="@android:style/Theme.Material.Light">
-        <item name="android:colorPrimary">@color/primary</item>
-        <item name="android:colorPrimaryDark">@color/primary_dark</item>
-        <item name="android:colorAccent">@color/primary</item>
-        <item name="android:statusBarColor">@color/primary_dark</item>
-        <item name="android:windowBackground">@color/bg</item>
-        <item name="android:colorButtonNormal">#E3EDFB</item>
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/mint</item>
+        <item name="android:colorPrimaryDark">@color/canvas</item>
+        <item name="android:colorAccent">@color/mint</item>
+        <item name="android:statusBarColor">@color/canvas</item>
+        <item name="android:navigationBarColor">@color/canvas</item>
+        <item name="android:windowBackground">@color/canvas</item>
+        <item name="android:colorBackground">@color/canvas</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:colorButtonNormal">@color/surface_raised</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:alertDialogTheme">@style/AppDialog</item>
+    </style>
+
+    <style name="AppDialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/mint</item>
+        <item name="android:windowBackground">@color/surface_raised</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="AppTheme">

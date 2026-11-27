@@ -297,11 +297,8 @@ public class GroupSendActivity extends Activity {
     }
 
     private void label(LinearLayout box, String text) {
-        TextView l = new TextView(this);
-        l.setText(text);
-        l.setTextSize(13);
-        l.setTextColor(0xFF777777);
-        l.setPadding(0, dp(14), 0, 0);
+        TextView l = Theme.label(this, text, Theme.TEXT_SECONDARY);
+        l.setPadding(0, dp(16), 0, 0);
         box.addView(l);
     }
 

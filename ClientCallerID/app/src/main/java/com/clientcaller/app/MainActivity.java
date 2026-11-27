@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(Ui.PRIMARY_DARK);
+        Theme.applyWindow(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.BG);
@@ -63,12 +63,10 @@ public class MainActivity extends Activity {
         // Header
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
-        android.graphics.drawable.GradientDrawable hg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{Ui.PRIMARY_DARK, Ui.PRIMARY});
-        header.setBackground(hg);
-        header.setPadding(dp(20), dp(16), dp(20), dp(16));
-        header.addView(Ui.text(this, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA", 22, 0xFFFFFFFF, true));
-        headerSub = Ui.text(this, "", 13, 0xCCFFFFFF, false);
+        header.setBackgroundColor(Theme.CANVAS);
+        header.setPadding(dp(20), dp(16), dp(20), dp(12));
+        header.addView(Theme.title(this, "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05E9\u05D9\u05E8\u05D5\u05EA", Theme.TEXT_PRIMARY));
+        headerSub = Theme.caption(this, "", Theme.TEXT_SECONDARY);
         header.addView(headerSub);
         root.addView(header);
 
@@ -77,7 +75,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < 4; i++) {
             pages[i] = new LinearLayout(this);
             pages[i].setOrientation(LinearLayout.VERTICAL);
-            pages[i].setPadding(dp(10), dp(6), dp(10), dp(90));
+            pages[i].setPadding(dp(12), dp(8), dp(12), dp(24));
             scrolls[i] = new android.widget.ScrollView(this);
             scrolls[i].setFillViewport(true);
             scrolls[i].addView(pages[i]);
@@ -89,16 +87,17 @@ public class MainActivity extends Activity {
         search = new EditText(this);
         search.setHint("\uD83D\uDD0D  \u05D7\u05D9\u05E4\u05D5\u05E9 \u05DC\u05E4\u05D9 \u05E9\u05DD, \u05D8\u05DC\u05E4\u05D5\u05DF, \u05D7\u05DC\u05E7\u05D4\u2026");
         search.setSingleLine(true);
-        search.setBackground(Ui.rounded(0xFFFFFFFF, 12, this));
-        search.setPadding(dp(14), dp(12), dp(14), dp(12));
-        search.setElevation(dp(1));
+        search.setBackground(Theme.fieldBg(this));
+        search.setPadding(dp(16), dp(12), dp(16), dp(12));
+        search.setTextColor(Theme.TEXT_PRIMARY);
+        search.setHintTextColor(Theme.TEXT_TERTIARY);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void afterTextChanged(Editable e) { refreshList(); }
         });
         LinearLayout.LayoutParams slp = Ui.cardParams(this);
-        slp.topMargin = dp(10);
+        slp.topMargin = dp(12);
         pages[1].addView(search, slp);
         List<View> clientActions = new ArrayList<>();
         clientActions.add(Ui.tile(this, "\u2795", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
@@ -111,19 +110,22 @@ public class MainActivity extends Activity {
         pages[1].addView(listBox);
 
         // Bottom tabs
+        View tabsLine = new View(this);
+        tabsLine.setBackgroundColor(Theme.HAIRLINE);
+        root.addView(tabsLine, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
         LinearLayout tabs = new LinearLayout(this);
-        tabs.setBackgroundColor(0xFFFFFFFF);
-        tabs.setElevation(dp(8));
+        tabs.setBackgroundColor(Theme.SURFACE);
+        tabs.setElevation(0);
         for (int i = 0; i < 4; i++) {
             final int idx = i;
             LinearLayout tb = new LinearLayout(this);
             tb.setOrientation(LinearLayout.VERTICAL);
             tb.setGravity(android.view.Gravity.CENTER);
-            tb.setPadding(0, dp(6), 0, dp(6));
-            TextView ic = Ui.text(this, TAB_ICONS[i], 22, Ui.TEXT, false);
+            tb.setPadding(0, dp(8), 0, dp(8));
+            TextView ic = Ui.text(this, TAB_ICONS[i], 22, Theme.TEXT_SECONDARY, false);
             ic.setGravity(android.view.Gravity.CENTER);
             ic.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            TextView nm = Ui.text(this, TAB_NAMES[i], 12, Ui.MUTED, false);
+            TextView nm = Ui.text(this, TAB_NAMES[i], 12, Theme.TEXT_SECONDARY, false);
             nm.setGravity(android.view.Gravity.CENTER);
             nm.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             tb.addView(ic);
@@ -153,9 +155,10 @@ public class MainActivity extends Activity {
         tab = i;
         for (int k = 0; k < 4; k++) {
             scrolls[k].setVisibility(k == i ? View.VISIBLE : View.GONE);
-            tabButtons[k].setBackground(k == i ? Ui.rounded(0xFFE3EDFB, 12, this) : null);
-            ((TextView) tabButtons[k].getChildAt(1)).setTextColor(k == i ? Ui.PRIMARY : Ui.MUTED);
-            ((TextView) tabButtons[k].getChildAt(1)).setTypeface(null, k == i ? Typeface.BOLD : Typeface.NORMAL);
+            tabButtons[k].setBackground(k == i ? Theme.pillBg(this, Theme.MINT_CONTAINER) : null);
+            ((TextView) tabButtons[k].getChildAt(0)).setTextColor(k == i ? Theme.MINT : Theme.TEXT_SECONDARY);
+            ((TextView) tabButtons[k].getChildAt(1)).setTextColor(k == i ? Theme.MINT : Theme.TEXT_SECONDARY);
+            ((TextView) tabButtons[k].getChildAt(1)).setTypeface(Theme.typeface(k == i ? 1 : 0));
         }
     }
 
@@ -211,7 +214,9 @@ public class MainActivity extends Activity {
         if (!setupDone()) {
             LinearLayout warn = Ui.rowCard(this, "\u26A0\uFE0F  \u05D4\u05D4\u05D2\u05D3\u05E8\u05D4 \u05DC\u05D0 \u05D4\u05D5\u05E9\u05DC\u05DE\u05D4",
                     "\u05DC\u05D7\u05E5 \u05DB\u05D0\u05DF \u05DB\u05D3\u05D9 \u05DC\u05D4\u05E9\u05DC\u05D9\u05DD \u05D9\u05D9\u05D1\u05D5\u05D0 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05E0\u05D9\u05D4\u05D5\u05DC", "", 0, v -> showTab(3));
-            warn.setBackground(Ui.rounded(0xFFFFF4E5, 14, this));
+            android.graphics.drawable.GradientDrawable warnBg = Theme.raisedBg(this);
+            warnBg.setStroke(dp(1), Theme.WARNING);
+            warn.setBackground(warnBg);
             p.addView(warn, Ui.cardParams(this));
         }
         p.addView(Ui.sectionTitle(this, "\u05DE\u05D1\u05D8 \u05DE\u05D4\u05D9\u05E8"));
