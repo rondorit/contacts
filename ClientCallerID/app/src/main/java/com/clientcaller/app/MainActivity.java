@@ -404,7 +404,8 @@ public class MainActivity extends Activity {
         calls.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05DE\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", waModeText[waMode], waMode > 0 ? ok : info, v ->
                 new AlertDialog.Builder(this)
                         .setTitle("\u05D4\u05E6\u05E2\u05EA \u05E7\u05E8\u05D9\u05D0\u05D4 \u05DE\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
-                        .setSingleChoiceItems(waModeText, waMode, (d, which) -> {
+                        .setSingleChoiceItems(new String[]{"\u05DB\u05D1\u05D5\u05D9 \u2013 \u05DC\u05D0 \u05E0\u05E4\u05EA\u05D7\u05D5\u05EA \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA (\u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05E1\u05D8\u05D8\u05D5\u05E1 \u05DE\u05DE\u05E9\u05D9\u05DB\u05D9\u05DD \u05DC\u05E2\u05D1\u05D5\u05D3)",
+                                waModeText[1], waModeText[2]}, waMode, (d, which) -> {
                             sp.edit().putInt(WaMessages.KEY_MODE, which).apply();
                             d.dismiss();
                             refresh();
