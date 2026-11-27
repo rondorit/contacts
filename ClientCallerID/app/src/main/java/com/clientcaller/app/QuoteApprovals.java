@@ -31,11 +31,18 @@ final class QuoteApprovals {
 
     /** 1 = approve, -1 = decline, 0 = neither. Only short replies count, so ordinary messages aren't mistaken. */
     static int intent(String text) {
-        String t = text.toLowerCase(Locale.ROOT).trim();
+        String t = norm(text);
         if (t.isEmpty() || t.length() > 160) return 0;
         for (String n : NO) if (t.contains(n)) return -1;
         for (String y : YES) if (t.contains(y)) return 1;
         return 0;
+    }
+
+    /** Lower-case, drop invisible direction marks and collapse all kinds of spaces. */
+    static String norm(String text) {
+        if (text == null) return "";
+        return text.replaceAll("[\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069\\uFEFF]", "")
+                .replaceAll("[\\s\\u00A0]+", " ").toLowerCase(Locale.ROOT).trim();
     }
 
     /** WhatsApp message notification. Returns a log line if it was handled as a quote reply, else null. */
@@ -55,9 +62,18 @@ final class QuoteApprovals {
             if (s != null && s.length() > 0) sender = s.toString();
         }
         int yes = intent(text);
+        if (yes == 0) {
+            // Fall back to the plain notification text / big text.
+            CharSequence big = ex.getCharSequence(Notification.EXTRA_BIG_TEXT);
+            for (CharSequence alt : new CharSequence[]{tx, big}) {
+                if (alt != null && intent(alt.toString()) != 0) { text = alt.toString(); yes = intent(text); break; }
+            }
+        }
         if (yes == 0 || sender == null) return null;
         String phone = null;
-        String name = sender.trim();
+        // WhatsApp may add a counter to the title, e.g. "Name (2 messages)".
+        String name = sender.replaceAll("[\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069]", "")
+                .replaceAll("\\s*\\(\\d+[^)]*\\)\\s*$", "").trim();
         int row = CallPopup.findClientRow(c, name);
         ClientStore s = Data.get(c);
         if (row >= 0) {
@@ -75,8 +91,8 @@ final class QuoteApprovals {
                     + " \u05DE-" + name + (phone != null ? " (" + phone + ")" : "")
                     + ", \u05D0\u05D1\u05DC \u05D0\u05D9\u05DF \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 \u05E4\u05EA\u05D5\u05D7\u05D4 \u05E9\u05DE\u05EA\u05D0\u05D9\u05DE\u05D4 \u05DC\u05E9\u05D5\u05DC\u05D7";
         }
-        offer(c, q, yes, "\u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4: " + text.trim());
-        return "\u05EA\u05E9\u05D5\u05D1\u05D4 \u05DC\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + ": " + (yes > 0 ? "\u05D0\u05D9\u05E9\u05D5\u05E8" : "\u05D3\u05D7\u05D9\u05D9\u05D4");
+        apply(c, q, yes, "\u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4: " + text.trim());
+        return "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D4: " + (yes > 0 ? "\u05D0\u05D5\u05E9\u05E8\u05D4" : "\u05E0\u05D3\u05D7\u05EA\u05D4");
     }
 
     /** Gmail notification (reply to a quote email). Returns a log line if handled, else null. */
@@ -98,7 +114,7 @@ final class QuoteApprovals {
         if (yes == 0) return null;
         QuoteDb.Quote q = findQuote(c, sender, null, sender, id);
         if (q == null) return null;
-        offer(c, q, yes, "\u05D1\u05DE\u05D9\u05D9\u05DC: " + reply.trim());
+        apply(c, q, yes, "\u05D1\u05DE\u05D9\u05D9\u05DC: " + reply.trim());
         return "\u05EA\u05E9\u05D5\u05D1\u05D4 \u05D1\u05DE\u05D9\u05D9\u05DC \u05DC\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id;
     }
 
@@ -117,6 +133,36 @@ final class QuoteApprovals {
             if (best == null || ("Sent".equals(q.status) && !"Sent".equals(best.status)) || q.updated > best.updated) best = q;
         }
         return best;
+    }
+
+    /** Updates the quote status right away and posts a notice with an undo button. */
+    private static void apply(Context c, QuoteDb.Quote q, int yes, String said) {
+        String prev = q.status;
+        String status = yes > 0 ? "Approved" : "Rejected";
+        setStatus(c, q.id, status, false);
+        NotificationManager nm = c.getSystemService(NotificationManager.class);
+        nm.createNotificationChannel(new NotificationChannel("quote_replies", "\u05EA\u05E9\u05D5\u05D1\u05D5\u05EA \u05DC\u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8",
+                NotificationManager.IMPORTANCE_HIGH));
+        int nid = 400000 + (int) q.id;
+        int flags = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
+        Intent undo = new Intent(c, FollowupReceiver.class).setAction(ACTION_SET)
+                .putExtra(QuoteActivity.EXTRA_QUOTE, q.id).putExtra("status", prev);
+        PendingIntent pUndo = PendingIntent.getBroadcast(c, nid, undo, flags);
+        Intent open = new Intent(c, QuoteActivity.class).putExtra(QuoteActivity.EXTRA_QUOTE, q.id)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent pOpen = PendingIntent.getActivity(c, nid, open, flags);
+        Notification n = new Notification.Builder(c, "quote_replies")
+                .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                .setContentTitle((yes > 0 ? "\u2705 " : "\u274C ") + "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + q.id + " \u05E1\u05D5\u05DE\u05E0\u05D4 \u05DB"
+                        + QuoteDb.statusHe(status) + " - " + q.clientName)
+                .setContentText(said)
+                .setStyle(new Notification.BigTextStyle().bigText(said + "\n\u05E1\u05D4\"\u05DB: " + QuoteDb.money(q.total())))
+                .setContentIntent(pOpen)
+                .addAction(new Notification.Action.Builder(null, "\u21A9 \u05D1\u05D8\u05DC (\u05D4\u05D7\u05D6\u05E8 \u05DC" + QuoteDb.statusHe(prev) + ")", pUndo).build())
+                .addAction(new Notification.Action.Builder(null, "\u05E4\u05EA\u05D7 \u05D4\u05E6\u05E2\u05D4", pOpen).build())
+                .setAutoCancel(true)
+                .build();
+        nm.notify(nid, n);
     }
 
     private static void offer(Context c, QuoteDb.Quote q, int yes, String said) {
@@ -147,6 +193,10 @@ final class QuoteApprovals {
 
     /** Called from the notification button. */
     static void setStatus(Context c, long id, String status) {
+        setStatus(c, id, status, true);
+    }
+
+    static void setStatus(Context c, long id, String status, boolean manual) {
         QuoteDb db = QuoteDb.get(c);
         QuoteDb.Quote q = db.load(id);
         if (q == null) return;
@@ -154,7 +204,8 @@ final class QuoteApprovals {
         db.save(q);
         QuoteActivity.cancelReminder(c, id);
         if (q.ticketId > 0) TicketDb.get(c).addNote(q.ticketId, "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + id + ": " + QuoteDb.statusHe(status)
-                + " (\u05DC\u05E4\u05D9 \u05EA\u05E9\u05D5\u05D1\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7)");
+                + (manual ? "" : " (\u05DC\u05E4\u05D9 \u05EA\u05E9\u05D5\u05D1\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7)"));
+        if (!manual) return;
         try { c.getSystemService(NotificationManager.class).cancel(400000 + (int) id); } catch (Exception ignored) { }
         android.widget.Toast.makeText(c, "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 " + id + ": " + QuoteDb.statusHe(status), android.widget.Toast.LENGTH_SHORT).show();
     }
