@@ -21,22 +21,57 @@ import java.util.regex.Pattern;
  */
 final class QuoteApprovals {
     static final String ACTION_SET = "com.clientcaller.app.QUOTE_SET_STATUS";
-    private static final String[] YES = {"\u05DE\u05D0\u05E9\u05E8", "\u05DE\u05D0\u05E9\u05E8\u05EA", "\u05DE\u05D0\u05E9\u05E8\u05D9\u05DD", "\u05DE\u05D0\u05D5\u05E9\u05E8", "\u05D0\u05D9\u05E9\u05D5\u05E8", "\u05DE\u05E7\u05D5\u05D1\u05DC", "\u05DE\u05E7\u05D5\u05D1\u05DC\u05EA", "\u05E1\u05D2\u05E8\u05E0\u05D5",
-            "approve", "approved", "accept", "ok", "\u05D0\u05D5\u05E7\u05D9\u05D9", "\u05D0\u05D5\u05E7\u05D9", "\uD83D\uDC4D", "\u2705"};
-    private static final String[] NO = {"\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8", "\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8\u05EA", "\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8\u05D9\u05DD", "\u05DC\u05D0 \u05DE\u05E7\u05D5\u05D1\u05DC", "\u05DC\u05D0 \u05DE\u05E2\u05D5\u05E0\u05D9\u05D9\u05DF", "\u05DC\u05D0 \u05DE\u05E2\u05D5\u05E0\u05D9\u05D9\u05E0\u05EA",
-            "\u05D3\u05D5\u05D7\u05D4", "\u05DE\u05D5\u05D5\u05EA\u05E8", "\u05DE\u05D5\u05D5\u05EA\u05E8\u05EA", "decline", "reject", "\uD83D\uDC4E"};
+    /** Words/emoji anywhere in a short reply. */
+    private static final String[] YES = {"\u05DE\u05D0\u05E9\u05E8", "\u05DE\u05D0\u05E9\u05E8\u05EA", "\u05DE\u05D0\u05E9\u05E8\u05D9\u05DD", "\u05DE\u05D0\u05D5\u05E9\u05E8", "\u05DE\u05D0\u05D5\u05E9\u05E8\u05EA", "\u05D0\u05D9\u05E9\u05D5\u05E8", "\u05DE\u05E7\u05D5\u05D1\u05DC", "\u05DE\u05E7\u05D5\u05D1\u05DC\u05EA", "\u05E1\u05D2\u05E8\u05E0\u05D5", "\u05E1\u05D2\u05D5\u05E8",
+            "\u05DE\u05E1\u05DB\u05D9\u05DD", "\u05DE\u05E1\u05DB\u05D9\u05DE\u05D4", "\u05DE\u05E1\u05DB\u05D9\u05DE\u05D9\u05DD", "\u05E0\u05E9\u05DE\u05E2 \u05D8\u05D5\u05D1", "\u05E0\u05E9\u05DE\u05E2 \u05DE\u05E6\u05D5\u05D9\u05DF", "\u05E0\u05E9\u05DE\u05E2 \u05DE\u05E6\u05D5\u05D9\u05D9\u05DF", "\u05D0\u05E4\u05E9\u05E8 \u05DC\u05D4\u05EA\u05E7\u05D3\u05DD", "\u05D1\u05D5\u05D0 \u05E0\u05EA\u05E7\u05D3\u05DD", "\u05D1\u05D5\u05D0\u05D5 \u05E0\u05EA\u05E7\u05D3\u05DD",
+            "\u05EA\u05EA\u05E7\u05D3\u05DD", "\u05EA\u05EA\u05E7\u05D3\u05DE\u05D5", "\u05DE\u05EA\u05E7\u05D3\u05DE\u05D9\u05DD", "\u05D9\u05D0\u05DC\u05DC\u05D4", "\u05D0\u05D9\u05DF \u05D1\u05E2\u05D9\u05D4", "\u05D1\u05E1\u05D3\u05E8 \u05D2\u05DE\u05D5\u05E8", "\u05D4\u05D5\u05DC\u05DA \u05E2\u05DC \u05D6\u05D4", "\u05D4\u05D5\u05DC\u05DB\u05D9\u05DD \u05E2\u05DC \u05D6\u05D4", "approve", "accept", "agreed",
+            "\u05D0\u05D5\u05E7\u05D9\u05D9", "\u05D0\u05D5\u05E7\u05D9", "\u05E1\u05D1\u05D1\u05D4", "\uD83D\uDC4D", "\u2705", "\uD83D\uDC4C", "\uD83D\uDE4F", "\uD83D\uDCAF", "\u2714", "\u2764", "\u2665", "\uD83D\uDE0D", "\uD83E\uDD70", "\uD83D\uDC4F", "\uD83E\uDD1D", "\uD83D\uDCAA", "\uD83D\uDE4C", "\uD83D\uDE0A", "\uD83D\uDE00", "\uD83D\uDE03", "\uD83C\uDD97"};
+    private static final String[] NO = {"\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8", "\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8\u05EA", "\u05DC\u05D0 \u05DE\u05D0\u05E9\u05E8\u05D9\u05DD", "\u05DC\u05D0 \u05DE\u05E7\u05D5\u05D1\u05DC", "\u05DC\u05D0 \u05DE\u05E2\u05D5\u05E0\u05D9\u05D9\u05DF", "\u05DC\u05D0 \u05DE\u05E2\u05D5\u05E0\u05D9\u05D9\u05E0\u05EA", "\u05DC\u05D0 \u05DE\u05E2\u05D5\u05E0\u05D9\u05D9\u05E0\u05D9\u05DD",
+            "\u05DC\u05D0 \u05DE\u05EA\u05D0\u05D9\u05DD", "\u05DC\u05D0 \u05DE\u05EA\u05D0\u05D9\u05DE\u05D4", "\u05DC\u05D0 \u05E8\u05DC\u05D5\u05D5\u05E0\u05D8\u05D9", "\u05DC\u05D0 \u05EA\u05D5\u05D3\u05D4", "\u05DC\u05D0, \u05EA\u05D5\u05D3\u05D4", "\u05DC\u05D0 \u05E6\u05E8\u05D9\u05DA", "\u05DC\u05D0 \u05E0\u05D7\u05D5\u05E5", "\u05D9\u05E7\u05E8 \u05DE\u05D3\u05D9", "\u05D9\u05E7\u05E8 \u05DC\u05D9", "\u05D9\u05E7\u05E8 \u05DE\u05D9\u05D3\u05D9",
+            "\u05E0\u05D5\u05D5\u05EA\u05E8", "\u05DE\u05D5\u05D5\u05EA\u05E8", "\u05DE\u05D5\u05D5\u05EA\u05E8\u05EA", "\u05DE\u05D5\u05D5\u05EA\u05E8\u05D9\u05DD", "\u05DE\u05D1\u05D8\u05DC", "\u05DE\u05D1\u05D8\u05DC\u05EA", "\u05DE\u05D1\u05D8\u05DC\u05D9\u05DD", "\u05D1\u05D9\u05D8\u05D5\u05DC", "\u05D3\u05D5\u05D7\u05D4", "decline", "reject",
+            "\uD83D\uDC4E", "\u274C", "\u2716", "\uD83D\uDEAB", "\u26D4", "\uD83D\uDE21", "\uD83D\uDE20", "\uD83D\uDE45"};
+    /** Whole-message short answers (after removing punctuation). */
+    private static final String[] YES_WORDS = {"\u05DB\u05DF", "\u05DB\u05DF \u05EA\u05D5\u05D3\u05D4", "\u05DB\u05DF \u05D1\u05D1\u05E7\u05E9\u05D4", "\u05D1\u05E1\u05D3\u05E8", "\u05D8\u05D5\u05D1", "\u05D9\u05D5\u05E4\u05D9", "\u05DE\u05E2\u05D5\u05DC\u05D4", "\u05DE\u05E6\u05D5\u05D9\u05DF", "\u05DE\u05E6\u05D5\u05D9\u05D9\u05DF", "ok", "okay", "yes", "\u05E7\u05D3\u05D9\u05DE\u05D4", "\u05E1\u05D2\u05D5\u05E8", "\u05D1\u05D8\u05D7", "\u05D1\u05E8\u05D5\u05E8", "\u05D1\u05D4\u05D7\u05DC\u05D8", "\u05EA\u05D5\u05D3\u05D4 \u05DB\u05DF", "\u05DE\u05E2\u05D5\u05DC\u05D4 \u05EA\u05D5\u05D3\u05D4", "\u05D9\u05D5\u05E4\u05D9 \u05EA\u05D5\u05D3\u05D4", "\u05D1\u05E1\u05D3\u05E8 \u05EA\u05D5\u05D3\u05D4", "\u05D8\u05D5\u05D1 \u05EA\u05D5\u05D3\u05D4", "\u05DE\u05E6\u05D5\u05D9\u05DF \u05EA\u05D5\u05D3\u05D4", "\u05DE\u05E6\u05D5\u05D9\u05D9\u05DF \u05EA\u05D5\u05D3\u05D4", "\u05E1\u05D1\u05D1\u05D4 \u05EA\u05D5\u05D3\u05D4"};
+    private static final String[] NO_WORDS = {"\u05DC\u05D0", "no", "\u05DC\u05D0 \u05DB\u05E8\u05D2\u05E2", "\u05DC\u05D0 \u05E2\u05DB\u05E9\u05D9\u05D5", "\u05E4\u05D7\u05D5\u05EA", "\u05E2\u05D3\u05D9\u05D9\u05DF \u05DC\u05D0"};
     private static final Pattern QUOTE_NO = Pattern.compile("\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8\\s*(?:\u05DE\u05E1['\u05F3]?\\s*)?(\\d+)");
 
     private QuoteApprovals() { }
 
     /** 1 = approve, -1 = decline, 0 = neither. Only short replies count, so ordinary messages aren't mistaken. */
     static int intent(String text) {
-        String t = norm(text);
-        if (t.isEmpty() || t.length() > 160) return 0;
+        String t = norm(text).replaceAll("[\uFE0F\u200D]", "").replaceAll("[\\x{1F3FB}-\\x{1F3FF}]", "");
+        if (t.isEmpty()) return 0;
+        // WhatsApp reaction ("\u05D4\u05D2\u05D9\u05D1/\u05D4 \uD83D\uDC4D \u05DC..."): judge only the emoji, not the quoted message.
+        if (t.contains("\u05D4\u05D2\u05D9\u05D1") || t.contains("reacted")) {
+            int q = indexOfAny(t, "\"", "\u201C", "\u201E", ":", "\u00AB");
+            t = q > 0 ? t.substring(0, q) : t;
+            t = t.replaceAll("[\\p{L}\\p{N}\\s/]", "");
+            if (t.isEmpty()) return 0;
+        }
+        if (t.length() > 160) return 0;
+        String plain = t.replaceAll("[.,!?;:\\-\"'\u05F4\u05F3()\u2026]+", " ").replaceAll("\\s+", " ").trim();
+        for (String w : NO_WORDS) if (plain.equals(w)) return -1;
+        for (String w : YES_WORDS) if (plain.equals(w)) return 1;
+        if (t.contains("\u05D0\u05D9\u05DF \u05D1\u05E2\u05D9\u05D4") || t.contains("\u05DC\u05D0 \u05D1\u05E2\u05D9\u05D4")) return 1;
         for (String n : NO) if (t.contains(n)) return -1;
         for (String y : YES) if (t.contains(y)) return 1;
+        // Short reply opening with a clear yes/no ("\u05DB\u05DF, \u05EA\u05EA\u05D7\u05D9\u05DC", "\u05DC\u05D0, \u05EA\u05D5\u05D3\u05D4 \u05E8\u05D1\u05D4").
+        if (plain.length() <= 40) {
+            if (plain.startsWith("\u05DB\u05DF ") || plain.startsWith("yes ")) return 1;
+            if (plain.startsWith("\u05DC\u05D0 ") || plain.startsWith("no ")) return -1;
+        }
         return 0;
     }
+
+    private static int indexOfAny(String s, String... keys) {
+        int best = -1;
+        for (String k : keys) {
+            int i = s.indexOf(k);
+            if (i >= 0 && (best < 0 || i < best)) best = i;
+        }
+        return best;
+    }
+
 
     /** Lower-case, drop invisible direction marks and collapse all kinds of spaces. */
     static String norm(String text) {
