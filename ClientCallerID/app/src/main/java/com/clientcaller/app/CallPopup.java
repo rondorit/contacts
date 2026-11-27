@@ -58,6 +58,23 @@ final class CallPopup {
      * WhatsApp call: we only get the name WhatsApp shows (contact name, or the number if not saved).
      * Find the client by number, by Excel name, or through the phone contact's numbers.
      */
+    /** Excel row of a client shown by WhatsApp (number, exact Excel name, or a phone contact's numbers); -1 if none. */
+    static int findClientRow(Context ctx, String shown) {
+        ClientStore s = Data.get(ctx);
+        if (shown.replaceAll("[^0-9]", "").length() >= 8) {
+            int r = s.find(shown);
+            if (r >= 0) return r;
+        }
+        for (int r = 0; r < s.rows.size(); r++) {
+            if (s.name(r).trim().equalsIgnoreCase(shown)) return r;
+        }
+        for (String ph : PhoneContacts.numbersForName(ctx, shown)) {
+            int r = s.find(ph);
+            if (r >= 0) return r;
+        }
+        return -1;
+    }
+
     static String onWhatsApp(Context ctx, List<String> candidates) {
         Context app = ctx.getApplicationContext();
         ClientStore s = Data.get(app);

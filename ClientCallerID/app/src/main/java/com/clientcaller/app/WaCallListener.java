@@ -43,11 +43,13 @@ public class WaCallListener extends NotificationListenerService {
                 callType = ex.getInt(Notification.EXTRA_CALL_TYPE, 0);
             }
             String low = (text + " " + title).toLowerCase(Locale.ROOT);
+            boolean isMessage = Notification.CATEGORY_MESSAGE.equals(n.category)
+                    || ex.getParcelableArray(Notification.EXTRA_MESSAGES) != null;
             boolean isCall = Notification.CATEGORY_CALL.equals(n.category) || callType > 0 || !person.isEmpty()
-                    || low.contains("call") || low.contains("\u05E9\u05D9\u05D7\u05D4") || low.contains("\u05E9\u05D9\u05D7\u05EA");
+                    || (!isMessage && (low.contains("call") || low.contains("\u05E9\u05D9\u05D7\u05D4") || low.contains("\u05E9\u05D9\u05D7\u05EA")));
             String result;
             if (!isCall) {
-                result = "\u05DC\u05D0 \u05E9\u05D9\u05D7\u05D4";
+                result = WaMessages.onNotification(this, n, title);
             } else {
                 List<String> names = new ArrayList<>();
                 for (String c : new String[]{person, title, bigTitle, conv}) {
