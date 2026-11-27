@@ -327,6 +327,16 @@ public class MainActivity extends Activity {
             int changes = Data.list(this, Data.KEY_ACC_EDITS).size() + Data.list(this, Data.KEY_ACC_DELETES).size();
             data.add(Ui.tile(this, "\uD83D\uDD04", "\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access", changes == 0 ? "\u05D0\u05D9\u05DF \u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD" : changes + " \u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD",
                     changes == 0 ? info : Ui.ORANGE, v -> startAccessUpdate()));
+        } else {
+            data.add(Ui.tile(this, "\uD83D\uDD04", "\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access", "\u05DC\u05D0 \u05DE\u05D7\u05D5\u05D1\u05E8", need, v -> new AlertDialog.Builder(this)
+                    .setTitle("\u05D7\u05D9\u05D1\u05D5\u05E8 \u05DC\u05E7\u05D5\u05D1\u05E5 Access")
+                    .setMessage("\u05DB\u05D3\u05D9 \u05DC\u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access, \u05D9\u05D9\u05D1\u05D0 \u05D0\u05D5\u05EA\u05D5 \u05E4\u05E2\u05DD \u05D0\u05D7\u05EA \u05D3\u05E8\u05DA \"\u05D9\u05D9\u05D1\u05D5\u05D0\" - \u05D9\u05E9\u05D9\u05E8\u05D5\u05EA \u05DE-Google Drive "
+                            + "(\u05D1\u05D7\u05DC\u05D5\u05DF \u05D1\u05D7\u05D9\u05E8\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: \u05EA\u05E4\u05E8\u05D9\u05D8 \u2630 \u2190 Drive). \u05DE\u05D0\u05D5\u05EA\u05D5 \u05E8\u05D2\u05E2 \u05DB\u05DC \u05DC\u05E7\u05D5\u05D7 \u05E9\u05EA\u05D5\u05E1\u05D9\u05E3, \u05EA\u05E2\u05E8\u05D5\u05DA \u05D0\u05D5 \u05EA\u05DE\u05D7\u05E7 "
+                            + "\u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 \u05D9\u05E2\u05D5\u05D3\u05DB\u05DF \u05D1\u05E7\u05D5\u05D1\u05E5.\n\n\u05E9\u05D9\u05DD \u05DC\u05D1: \u05D9\u05D9\u05D1\u05D5\u05D0 \u05DE\u05D7\u05D3\u05E9 \u05DE\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 "
+                            + "\u05D1\u05EA\u05D5\u05DB\u05DF \u05D4\u05E7\u05D5\u05D1\u05E5.")
+                    .setPositiveButton("\u05D9\u05D9\u05D1\u05D5\u05D0 \u05E2\u05DB\u05E9\u05D9\u05D5", (d, w) -> pickFile())
+                    .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
+                    .show()));
         }
         data.add(Ui.tile(this, "\uD83D\uDC64", "\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", "", 0, v -> startActivity(new Intent(this, ClientEditActivity.class))));
         data.add(Ui.tile(this, "\uD83D\uDD24", "\u05E2\u05DE\u05D5\u05D3\u05EA \u05E9\u05DD", s.headers.isEmpty() ? "" : s.headers.get(s.nameCol), info, v -> chooseNameColumn()));
@@ -738,7 +748,8 @@ public class MainActivity extends Activity {
         final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
         AlertDialog.Builder b = new AlertDialog.Builder(this)
                 .setTitle("\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access")
-                .setMessage("\u05D9\u05E2\u05D5\u05D3\u05DB\u05E0\u05D5 \u05D0\u05D5 \u05D9\u05EA\u05D5\u05D5\u05E1\u05E4\u05D5 " + edits.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA, \u05D5\u05D9\u05D9\u05DE\u05D7\u05E7\u05D5 " + dels.size() + ".\n"
+                .setMessage((uriStr.isEmpty() ? "" : "\u05E7\u05D5\u05D1\u05E5: " + describe(Uri.parse(uriStr)) + "\n\n")
+                        + "\u05D9\u05E2\u05D5\u05D3\u05DB\u05E0\u05D5 \u05D0\u05D5 \u05D9\u05EA\u05D5\u05D5\u05E1\u05E4\u05D5 " + edits.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA, \u05D5\u05D9\u05D9\u05DE\u05D7\u05E7\u05D5 " + dels.size() + ".\n"
                         + "\u05E9\u05D0\u05E8 \u05D4\u05E8\u05E9\u05D5\u05DE\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5 \u05DC\u05D0 \u05D9\u05E9\u05EA\u05E0\u05D5.\n\n\u05D0\u05D9\u05E4\u05D4 \u05DC\u05E9\u05DE\u05D5\u05E8?")
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                 .setNeutralButton("\u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9", (d, w) -> {
@@ -800,10 +811,28 @@ public class MainActivity extends Activity {
                 try (InputStream in = new java.io.FileInputStream(work)) {
                     out = ClientStore.readAll(in);
                 }
-                try (java.io.OutputStream os = getContentResolver().openOutputStream(target, "wt")) {
-                    if (os == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05DB\u05EA\u05D5\u05D1 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
-                    os.write(out);
+                // Google Drive and other providers accept different write modes: try several.
+                boolean written = false;
+                Exception lastErr = null;
+                for (String mode : new String[]{"wt", "w", "rwt"}) {
+                    try (java.io.OutputStream os = getContentResolver().openOutputStream(target, mode)) {
+                        if (os == null) continue;
+                        os.write(out);
+                        os.flush();
+                        written = true;
+                        break;
+                    } catch (Exception e) {
+                        lastErr = e;
+                    }
                 }
+                if (!written) throw new IOException("\u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05EA \u05DB\u05EA\u05D9\u05D1\u05D4 \u05DC\u05E7\u05D5\u05D1\u05E5" + (lastErr == null ? "" : ": " + lastErr.getMessage()));
+                long readBack = -1;
+                try (InputStream in = getContentResolver().openInputStream(target)) {
+                    if (in != null) readBack = ClientStore.readAll(in).length;
+                } catch (Exception ignored) { }
+                final String where = describe(target);
+                final boolean verified = readBack == out.length;
+                final boolean drive = target.getAuthority() != null && target.getAuthority().contains("com.google.android.apps.docs");
                 try (java.io.FileOutputStream o = new java.io.FileOutputStream(new File(getFilesDir(), Data.ACCESS_COPY))) {
                     o.write(out);
                 }
@@ -820,7 +849,10 @@ public class MainActivity extends Activity {
                 Data.clearAccessChanges(this);
                 CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
 
-                final String msg = "\u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05E2\u05D5\u05D3\u05DB\u05DF: " + res.updated + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D5, " + res.added + " \u05E0\u05D5\u05E1\u05E4\u05D5, "
+                final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + (verified ? "  \u2713 \u05D0\u05D5\u05DE\u05EA" : "  (\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05D0\u05DE\u05EA)") + "\n\n"
+                        + (drive ? "Google Drive \u05DE\u05E1\u05E0\u05DB\u05E8\u05DF \u05DC\u05DE\u05D7\u05E9\u05D1 \u05EA\u05D5\u05DA \u05D3\u05E7\u05D4-\u05E9\u05EA\u05D9\u05D9\u05DD. \u05D0\u05DD \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E4\u05EA\u05D5\u05D7 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1, \u05E1\u05D2\u05D5\u05E8 \u05D0\u05D5\u05EA\u05D5 - "
+                        + "\u05D0\u05D7\u05E8\u05EA Drive \u05D9\u05E9\u05DE\u05D5\u05E8 \u05E2\u05D5\u05EA\u05E7 \u05E0\u05D5\u05E1\u05E3 \u05D1\u05E9\u05DD \u05E2\u05DD (1).\n\n" : "")
+                        + "\u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05E2\u05D5\u05D3\u05DB\u05DF: " + res.updated + " \u05E2\u05D5\u05D3\u05DB\u05E0\u05D5, " + res.added + " \u05E0\u05D5\u05E1\u05E4\u05D5, "
                         + res.deleted + " \u05E0\u05DE\u05D7\u05E7\u05D5"
                         + (res.notFound > 0 ? "\n" + res.notFound + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05D1\u05E7\u05D5\u05D1\u05E5" : "")
                         + (res.warnings.isEmpty() ? "" : "\n\n\u05E9\u05D3\u05D5\u05EA \u05E9\u05DC\u05D0 \u05E0\u05E9\u05DE\u05E8\u05D5:\n" + String.join("\n", res.warnings));
@@ -836,6 +868,20 @@ public class MainActivity extends Activity {
                         .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show());
             }
         }).start();
+    }
+
+    /** "file name (Google Drive)" for a document Uri. */
+    private String describe(Uri u) {
+        String name = u.getLastPathSegment();
+        try (android.database.Cursor c = getContentResolver().query(u,
+                new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (c != null && c.moveToFirst() && c.getString(0) != null) name = c.getString(0);
+        } catch (Exception ignored) { }
+        String auth = u.getAuthority() == null ? "" : u.getAuthority();
+        String place = auth.contains("com.google.android.apps.docs") ? "Google Drive"
+                : auth.contains("externalstorage") || auth.contains("media") || auth.contains("downloads") ? "\u05D6\u05D9\u05DB\u05E8\u05D5\u05DF \u05D4\u05D8\u05DC\u05E4\u05D5\u05DF"
+                : auth.contains("onedrive") || auth.contains("skydrive") ? "OneDrive" : auth;
+        return name + " (" + place + ")";
     }
 
     private void startBackup() {
