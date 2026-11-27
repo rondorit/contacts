@@ -21,8 +21,16 @@ final class WaMessages {
 
     private WaMessages() { }
 
+    static final String KEY_MODE = "wa_msg_mode";   // 0 = off, 1 = Excel clients only, 2 = also phone contacts
+
+    static int mode(Context c) {
+        android.content.SharedPreferences p = CallLogger.prefs(c);
+        if (p.contains(KEY_MODE)) return p.getInt(KEY_MODE, 1);
+        return p.getBoolean(KEY_ENABLED, true) ? 1 : 0;
+    }
+
     static boolean enabled(Context c) {
-        return CallLogger.prefs(c).getBoolean(KEY_ENABLED, true);
+        return mode(c) > 0;
     }
 
     /** Returns a short description for the diagnostics log. */
@@ -59,6 +67,7 @@ final class WaMessages {
             else if (!PhoneContacts.numbersForName(c, name).isEmpty()) phone = PhoneContacts.numbersForName(c, name).get(0);
         }
         if (row < 0 && phone == null) return "\u05D4\u05D5\u05D3\u05E2\u05D4 \u05DE\u05DE\u05D9 \u05E9\u05DC\u05D0 \u05DC\u05E7\u05D5\u05D7: " + name;
+        if (row < 0 && mode(c) == 1) return "\u05DC\u05D0 \u05D1\u05D0\u05E7\u05E1\u05DC (\u05E8\u05E7 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DE\u05D4\u05D0\u05E7\u05E1\u05DC): " + name;
 
         // Collect this sender's messages from the last 15 minutes into one description.
         long now = System.currentTimeMillis();

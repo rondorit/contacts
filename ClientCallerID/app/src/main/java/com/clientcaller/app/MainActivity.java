@@ -359,11 +359,18 @@ public class MainActivity extends Activity {
         calls.add(Ui.tile(this, "\uD83E\uDDEA", "\u05D1\u05D3\u05D9\u05E7\u05EA \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA", "\u05DC\u05DC\u05E7\u05D5\u05D7 \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF", info, v -> testPopup()));
         String enabledListeners = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
         final boolean waOn = enabledListeners != null && enabledListeners.contains(getPackageName());
-        final boolean waMsg = WaMessages.enabled(this);
-        calls.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05DE\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", waMsg ? "\u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9", waMsg ? ok : info, v -> {
-            sp.edit().putBoolean(WaMessages.KEY_ENABLED, !waMsg).apply();
-            refresh();
-        }));
+        final int waMode = WaMessages.mode(this);
+        String[] waModeText = {"\u05DB\u05D1\u05D5\u05D9", "\u05E8\u05E7 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DE\u05D4\u05D0\u05E7\u05E1\u05DC", "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA + \u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8"};
+        calls.add(Ui.tile(this, "\uD83D\uDCDD", "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05DE\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", waModeText[waMode], waMode > 0 ? ok : info, v ->
+                new AlertDialog.Builder(this)
+                        .setTitle("\u05D4\u05E6\u05E2\u05EA \u05E7\u05E8\u05D9\u05D0\u05D4 \u05DE\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4")
+                        .setSingleChoiceItems(waModeText, waMode, (d, which) -> {
+                            sp.edit().putInt(WaMessages.KEY_MODE, which).apply();
+                            d.dismiss();
+                            refresh();
+                        })
+                        .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                        .show()));
         calls.add(Ui.tile(this, "\uD83D\uDCAC", "\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", waOn ? "\u2713 \u05E4\u05E2\u05D9\u05DC" : "\u05DC\u05D0 \u05DE\u05D5\u05E4\u05E2\u05DC", waOn ? ok : info, v -> whatsAppSetup(waOn)));
         Ui.grid(this, p, calls, 3);
 
