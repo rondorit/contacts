@@ -53,6 +53,7 @@ public class QuoteActivity extends Activity {
         q = id > 0 ? db.load(id) : null;
         if (q == null) {
             q = new QuoteDb.Quote();
+            q.issuer = Issuer.defaultId(this);
             ClientStore s = Data.get(this);
             int row = getIntent().getIntExtra(DetailActivity.EXTRA_ROW, -1);
             long ticketId = getIntent().getLongExtra(EXTRA_TICKET, 0);
@@ -92,6 +93,17 @@ public class QuoteActivity extends Activity {
         eName = field(box, "\u05E9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7 / \u05D4\u05D2\u05D5\u05E3", q.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         ePhone = field(box, "\u05D8\u05DC\u05E4\u05D5\u05DF", q.clientPhone, InputType.TYPE_CLASS_PHONE);
         eEmail = field(box, "\u05DE\u05D9\u05D9\u05DC", q.clientEmail, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+
+        label(box, "\u05DE\u05D0\u05EA (\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DE\u05E6\u05D9\u05E2)");
+        LinearLayout issRow = new LinearLayout(this);
+        tIssuer = Ui.text(this, "", 16, Ui.TEXT, false);
+        issRow.addView(tIssuer, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
+        rowButton(issRow, "\u05D1\u05D7\u05E8 \u05DE\u05E6\u05D9\u05E2", v -> Issuer.choose(this, q.issuer.isEmpty() ? Issuer.defaultId(this) : q.issuer, id -> {
+            q.issuer = id;
+            showIssuer();
+        }));
+        box.addView(issRow);
+        showIssuer();
 
         box.addView(Ui.sectionTitle(this, "\u05E4\u05E8\u05D9\u05D8\u05D9\u05DD"));
         linesBox = new LinearLayout(this);
@@ -317,6 +329,13 @@ public class QuoteActivity extends Activity {
         toast("\u05E0\u05E4\u05EA\u05D7 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05E9\u05D9\u05E8\u05D5\u05EA #" + t.id);
         openTicket(t.id);
         finish();
+    }
+
+    private TextView tIssuer;
+
+    private void showIssuer() {
+        Issuer.Profile p = Issuer.forQuote(this, q);
+        tIssuer.setText("\uD83E\uDDFE " + p.label());
     }
 
     private void fillFromRow(ClientStore s, int row) {
@@ -627,7 +646,7 @@ public class QuoteActivity extends Activity {
                 } else {
                     i.putExtra(Intent.EXTRA_EMAIL, new String[]{email})
                             .putExtra(Intent.EXTRA_SUBJECT, subject)
-                            .putExtra(Intent.EXTRA_TEXT, caption + "\n\n" + Issuer.signature(this));
+                            .putExtra(Intent.EXTRA_TEXT, caption + "\n\n" + Issuer.signature(Issuer.forQuote(this, q)));
                     // A mailto selector together with an attachment fails on some phones ("No apps can perform this action"),
                     // so open an email app directly, and fall back to the regular share sheet.
                     if (!startWith(i, "com.google.android.gm") && !startWith(i, "com.samsung.android.email.provider")

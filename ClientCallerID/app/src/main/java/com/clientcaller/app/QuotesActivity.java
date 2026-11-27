@@ -54,7 +54,7 @@ public class QuotesActivity extends Activity {
         tools.add(Ui.tile(this, "\uD83D\uDCDD", "\u05D4\u05E6\u05E2\u05D4 \u05D7\u05D3\u05E9\u05D4", "", 0, v -> startActivity(new Intent(this, QuoteActivity.class))));
         tools.add(Ui.tile(this, "\uD83C\uDFF7\uFE0F", "\u05DE\u05D7\u05D9\u05E8\u05D5\u05DF", QuoteDb.get(this).catalog().size() + " \u05E4\u05E8\u05D9\u05D8\u05D9\u05DD", Ui.MUTED,
                 v -> startActivity(new Intent(this, CatalogActivity.class))));
-        tools.add(Ui.tile(this, "\uD83E\uDDFE", "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DE\u05E6\u05D9\u05E2", Issuer.get(this, 0), Ui.MUTED, v -> editIssuer()));
+        tools.add(Ui.tile(this, "\uD83E\uDDFE", "\u05E4\u05E8\u05D8\u05D9 \u05D4\u05DE\u05E6\u05D9\u05E2", Issuer.list(this).size() > 1 ? Issuer.list(this).size() + " \u05DE\u05E6\u05D9\u05E2\u05D9\u05DD" : Issuer.get(this, 0), Ui.MUTED, v -> Issuer.manage(this, this::refresh)));
         Ui.grid(this, page, tools, 3);
 
         List<View> stats = new ArrayList<>();

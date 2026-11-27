@@ -47,15 +47,7 @@ final class QuotePdf {
         y = 108;
 
         // Issuer (right) and recipient (left) blocks
-        StringBuilder iss = new StringBuilder();
-        for (int i = 0; i < Issuer.KEYS.length; i++) {
-            String v = Issuer.get(c, i);
-            if (v.isEmpty()) continue;
-            if (iss.length() > 0) iss.append('\n');
-            if (i == 3) iss.append("\u05D8\u05DC': ");
-            if (i == 5) iss.append("\u05D7.\u05E4: ");
-            iss.append(v);
-        }
+        String iss = Issuer.block(Issuer.forQuote(c, q));
         float colW = (W - 2 * M - 20) / 2f;
         float h1 = text("\u05DE\u05D0\u05EA:\n" + iss, W - M - colW, y, colW, 11, false, TEXT, Layout.Alignment.ALIGN_NORMAL);
         StringBuilder to = new StringBuilder("\u05DC\u05DB\u05D1\u05D5\u05D3:\n").append(q.clientName.isEmpty() ? "-" : q.clientName);

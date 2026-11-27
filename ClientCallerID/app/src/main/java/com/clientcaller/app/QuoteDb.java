@@ -38,7 +38,7 @@ final class QuoteDb extends SQLiteOpenHelper {
 
     static final class Quote {
         long id, ticketId, created, updated, followupAt;
-        String clientName = "", clientPhone = "", clientEmail = "", title = "", notes = "", status = "Draft";
+        String clientName = "", clientPhone = "", clientEmail = "", title = "", notes = "", status = "Draft", issuer = "";
         int validDays = 30;
         double discountPct;
         final List<Line> lines = new ArrayList<>();
@@ -90,7 +90,7 @@ final class QuoteDb extends SQLiteOpenHelper {
     }
 
     private QuoteDb(Context c) {
-        super(c, "quotes.db", null, 1);
+        super(c, "quotes.db", null, 2);
     }
 
     @Override
@@ -98,13 +98,15 @@ final class QuoteDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE catalog (_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, unit TEXT, category TEXT)");
         db.execSQL("CREATE TABLE quotes (_id INTEGER PRIMARY KEY AUTOINCREMENT, client_name TEXT, client_phone TEXT,"
                 + " client_email TEXT, ticket_id INTEGER, title TEXT, notes TEXT, status TEXT, valid_days INTEGER,"
-                + " discount REAL, created INTEGER, updated INTEGER, followup_at INTEGER)");
+                + " discount REAL, created INTEGER, updated INTEGER, followup_at INTEGER, issuer TEXT)");
         db.execSQL("CREATE TABLE quote_lines (_id INTEGER PRIMARY KEY AUTOINCREMENT, quote_id INTEGER, pos INTEGER,"
                 + " name TEXT, qty REAL, price REAL)");
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 2) db.execSQL("ALTER TABLE quotes ADD COLUMN issuer TEXT");
+    }
 
     private static String str(Cursor c, int i) {
         String s = c.getString(i);
@@ -152,7 +154,7 @@ final class QuoteDb extends SQLiteOpenHelper {
     // ------------------------------------------------------------------ quotes
 
     private static final String[] QCOLS = {"_id", "client_name", "client_phone", "client_email", "ticket_id", "title",
-            "notes", "status", "valid_days", "discount", "created", "updated", "followup_at"};
+            "notes", "status", "valid_days", "discount", "created", "updated", "followup_at", "issuer"};
 
     private Quote readQuote(Cursor c, boolean withLines) {
         Quote q = new Quote();
@@ -169,6 +171,7 @@ final class QuoteDb extends SQLiteOpenHelper {
         q.created = c.getLong(10);
         q.updated = c.getLong(11);
         q.followupAt = c.getLong(12);
+        q.issuer = str(c, 13);
         if (withLines) loadLines(q);
         return q;
     }
@@ -219,6 +222,7 @@ final class QuoteDb extends SQLiteOpenHelper {
         v.put("created", q.created);
         v.put("updated", q.updated);
         v.put("followup_at", q.followupAt);
+        v.put("issuer", q.issuer);
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();
         try {
@@ -266,7 +270,7 @@ final class QuoteDb extends SQLiteOpenHelper {
         sb.append("\n\n\u05D4\u05D4\u05E6\u05E2\u05D4 \u05D1\u05EA\u05D5\u05E7\u05E3 \u05DC-").append(q.validDays).append(" \u05D9\u05D5\u05DD.");
         if (!q.notes.isEmpty()) sb.append("\n\n").append(q.notes);
         sb.append("\n\n\u05DC\u05D0\u05D9\u05E9\u05D5\u05E8 \u05D4\u05D4\u05E6\u05E2\u05D4 \u05D0\u05E4\u05E9\u05E8 \u05E4\u05E9\u05D5\u05D8 \u05DC\u05D4\u05E9\u05D9\u05D1 \u05DC\u05D4\u05D5\u05D3\u05E2\u05D4 \u05D6\u05D5: \"\u05DE\u05D0\u05E9\u05E8/\u05EA\".");
-        sb.append("\n\n").append(Issuer.signature(c));
+        sb.append("\n\n").append(Issuer.signature(Issuer.forQuote(c, q)));
         return sb.toString();
     }
 }
