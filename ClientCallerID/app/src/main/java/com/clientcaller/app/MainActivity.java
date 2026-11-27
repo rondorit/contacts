@@ -147,6 +147,7 @@ public class MainActivity extends Activity {
                     .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show();
         }
         Backup.scheduleReminder(this);
+        Daily.schedule(this);
         showTab(0);
         if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
     }
@@ -320,6 +321,12 @@ public class MainActivity extends Activity {
         List<View> bk = new ArrayList<>();
         bk.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : "\u05D0\u05D7\u05E8\u05D5\u05DF: " + TicketDb.fmt(lastBk).substring(0, 10),
                 oldBk ? need : ok, v -> startBackup()));
+        int autoDays = sp.getInt(Daily.KEY_AUTO_DAYS, 0);
+        bk.add(Ui.tile(this, "\u2601\uFE0F", "\u05D2\u05D9\u05D1\u05D5\u05D9 \u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9", autoDays == 0 ? "\u05DB\u05D1\u05D5\u05D9" : autoDays == 1 ? "\u05D9\u05D5\u05DE\u05D9" : "\u05E9\u05D1\u05D5\u05E2\u05D9",
+                autoDays == 0 ? info : ok, v -> Daily.backupSettings(this, this::refresh)));
+        boolean daySum = sp.getBoolean(Daily.KEY_SUMMARY, true);
+        bk.add(Ui.tile(this, "\u2600\uFE0F", "\u05E1\u05D9\u05DB\u05D5\u05DD \u05D1\u05D5\u05E7\u05E8", daySum ? sp.getInt(Daily.KEY_HOUR, 7) + ":30" : "\u05DB\u05D1\u05D5\u05D9",
+                daySum ? ok : info, v -> Daily.summarySettings(this, this::refresh)));
         bk.add(Ui.tile(this, "\u267B\uFE0F", "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9", "", 0, v -> new AlertDialog.Builder(this)
                 .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
                 .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
@@ -561,6 +568,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (Daily.onResult(this, requestCode, resultCode, data)) { refresh(); return; }
         if (requestCode == REQ_FILE && resultCode == RESULT_OK && data != null && data.getData() != null) {
             final Uri uri = data.getData();
             Toast.makeText(this, "\u05E7\u05D5\u05E8\u05D0 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5\u2026", Toast.LENGTH_SHORT).show();

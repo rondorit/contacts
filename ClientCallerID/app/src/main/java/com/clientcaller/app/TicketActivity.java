@@ -90,6 +90,8 @@ public class TicketActivity extends Activity {
         eTitle = field(box, "\u05E0\u05D5\u05E9\u05D0 (\u05E7\u05E6\u05E8)", t.title, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         eDesc = field(box, "\u05EA\u05D9\u05D0\u05D5\u05E8 \u05D4\u05EA\u05E7\u05DC\u05D4", t.description,
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        LinearLayout vdRow = row(box);
+        rowButton(vdRow, "\uD83C\uDFA4 \u05D4\u05DB\u05EA\u05D1\u05D4 \u05DC\u05EA\u05D9\u05D0\u05D5\u05E8", v -> dictate(eDesc));
         eDesc.setMinLines(3);
         sStatus = spinner(box, "\u05E1\u05D8\u05D8\u05D5\u05E1", TicketDb.STATUSES, He.STATUS, t.status);
         sPriority = spinner(box, "\u05D3\u05D7\u05D9\u05E4\u05D5\u05EA", TicketDb.PRIORITIES, He.PRIORITY, t.priority);
@@ -178,6 +180,8 @@ public class TicketActivity extends Activity {
         box.addView(history);
         eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        LinearLayout vnRow = row(box);
+        rowButton(vnRow, "\uD83C\uDFA4 \u05D4\u05DB\u05EA\u05D1\u05D4 \u05DC\u05D4\u05E2\u05E8\u05D4", v -> dictate(eNote));
         eNote.setMinLines(2);
         LinearLayout pasteRow = row(box);
         rowButton(pasteRow, "\uD83D\uDCCB \u05D4\u05D3\u05D1\u05E7 \u05D8\u05E7\u05E1\u05D8 \u05E9\u05D4\u05D5\u05E2\u05EA\u05E7 (\u05EA\u05DE\u05DC\u05D5\u05DC / \u05D4\u05D5\u05D3\u05E2\u05D4)", v -> {
@@ -558,6 +562,38 @@ public class TicketActivity extends Activity {
             if (v.trim().matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) return v.trim();
         }
         return "";
+    }
+
+    // ------------------------------------------------------------------ voice dictation
+
+    private static final int REQ_VOICE = 71;
+    private EditText voiceTarget;
+
+    private void dictate(EditText target) {
+        voiceTarget = target;
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "he-IL")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "\u05D3\u05D1\u05E8 \u05E2\u05DB\u05E9\u05D9\u05D5\u2026");
+        try {
+            startActivityForResult(i, REQ_VOICE);
+        } catch (Exception e) {
+            toast("\u05D6\u05D9\u05D4\u05D5\u05D9 \u05D3\u05D9\u05D1\u05D5\u05E8 \u05DC\u05D0 \u05D6\u05DE\u05D9\u05DF \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF. \u05D0\u05E4\u05E9\u05E8 \u05DC\u05D4\u05E9\u05EA\u05DE\u05E9 \u05D1\u05DE\u05D9\u05E7\u05E8\u05D5\u05E4\u05D5\u05DF \u05E9\u05D1\u05DE\u05E7\u05DC\u05D3\u05EA.");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_VOICE && resultCode == RESULT_OK && data != null && voiceTarget != null) {
+            java.util.ArrayList<String> r = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+            if (r == null || r.isEmpty()) return;
+            String cur = voiceTarget.getText().toString().trim();
+            voiceTarget.setText(cur.isEmpty() ? r.get(0) : cur + " " + r.get(0));
+            voiceTarget.setSelection(voiceTarget.getText().length());
+            return;
+        }
+        Media.onResult(this, requestCode, resultCode, data);
     }
 
     private void showAssignee() {
