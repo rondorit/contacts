@@ -256,12 +256,12 @@ public class DetailActivity extends Activity {
             LinearLayout card = Ui.rowCard(this, e.title, TicketDb.fmt(e.start), "", 0, v -> new AlertDialog.Builder(this)
                     .setTitle(e.title)
                     .setMessage(TicketDb.fmt(e.start) + (e.description.isEmpty() ? "" : "\n\n" + e.description))
-                    .setPositiveButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", (d, w) -> {
+                    .setPositiveButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", (d, w) -> Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05D0\u05D9\u05E8\u05D5\u05E2 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", () -> {
                         if (Followups.deleteEvent(this, e.id)) {
                             Toast.makeText(this, "\u05D4\u05D0\u05D9\u05E8\u05D5\u05E2 \u05E0\u05DE\u05D7\u05E7 \u05DE\u05D4\u05D9\u05D5\u05DE\u05DF", Toast.LENGTH_SHORT).show();
                         }
                         refreshCalendar();
-                    })
+                    }))
                     .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
                     .show());
             calBox.addView(card, Ui.cardParams(this));
@@ -336,8 +336,10 @@ public class DetailActivity extends Activity {
                         open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
                                 + whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
                     } else {
-                        db.deleteSent(m.id);
-                        refreshSent();
+                        Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05DE\u05D9\u05D9\u05DC \u05DE\u05D4\u05E8\u05E9\u05D9\u05DE\u05D4", () -> {
+                            db.deleteSent(m.id);
+                            refreshSent();
+                        });
                     }
                 })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)

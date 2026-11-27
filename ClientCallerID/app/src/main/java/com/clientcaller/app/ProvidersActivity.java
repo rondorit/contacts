@@ -111,10 +111,10 @@ public class ProvidersActivity extends Activity {
         if (pr.id > 0) {
             b.setNeutralButton("\u05DE\u05D7\u05E7", (d, w) -> new AlertDialog.Builder(this)
                     .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA " + pr.name + "?")
-                    .setPositiveButton("\u05DE\u05D7\u05E7", (d2, w2) -> {
+                    .setPositiveButton("\u05DE\u05D7\u05E7", (d2, w2) -> Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA " + pr.name, () -> {
                         TicketDb.get(this).deleteProvider(pr.id);
                         refresh();
-                    })
+                    }))
                     .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                     .show());
         }

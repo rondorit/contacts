@@ -306,12 +306,12 @@ public class MainActivity extends Activity {
         bk.add(Ui.tile(this, "\u267B\uFE0F", "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9", "", 0, v -> new AlertDialog.Builder(this)
                 .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9")
                 .setMessage("\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05E0\u05D5\u05EA\u05E0\u05D9 \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA, \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D4\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA \u05E9\u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D1\u05EA\u05D5\u05DB\u05DF \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D2\u05D9\u05D1\u05D5\u05D9. \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA?")
-                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> {
+                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 \u05D2\u05D9\u05D1\u05D5\u05D9", (d, w) -> Auth.confirm(this, "\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D9\u05D7\u05DC\u05D9\u05E3 \u05D0\u05EA \u05DB\u05DC \u05D4\u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", () -> {
                     Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     i.setType("*/*");
                     startActivityForResult(i, REQ_RESTORE);
-                })
+                }))
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                 .show()));
         Ui.grid(this, p, bk, 3);
@@ -374,6 +374,12 @@ public class MainActivity extends Activity {
             boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
             perms.add(Ui.tile(this, "\uD83C\uDD94", "\u05D6\u05D9\u05D4\u05D5\u05D9 \u05DE\u05EA\u05E7\u05E9\u05E8", held ? "\u2713 \u05DE\u05D5\u05D2\u05D3\u05E8" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", held ? ok : need, v -> askCallerIdRole()));
         }
+        final boolean authOn = Auth.enabled(this);
+        perms.add(Ui.tile(this, "\uD83D\uDD0F", "\u05D0\u05D9\u05E9\u05D5\u05E8 \u05DE\u05D7\u05D9\u05E7\u05D4", authOn ? "\u05D8\u05D1\u05D9\u05E2\u05EA \u05D0\u05E6\u05D1\u05E2: \u05E4\u05E2\u05D9\u05DC" : "\u05DB\u05D1\u05D5\u05D9", authOn ? ok : info,
+                v -> Auth.confirm(this, authOn ? "\u05DB\u05D9\u05D1\u05D5\u05D9 \u05D0\u05D9\u05E9\u05D5\u05E8 \u05DE\u05D7\u05D9\u05E7\u05D4" : "\u05D4\u05E4\u05E2\u05DC\u05EA \u05D0\u05D9\u05E9\u05D5\u05E8 \u05DE\u05D7\u05D9\u05E7\u05D4", () -> {
+                    sp.edit().putBoolean(Auth.KEY_ENABLED, !authOn).apply();
+                    refresh();
+                })));
         Ui.grid(this, p, perms, 3);
 
     }

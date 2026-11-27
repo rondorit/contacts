@@ -203,12 +203,12 @@ public class TicketActivity extends Activity {
             LinearLayout dRow = row(box);
             rowButton(dRow, "\u05DE\u05D7\u05E7 \u05E7\u05E8\u05D9\u05D0\u05D4", v -> new AlertDialog.Builder(this)
                     .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "?")
-                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> {
+                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id, () -> {
                         Followups.cancel(this, t.id);
                         Followups.removeEvent(this, t);
                         db.delete(t.id);
                         finish();
-                    })
+                    }))
                     .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                     .show());
         }
@@ -363,10 +363,10 @@ public class TicketActivity extends Activity {
             tv.setPadding(0, dp(8), 0, dp(8));
             tv.setOnClickListener(v -> new AlertDialog.Builder(this)
                     .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05D4\u05E9\u05D5\u05E8\u05D4 \u05D4\u05D6\u05D0\u05EA \u05DE\u05D4\u05D4\u05D9\u05E1\u05D8\u05D5\u05E8\u05D9\u05D4?\n\n" + n.text)
-                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> {
+                    .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05D4\u05E2\u05E8\u05D4", () -> {
                         db.deleteNote(n.id);
                         showHistory();
-                    })
+                    }))
                     .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                     .show());
             history.addView(tv);

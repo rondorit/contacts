@@ -109,7 +109,12 @@ public class CategoriesActivity extends Activity {
                         items.add(pos + 1, items.remove(pos));
                     } else if (w == 2) {
                         if (items.size() <= 1) return;
-                        items.remove(pos);
+                        Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05D4\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4 " + items.get(pos), () -> {
+                            items.remove(pos);
+                            Categories.save(this, items);
+                            refresh();
+                        });
+                        return;
                     } else {
                         return;
                     }
