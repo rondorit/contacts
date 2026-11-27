@@ -69,11 +69,8 @@ final class Followups {
             String title = "\uD83D\uDD27 \u05DE\u05E2\u05E7\u05D1: "
                     + (t.clientName.isEmpty() ? "" : t.clientName + " - ") + t.title;
             ContentValues v = new ContentValues();
-            v.put(CalendarContract.Events.TITLE, title);
             v.put(CalendarContract.Events.DESCRIPTION, TicketDb.get(c).summary(t));
-            v.put(CalendarContract.Events.DTSTART, t.followupAt);
-            v.put(CalendarContract.Events.DTEND, t.followupAt + 30 * 60 * 1000L);
-            v.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+            v.put(CalendarContract.Events.TITLE, CallLogger.putTime(c, v, title, t.followupAt, t.followupAt + 30 * 60 * 1000L));
             if (t.eventId > 0) {
                 Uri u = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, t.eventId);
                 if (cr.update(u, v, null, null) > 0) return;

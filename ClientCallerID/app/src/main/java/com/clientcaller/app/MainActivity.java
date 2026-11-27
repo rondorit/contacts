@@ -384,6 +384,18 @@ public class MainActivity extends Activity {
         boolean contacts = sp.getBoolean(PhoneContacts.KEY_ENABLED, true);
         List<View> calls = new ArrayList<>();
         calls.add(Ui.tile(this, "\uD83D\uDCC5", "\u05D9\u05D5\u05DE\u05DF \u05DC\u05E9\u05D9\u05D7\u05D5\u05EA", calText, calId < 0 ? info : ok, v -> chooseCalendar()));
+        final boolean allDay = CallLogger.allDay(this);
+        calls.add(Ui.tile(this, "\uD83D\uDDD3\uFE0F", "\u05E1\u05D5\u05D2 \u05E8\u05D9\u05E9\u05D5\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF", allDay ? "\u05D9\u05D5\u05DD \u05E9\u05DC\u05DD" : "\u05D0\u05D9\u05E8\u05D5\u05E2 \u05E2\u05DD \u05E9\u05E2\u05D4", info, v ->
+                new AlertDialog.Builder(this)
+                        .setTitle("\u05D0\u05D9\u05DA \u05DC\u05E8\u05E9\u05D5\u05DD \u05E9\u05D9\u05D7\u05D5\u05EA \u05D5\u05DE\u05E2\u05E7\u05D1\u05D9\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF?")
+                        .setSingleChoiceItems(new String[]{"\uD83D\uDCCC \u05D0\u05D9\u05E8\u05D5\u05E2 \u05E9\u05DC \u05D9\u05D5\u05DD \u05E9\u05DC\u05DD (\u05D4\u05E9\u05E2\u05D4 \u05D1\u05DB\u05D5\u05EA\u05E8\u05EA, \u05DC\u05D0 \u05D7\u05D5\u05E1\u05DD \u05D6\u05DE\u05DF)", "\uD83D\uDD52 \u05D0\u05D9\u05E8\u05D5\u05E2 \u05E2\u05DD \u05E9\u05E2\u05D4 (\u05DB\u05DE\u05D5 \u05E4\u05D2\u05D9\u05E9\u05D4)"},
+                                allDay ? 0 : 1, (d, which) -> {
+                                    sp.edit().putBoolean(CallLogger.KEY_ALL_DAY, which == 0).apply();
+                                    d.dismiss();
+                                    refresh();
+                                })
+                        .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                        .show()));
         calls.add(Ui.tile(this, "\uD83D\uDCAC", "\u05E9\u05DE\u05D9\u05E8\u05EA \u05E9\u05D9\u05D7\u05D4", ask ? "\u05DC\u05E9\u05D0\u05D5\u05DC \u05DB\u05DC \u05E4\u05E2\u05DD" : "\u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA", info, v -> {
             sp.edit().putBoolean(CallLogger.KEY_ASK, !ask).apply();
             refresh();

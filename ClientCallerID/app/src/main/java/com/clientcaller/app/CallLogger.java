@@ -101,12 +101,44 @@ final class CallLogger {
     static void insertEvent(Context c, long calId, String title, String desc, long start, long end) {
         ContentValues v = new ContentValues();
         v.put(CalendarContract.Events.CALENDAR_ID, calId);
-        v.put(CalendarContract.Events.TITLE, title);
         v.put(CalendarContract.Events.DESCRIPTION, desc);
-        v.put(CalendarContract.Events.DTSTART, start);
-        v.put(CalendarContract.Events.DTEND, end);
-        v.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+        v.put(CalendarContract.Events.TITLE, putTime(c, v, title, start, end));
         c.getContentResolver().insert(CalendarContract.Events.CONTENT_URI, v);
+    }
+
+    static final String KEY_ALL_DAY = "cal_all_day";
+
+    static boolean allDay(Context c) {
+        return prefs(c).getBoolean(KEY_ALL_DAY, true);
+    }
+
+    /**
+     * Puts the event time. In all-day mode the event covers the whole local day (UTC midnight to midnight,
+     * as Android requires), is marked "free" so it doesn't look like a meeting, and the clock time moves into the title.
+     * Returns the title to use.
+     */
+    static String putTime(Context c, ContentValues v, String title, long start, long end) {
+        if (!allDay(c)) {
+            v.put(CalendarContract.Events.ALL_DAY, 0);
+            v.put(CalendarContract.Events.DTSTART, start);
+            v.put(CalendarContract.Events.DTEND, end);
+            v.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+            v.put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
+            return title;
+        }
+        java.util.Calendar local = java.util.Calendar.getInstance();
+        local.setTimeInMillis(start);
+        java.util.Calendar utc = java.util.Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        utc.clear();
+        utc.set(local.get(java.util.Calendar.YEAR), local.get(java.util.Calendar.MONTH), local.get(java.util.Calendar.DAY_OF_MONTH));
+        long day = utc.getTimeInMillis();
+        v.put(CalendarContract.Events.ALL_DAY, 1);
+        v.put(CalendarContract.Events.DTSTART, day);
+        v.put(CalendarContract.Events.DTEND, day + 24L * 60 * 60 * 1000);
+        v.put(CalendarContract.Events.EVENT_TIMEZONE, "UTC");
+        v.put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_FREE);
+        String hm = String.format(java.util.Locale.ROOT, "%02d:%02d", local.get(java.util.Calendar.HOUR_OF_DAY), local.get(java.util.Calendar.MINUTE));
+        return hm + " " + title;
     }
 
     /** Notification after the call: "Save to calendar?" with Save / No buttons. */
