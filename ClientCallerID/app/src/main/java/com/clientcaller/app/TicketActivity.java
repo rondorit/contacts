@@ -81,7 +81,11 @@ public class TicketActivity extends Activity {
         head.setText(t.id > 0 ? "\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + "  \u00B7  \u05E0\u05E4\u05EA\u05D7\u05D4 " + TicketDb.fmt(t.created) : "\u05E7\u05E8\u05D9\u05D0\u05D4 \u05D7\u05D3\u05E9\u05D4");
         box.addView(head);
 
-        eClient = field(box, "\u05DC\u05E7\u05D5\u05D7", t.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        eClient = field(box, "\u05DC\u05E7\u05D5\u05D7 (\u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4 - \u05E2\u05E8\u05D9\u05DB\u05EA \u05DB\u05E8\u05D8\u05D9\u05E1 \u05D4\u05DC\u05E7\u05D5\u05D7)", t.clientName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        eClient.setOnLongClickListener(v -> {
+            openClientForEdit();
+            return true;
+        });
         ePhone = field(box, "\u05D8\u05DC\u05E4\u05D5\u05DF \u05D4\u05DC\u05E7\u05D5\u05D7", t.clientPhone, InputType.TYPE_CLASS_PHONE);
         eTitle = field(box, "\u05E0\u05D5\u05E9\u05D0 (\u05E7\u05E6\u05E8)", t.title, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         eDesc = field(box, "\u05EA\u05D9\u05D0\u05D5\u05E8 \u05D4\u05EA\u05E7\u05DC\u05D4", t.description,
@@ -296,6 +300,26 @@ public class TicketActivity extends Activity {
                 })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                 .show();
+    }
+
+    /** Long press on the client name: open that client's card for editing. */
+    private void openClientForEdit() {
+        ClientStore s = Data.get(this);
+        String name = eClient.getText().toString().trim();
+        String phone = ePhone.getText().toString().trim();
+        int row = phone.isEmpty() ? -1 : s.find(phone);
+        if (row < 0 && !name.isEmpty()) {
+            for (int r = 0; r < s.rows.size(); r++) if (s.name(r).equalsIgnoreCase(name)) { row = r; break; }
+        }
+        if (row < 0) {
+            new AlertDialog.Builder(this)
+                    .setMessage("\u05D4\u05DC\u05E7\u05D5\u05D7 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0 \u05D1\u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA. \u05DC\u05D4\u05D5\u05E1\u05D9\u05E3 \u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9?")
+                    .setPositiveButton("\u05DC\u05E7\u05D5\u05D7 \u05D7\u05D3\u05E9", (d, w) -> startActivity(new Intent(this, ClientEditActivity.class)))
+                    .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                    .show();
+            return;
+        }
+        startActivity(new Intent(this, ClientEditActivity.class).putExtra(DetailActivity.EXTRA_ROW, row));
     }
 
     private void loadCategories(String selected) {
