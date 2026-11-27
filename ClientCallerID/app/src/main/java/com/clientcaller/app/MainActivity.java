@@ -39,6 +39,7 @@ public class MainActivity extends Activity {
     private static final int REQ_RESTORE = 5;
     private static final int REQ_EXPORT = 6;
     private static final int REQ_ACCESS_SAVE = 7;
+    private static final int REQ_ACCESS_SOURCE = 8;
 
     private static final String[] TAB_ICONS = {"\uD83C\uDFE0", "\uD83D\uDC65", "\uD83C\uDFAB", "\u2699\uFE0F"};
     private static final String[] TAB_NAMES = {"\u05E8\u05D0\u05E9\u05D9", "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA", "\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "\u05E0\u05D9\u05D4\u05D5\u05DC"};
@@ -568,6 +569,8 @@ public class MainActivity extends Activity {
                     runOnUiThread(() -> Toast.makeText(this, "\u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + msg, Toast.LENGTH_LONG).show());
                 }
             }).start();
+        } else if (requestCode == REQ_ACCESS_SOURCE && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            accessSourcePicked(data.getData());
         } else if (requestCode == REQ_ACCESS_SAVE && resultCode == RESULT_OK && data != null && data.getData() != null) {
             runAccessUpdate(data.getData());
         } else if (requestCode == REQ_EXPORT && resultCode == RESULT_OK && data != null && data.getData() != null) {
@@ -745,14 +748,78 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "\u05D0\u05D9\u05DF \u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF \u05D1-Access", Toast.LENGTH_SHORT).show();
             return;
         }
-        final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
+        new AlertDialog.Builder(this)
+                .setTitle("\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access")
+                .setMessage(edits.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF/\u05D4\u05D5\u05E1\u05E4\u05D4, " + dels.size() + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4.\n\n"
+                        + "\u05D1\u05D7\u05E8 \u05E2\u05DB\u05E9\u05D9\u05D5 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05D4\u05E2\u05D3\u05DB\u05E0\u05D9 (\u05DC\u05DE\u05E9\u05DC \u05DE-Google Drive \u2190 Metzer). "
+                        + "\u05D4\u05E9\u05D9\u05E0\u05D5\u05D9\u05D9\u05DD \u05DE\u05D4\u05D8\u05DC\u05E4\u05D5\u05DF \u05D9\u05D9\u05DB\u05EA\u05D1\u05D5 \u05DC\u05EA\u05D5\u05DB\u05D5, \u05D5\u05E9\u05D0\u05E8 \u05D4\u05E8\u05E9\u05D5\u05DE\u05D5\u05EA \u05DC\u05D0 \u05D9\u05E9\u05EA\u05E0\u05D5.\n\n\u05D5\u05D3\u05D0 \u05E9\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E1\u05D2\u05D5\u05E8 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1.")
+                .setPositiveButton("\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 Access", (d, w) -> {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                    startActivityForResult(i, REQ_ACCESS_SOURCE);
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
+    }
+
+    /** The user picked the current Access file: keep a fresh copy, then ask where to save the result. */
+    private void accessSourcePicked(final Uri uri) {
+        Toast.makeText(this, "\u05E7\u05D5\u05E8\u05D0 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5\u2026", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                byte[] bytes;
+                try (InputStream in = getContentResolver().openInputStream(uri)) {
+                    if (in == null) throw new IOException("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E4\u05EA\u05D5\u05D7 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5");
+                    bytes = ClientStore.readAll(in);
+                }
+                if (bytes.length == 0) throw new IOException("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E9\u05E0\u05D1\u05D7\u05E8 \u05E8\u05D9\u05E7 (0 \u05D1\u05EA\u05D9\u05DD). \u05D1\u05D7\u05E8 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9.");
+                if (!AccessImport.isAccess(bytes)) throw new IOException("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E9\u05E0\u05D1\u05D7\u05E8 \u05D0\u05D9\u05E0\u05D5 \u05E7\u05D5\u05D1\u05E5 Access");
+                final File copy = new File(getFilesDir(), Data.ACCESS_COPY);
+                try (java.io.FileOutputStream o = new java.io.FileOutputStream(copy)) {
+                    o.write(bytes);
+                }
+                try {
+                    getContentResolver().takePersistableUriPermission(uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                } catch (Exception ignored) { }
+                CallLogger.prefs(this).edit().putString(Data.KEY_ACC_URI, uri.toString()).apply();
+                final List<String> tables = AccessImport.tables(copy);
+                String table = CallLogger.prefs(this).getString(Data.KEY_ACC_TABLE, "");
+                if (!tables.contains(table)) {
+                    if (tables.size() == 1) {
+                        CallLogger.prefs(this).edit().putString(Data.KEY_ACC_TABLE, tables.get(0)).apply();
+                    } else {
+                        runOnUiThread(() -> new AlertDialog.Builder(this)
+                                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05D8\u05D1\u05DC\u05D4 \u05E0\u05DE\u05E6\u05D0\u05D9\u05DD \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA?")
+                                .setItems(tables.toArray(new String[0]), (d, w) -> {
+                                    CallLogger.prefs(this).edit().putString(Data.KEY_ACC_TABLE, tables.get(w)).apply();
+                                    showSaveOptions(uri, bytes.length);
+                                })
+                                .show());
+                        return;
+                    }
+                }
+                final int size = bytes.length;
+                runOnUiThread(() -> showSaveOptions(uri, size));
+            } catch (Exception e) {
+                final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+                runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E7\u05E8\u05D5\u05D0 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5")
+                        .setMessage(msg).setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show());
+            }
+        }).start();
+    }
+
+    private void showSaveOptions(final Uri source, int size) {
         final String[] opts = {
-                "\uD83D\uDCE4 \u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive (\u05DE\u05D5\u05DE\u05DC\u05E5)",
+                "\uD83D\uDCE4 \u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive",
                 "\uD83D\uDCC1 \u05E9\u05DE\u05D5\u05E8 \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF (\u05EA\u05D9\u05E7\u05D9\u05D9\u05EA \u05D4\u05D5\u05E8\u05D3\u05D5\u05EA)",
                 "\uD83D\uDCBE \u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9",
-                "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9" + (uriStr.isEmpty() ? " (\u05DC\u05D0 \u05D6\u05DE\u05D9\u05DF)" : "")};
+                "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E9\u05E0\u05D1\u05D7\u05E8: " + describe(source)};
         new AlertDialog.Builder(this)
-                .setTitle("\u05E2\u05D3\u05DB\u05D5\u05DF Access: " + edits.size() + " \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF/\u05D4\u05D5\u05E1\u05E4\u05D4, " + dels.size() + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4")
+                .setTitle("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E0\u05E7\u05E8\u05D0 (" + (size / 1024) + " KB). \u05D0\u05D9\u05E4\u05D4 \u05DC\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05D4\u05DE\u05E2\u05D5\u05D3\u05DB\u05DF?")
                 .setItems(opts, (d, w) -> {
                     if (w == 0) {
                         runAccessUpdate(null);
@@ -766,15 +833,8 @@ public class MainActivity extends Activity {
                         String ext = AccessImport.extension(new File(getFilesDir(), Data.ACCESS_COPY));
                         i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + "." + ext);
                         startActivityForResult(i, REQ_ACCESS_SAVE);
-                    } else if (!uriStr.isEmpty()) {
-                        new AlertDialog.Builder(this)
-                                .setMessage("\u05DC\u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + describe(Uri.parse(uriStr))
-                                        + "?\n\n\u05D5\u05D3\u05D0 \u05E9\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E1\u05D2\u05D5\u05E8 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1.")
-                                .setPositiveButton("\u05E2\u05D3\u05DB\u05DF", (d2, w2) -> runAccessUpdate(Uri.parse(uriStr)))
-                                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                                .show();
                     } else {
-                        Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05DE\u05D7\u05D3\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05E2\u05D3\u05DB\u05DF \u05D0\u05D5\u05EA\u05D5", Toast.LENGTH_LONG).show();
+                        runAccessUpdate(source);
                     }
                 })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
@@ -825,18 +885,13 @@ public class MainActivity extends Activity {
         final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
         new Thread(() -> {
             try {
-                // 1. Start from the newest version of the original file (keeps changes made on the PC).
+                // 1. Start from the copy of the Access file the user just picked.
                 File work = new File(getCacheDir(), "work.accdb");
-                byte[] src = null;
-                if (!uriStr.isEmpty()) {
-                    try (InputStream in = getContentResolver().openInputStream(Uri.parse(uriStr))) {
-                        if (in != null) src = ClientStore.readAll(in);
-                    } catch (Exception ignored) { }
-                }
-                if (src == null) {
-                    try (InputStream in = new java.io.FileInputStream(new File(getFilesDir(), Data.ACCESS_COPY))) {
-                        src = ClientStore.readAll(in);
-                    }
+                byte[] src;
+                File copy = new File(getFilesDir(), Data.ACCESS_COPY);
+                if (!copy.exists()) throw new IOException("\u05DC\u05D0 \u05E0\u05D1\u05D7\u05E8 \u05E7\u05D5\u05D1\u05E5 Access. \u05DC\u05D7\u05E5 \u05E9\u05D5\u05D1 \u05E2\u05DC \"\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access\" \u05D5\u05D1\u05D7\u05E8 \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5.");
+                try (InputStream in = new java.io.FileInputStream(copy)) {
+                    src = ClientStore.readAll(in);
                 }
                 try (java.io.FileOutputStream o = new java.io.FileOutputStream(work)) {
                     o.write(src);
