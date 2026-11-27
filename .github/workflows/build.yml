@@ -27,5 +27,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk ClientCallerID.apk
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest ClientCallerID.apk --target "${{ github.sha }}" --title "Client Caller ID" --notes "Tap ClientCallerID.apk to download and install."
+          if [ "${{ github.ref_name }}" = "main" ]; then TAG=latest; TITLE="Client Caller ID"; EXTRA=""; else TAG=preview; TITLE="Preview (${{ github.ref_name }})"; EXTRA="--prerelease"; fi
+          gh release delete $TAG --yes --cleanup-tag || true
+          gh release create $TAG ClientCallerID.apk --target "${{ github.sha }}" --title "$TITLE" $EXTRA --notes "Tap ClientCallerID.apk to download and install."
