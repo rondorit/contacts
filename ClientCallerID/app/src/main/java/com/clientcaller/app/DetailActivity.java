@@ -288,25 +288,57 @@ public class DetailActivity extends Activity {
                 .setMessage("\u05E0\u05E9\u05DC\u05D7: " + TicketDb.fmt(m.time) + "\n\u05D0\u05DC: " + m.to
                         + (m.cc.isEmpty() ? "" : "\n\u05D4\u05E2\u05EA\u05E7: " + m.cc)
                         + (m.ticketId > 0 ? "\n\u05E7\u05E8\u05D9\u05D0\u05D4 #" + m.ticketId : "") + "\n\n" + m.body)
-                .setPositiveButton("\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1", (d, w) -> {
-                    TicketDb.Sent again = new TicketDb.Sent();
-                    again.ticketId = m.ticketId;
-                    again.clientName = m.clientName;
-                    again.clientPhone = m.clientPhone;
-                    again.to = m.to;
-                    again.cc = m.cc;
-                    again.subject = m.subject;
-                    again.body = m.body;
-                    TicketDb.get(this).addSent(again);
-                    if (m.ticketId > 0) TicketDb.get(this).addNote(m.ticketId, "\u05DE\u05D9\u05D9\u05DC \u05E0\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1 \u05D0\u05DC " + m.to
-                            + (m.cc.isEmpty() ? "" : " (\u05D4\u05E2\u05EA\u05E7: " + m.cc + ")"));
-                    TicketActivity.openEmail(this, m.to, m.cc, m.subject, m.body);
-                })
-                .setNeutralButton("\u05DE\u05D7\u05E7 \u05DE\u05D4\u05E8\u05E9\u05D9\u05DE\u05D4", (d, w) -> {
-                    TicketDb.get(this).deleteSent(m.id);
-                    refreshSent();
-                })
+                .setPositiveButton("\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1 / \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4\u2026", (d, w) -> sentActions(m))
                 .setNegativeButton("\u05E1\u05D2\u05D5\u05E8", null)
+                .show();
+    }
+
+    private void sentActions(final TicketDb.Sent m) {
+        TicketDb db = TicketDb.get(this);
+        TicketDb.Ticket t = m.ticketId > 0 ? db.load(m.ticketId) : null;
+        TicketDb.Provider pr = t == null || t.provider.isEmpty() ? null : db.providerByName(t.provider);
+        final String provName = t == null ? "" : t.provider;
+        final String provPhone = pr == null ? "" : pr.phone.trim();
+        final String clientPhone = m.clientPhone.trim();
+        final String text = m.subject + "\n\n" + m.body;
+        final String[] opts = {
+                "\uD83D\uDCE7 \u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1 \u05D1\u05DE\u05D9\u05D9\u05DC",
+                "\uD83D\uDCAC \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA" + (provName.isEmpty() ? "" : " (" + provName + ")"),
+                "\uD83D\uDCAC \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05DC\u05E7\u05D5\u05D7" + (m.clientName.isEmpty() ? "" : " (" + m.clientName + ")"),
+                "\uD83D\uDDD1\uFE0F \u05DE\u05D7\u05E7 \u05DE\u05D4\u05E8\u05E9\u05D9\u05DE\u05D4"};
+        new AlertDialog.Builder(this)
+                .setTitle("\u05DE\u05D4 \u05DC\u05E2\u05E9\u05D5\u05EA \u05E2\u05DD \u05D4\u05DE\u05D9\u05D9\u05DC?")
+                .setItems(opts, (d, w) -> {
+                    if (w == 0) {
+                        TicketDb.Sent again = new TicketDb.Sent();
+                        again.ticketId = m.ticketId;
+                        again.clientName = m.clientName;
+                        again.clientPhone = m.clientPhone;
+                        again.to = m.to;
+                        again.cc = m.cc;
+                        again.subject = m.subject;
+                        again.body = m.body;
+                        db.addSent(again);
+                        if (m.ticketId > 0) db.addNote(m.ticketId, "\u05DE\u05D9\u05D9\u05DC \u05E0\u05E9\u05DC\u05D7 \u05E9\u05D5\u05D1 \u05D0\u05DC " + m.to
+                                + (m.cc.isEmpty() ? "" : " (\u05D4\u05E2\u05EA\u05E7: " + m.cc + ")"));
+                        TicketActivity.openEmail(this, m.to, m.cc, m.subject, m.body);
+                    } else if (w == 1 || w == 2) {
+                        String phone = w == 1 ? provPhone : clientPhone;
+                        if (phone.isEmpty()) {
+                            Toast.makeText(this, w == 1 ? "\u05D0\u05D9\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF \u05DC\u05E0\u05D5\u05EA\u05DF \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA - \u05D4\u05D5\u05E1\u05E3 \u05D0\u05D5\u05EA\u05D5 \u05D1'\u05E0\u05D5\u05EA\u05E0\u05D9 \u05E9\u05D9\u05E8\u05D5\u05EA'"
+                                    : "\u05D0\u05D9\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF \u05DC\u05DC\u05E7\u05D5\u05D7", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        if (m.ticketId > 0) db.addNote(m.ticketId, "\u05EA\u05D5\u05DB\u05DF \u05D4\u05DE\u05D9\u05D9\u05DC \u05E0\u05E9\u05DC\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC"
+                                + (w == 1 ? provName : (m.clientName.isEmpty() ? "\u05DC\u05E7\u05D5\u05D7" : m.clientName)));
+                        open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/"
+                                + whatsAppNumber(phone) + "?text=" + Uri.encode(text))));
+                    } else {
+                        db.deleteSent(m.id);
+                        refreshSent();
+                    }
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
                 .show();
     }
 
