@@ -74,6 +74,9 @@ public class DetailActivity extends Activity {
                 .putExtra(EXTRA_ROW, clientRow))));
         acts.add(Ui.tile(this, "\uD83C\uDFD8\uFE0F", "\u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4", pc < 0 ? "" : plotVal.isEmpty() ? "\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4" : same + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA",
                 Ui.MUTED, v -> showSamePlot(clientRow)));
+        final String navAddr = Nav.address(this, s, r);
+        acts.add(dim(Ui.tile(this, "\uD83E\uDDED", "\u05E0\u05D9\u05D5\u05D5\u05D8", navAddr.isEmpty() ? "\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05EA" : "", Ui.MUTED,
+                v -> Nav.choose(this, navAddr)), navAddr.isEmpty()));
         acts.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuoteActivity.class)
                 .putExtra(EXTRA_ROW, clientRow))));
         acts.add(Ui.tile(this, "\u270F\uFE0F", "\u05E2\u05E8\u05D9\u05DB\u05D4", "", 0, v -> {
@@ -108,6 +111,21 @@ public class DetailActivity extends Activity {
             TextView val = Ui.text(this, value, 17, Ui.TEXT, false);
             val.setTextIsSelectable(true);
             details.addView(val);
+            if (c == Nav.column(this, s)) {
+                final String addr = Nav.address(this, s, r);
+                LinearLayout navLine = new LinearLayout(this);
+                Button wz = new Button(this);
+                wz.setAllCaps(false);
+                wz.setText("\uD83D\uDE97 Waze");
+                wz.setOnClickListener(v -> Nav.waze(this, addr));
+                Button gm = new Button(this);
+                gm.setAllCaps(false);
+                gm.setText("\uD83D\uDDFA\uFE0F \u05DE\u05E4\u05D5\u05EA");
+                gm.setOnClickListener(v -> Nav.maps(this, addr));
+                navLine.addView(wz, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                navLine.addView(gm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                details.addView(navLine);
+            }
             if (s.phoneCols.contains(c)) {
                 for (final String number : ClientStore.phoneParts(value)) {
                     LinearLayout line = new LinearLayout(this);
