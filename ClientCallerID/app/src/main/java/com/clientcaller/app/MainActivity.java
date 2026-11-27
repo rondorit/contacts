@@ -746,25 +746,74 @@ public class MainActivity extends Activity {
             return;
         }
         final String uriStr = CallLogger.prefs(this).getString(Data.KEY_ACC_URI, "");
-        AlertDialog.Builder b = new AlertDialog.Builder(this)
-                .setTitle("\u05E2\u05D3\u05DB\u05D5\u05DF \u05E7\u05D5\u05D1\u05E5 Access")
-                .setMessage((uriStr.isEmpty() ? "" : "\u05E7\u05D5\u05D1\u05E5: " + describe(Uri.parse(uriStr)) + "\n\n")
-                        + "\u05D9\u05E2\u05D5\u05D3\u05DB\u05E0\u05D5 \u05D0\u05D5 \u05D9\u05EA\u05D5\u05D5\u05E1\u05E4\u05D5 " + edits.size() + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA, \u05D5\u05D9\u05D9\u05DE\u05D7\u05E7\u05D5 " + dels.size() + ".\n"
-                        + "\u05E9\u05D0\u05E8 \u05D4\u05E8\u05E9\u05D5\u05DE\u05D5\u05EA \u05D1\u05E7\u05D5\u05D1\u05E5 \u05DC\u05D0 \u05D9\u05E9\u05EA\u05E0\u05D5.\n\n\u05D0\u05D9\u05E4\u05D4 \u05DC\u05E9\u05DE\u05D5\u05E8?")
+        final String[] opts = {
+                "\uD83D\uDCE4 \u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive (\u05DE\u05D5\u05DE\u05DC\u05E5)",
+                "\uD83D\uDCBE \u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9",
+                "\u270F\uFE0F \u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9" + (uriStr.isEmpty() ? " (\u05DC\u05D0 \u05D6\u05DE\u05D9\u05DF)" : "")};
+        new AlertDialog.Builder(this)
+                .setTitle("\u05E2\u05D3\u05DB\u05D5\u05DF Access: " + edits.size() + " \u05DC\u05E2\u05D3\u05DB\u05D5\u05DF/\u05D4\u05D5\u05E1\u05E4\u05D4, " + dels.size() + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4")
+                .setItems(opts, (d, w) -> {
+                    if (w == 0) {
+                        runAccessUpdate(null);
+                    } else if (w == 1) {
+                        String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+                        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                        i.addCategory(Intent.CATEGORY_OPENABLE);
+                        i.setType("application/octet-stream");
+                        String ext = AccessImport.extension(new File(getFilesDir(), Data.ACCESS_COPY));
+                        i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + "." + ext);
+                        startActivityForResult(i, REQ_ACCESS_SAVE);
+                    } else if (!uriStr.isEmpty()) {
+                        new AlertDialog.Builder(this)
+                                .setMessage("\u05DC\u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5: " + describe(Uri.parse(uriStr))
+                                        + "?\n\n\u05D5\u05D3\u05D0 \u05E9\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E1\u05D2\u05D5\u05E8 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1.")
+                                .setPositiveButton("\u05E2\u05D3\u05DB\u05DF", (d2, w2) -> runAccessUpdate(Uri.parse(uriStr)))
+                                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                                .show();
+                    } else {
+                        Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access \u05DE\u05D7\u05D3\u05E9 \u05DB\u05D3\u05D9 \u05DC\u05E2\u05D3\u05DB\u05DF \u05D0\u05D5\u05EA\u05D5", Toast.LENGTH_LONG).show();
+                    }
+                })
                 .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                .setNeutralButton("\u05E9\u05DE\u05D5\u05E8 \u05DB\u05E7\u05D5\u05D1\u05E5 \u05D7\u05D3\u05E9", (d, w) -> {
-                    String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
-                    Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    i.addCategory(Intent.CATEGORY_OPENABLE);
-                    i.setType("application/octet-stream");
-                    String ext = AccessImport.extension(new File(getFilesDir(), Data.ACCESS_COPY));
-                    i.putExtra(Intent.EXTRA_TITLE, "clients-" + date + "." + ext);
-                    startActivityForResult(i, REQ_ACCESS_SAVE);
-                });
-        if (!uriStr.isEmpty()) {
-            b.setPositiveButton("\u05E2\u05D3\u05DB\u05DF \u05D0\u05EA \u05D4\u05E7\u05D5\u05D1\u05E5 \u05D4\u05DE\u05E7\u05D5\u05E8\u05D9", (d, w) -> runAccessUpdate(Uri.parse(uriStr)));
+                .show();
+    }
+
+    /** Writes bytes to a document; checks the result is not empty. Drive needs mode "w" (not "wt"). */
+    private String writeDocument(Uri target, byte[] out) throws IOException {
+        String auth = target.getAuthority() == null ? "" : target.getAuthority();
+        boolean drive = auth.contains("com.google.android.apps.docs");
+        String[] modes = drive ? new String[]{"w", "rwt", "wt"} : new String[]{"wt", "w", "rwt"};
+        Exception lastErr = null;
+        for (String mode : modes) {
+            try (android.os.ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(target, mode)) {
+                if (pfd == null) continue;
+                try (java.io.FileOutputStream os = new java.io.FileOutputStream(pfd.getFileDescriptor())) {
+                    os.write(out);
+                    os.flush();
+                    try { os.getFD().sync(); } catch (Exception ignored) { }
+                }
+            } catch (Exception e) {
+                lastErr = e;
+                continue;
+            }
+            long len = readLength(target);
+            if (len <= 0) {
+                try { Thread.sleep(1500); } catch (InterruptedException ignored) { }
+                len = readLength(target);
+            }
+            if (len == out.length) return "\u2713 \u05D0\u05D5\u05DE\u05EA (" + (out.length / 1024) + " KB)";
+            if (len > 0 && !drive) return "\u05E0\u05DB\u05EA\u05D1\u05D5 " + len + " \u05D1\u05EA\u05D9\u05DD";
         }
-        b.show();
+        throw new IOException("\u05D4\u05E7\u05D5\u05D1\u05E5 \u05E0\u05E9\u05DE\u05E8 \u05E8\u05D9\u05E7" + (lastErr == null ? "" : " (" + lastErr.getMessage() + ")")
+                + ". \u05D4\u05E9\u05EA\u05DE\u05E9 \u05D1\"\u05E9\u05EA\u05E3 / \u05E9\u05DE\u05D5\u05E8 \u05DC-Drive\".");
+    }
+
+    private long readLength(Uri u) {
+        try (InputStream in = getContentResolver().openInputStream(u)) {
+            return in == null ? -1 : ClientStore.readAll(in).length;
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     /** Reads the newest Access file, writes the app's changes into it, and saves it to target. */
@@ -824,28 +873,27 @@ public class MainActivity extends Activity {
                 try (InputStream in = new java.io.FileInputStream(work)) {
                     out = ClientStore.readAll(in);
                 }
-                // Google Drive and other providers accept different write modes: try several.
-                boolean written = false;
-                Exception lastErr = null;
-                for (String mode : new String[]{"wt", "w", "rwt"}) {
-                    try (java.io.OutputStream os = getContentResolver().openOutputStream(target, mode)) {
-                        if (os == null) continue;
-                        os.write(out);
-                        os.flush();
-                        written = true;
-                        break;
-                    } catch (Exception e) {
-                        lastErr = e;
+                final String where;
+                final String verifiedText;
+                final boolean drive;
+                File shared = null;
+                if (target == null) {
+                    String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+                    File dir = new File(getCacheDir(), "share");
+                    dir.mkdirs();
+                    shared = new File(dir, "clients-" + date + "." + AccessImport.extension(work));
+                    try (java.io.FileOutputStream o = new java.io.FileOutputStream(shared)) {
+                        o.write(out);
                     }
+                    where = shared.getName() + " (\u05DC\u05E9\u05D9\u05EA\u05D5\u05E3)";
+                    verifiedText = "\u2713 " + (out.length / 1024) + " KB";
+                    drive = false;
+                } else {
+                    verifiedText = writeDocument(target, out);
+                    where = describe(target);
+                    drive = target.getAuthority() != null && target.getAuthority().contains("com.google.android.apps.docs");
                 }
-                if (!written) throw new IOException("\u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05EA \u05DB\u05EA\u05D9\u05D1\u05D4 \u05DC\u05E7\u05D5\u05D1\u05E5" + (lastErr == null ? "" : ": " + lastErr.getMessage()));
-                long readBack = -1;
-                try (InputStream in = getContentResolver().openInputStream(target)) {
-                    if (in != null) readBack = ClientStore.readAll(in).length;
-                } catch (Exception ignored) { }
-                final String where = describe(target);
-                final boolean verified = readBack == out.length;
-                final boolean drive = target.getAuthority() != null && target.getAuthority().contains("com.google.android.apps.docs");
+                final File sharedFile = shared;
                 try (java.io.FileOutputStream o = new java.io.FileOutputStream(new File(getFilesDir(), Data.ACCESS_COPY))) {
                     o.write(out);
                 }
@@ -862,7 +910,7 @@ public class MainActivity extends Activity {
                 Data.clearAccessChanges(this);
                 CallLogger.prefs(this).edit().putBoolean(Data.KEY_EDITED, false).apply();
 
-                final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + (verified ? "  \u2713 \u05D0\u05D5\u05DE\u05EA" : "  (\u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05D0\u05DE\u05EA)") + "\n\n"
+                final String msg = "\u05E0\u05E9\u05DE\u05E8 \u05D0\u05DC: " + where + "  " + verifiedText + "\n\n"
                         + (drive ? "Google Drive \u05DE\u05E1\u05E0\u05DB\u05E8\u05DF \u05DC\u05DE\u05D7\u05E9\u05D1 \u05EA\u05D5\u05DA \u05D3\u05E7\u05D4-\u05E9\u05EA\u05D9\u05D9\u05DD. \u05D0\u05DD \u05D4\u05E7\u05D5\u05D1\u05E5 \u05E4\u05EA\u05D5\u05D7 \u05D1-Access \u05D1\u05DE\u05D7\u05E9\u05D1, \u05E1\u05D2\u05D5\u05E8 \u05D0\u05D5\u05EA\u05D5 - "
                         + "\u05D0\u05D7\u05E8\u05EA Drive \u05D9\u05E9\u05DE\u05D5\u05E8 \u05E2\u05D5\u05EA\u05E7 \u05E0\u05D5\u05E1\u05E3 \u05D1\u05E9\u05DD \u05E2\u05DD (1).\n\n" : "")
                         + "\u05D1\u05E7\u05D5\u05D1\u05E5 " + rowsAfter + " \u05E8\u05E9\u05D5\u05DE\u05D5\u05EA.\n"
@@ -871,6 +919,14 @@ public class MainActivity extends Activity {
                         + (res.notFound > 0 ? "\n" + res.notFound + " \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05D1\u05E7\u05D5\u05D1\u05E5" : "")
                         + (res.warnings.isEmpty() ? "" : "\n\n\u05E9\u05D3\u05D5\u05EA \u05E9\u05DC\u05D0 \u05E0\u05E9\u05DE\u05E8\u05D5:\n" + String.join("\n", res.warnings));
                 runOnUiThread(() -> {
+                    if (sharedFile != null) {
+                        Uri u = FilesProvider.uriFor(sharedFile);
+                        Intent si = new Intent(Intent.ACTION_SEND).setType("application/octet-stream")
+                                .putExtra(Intent.EXTRA_STREAM, u)
+                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        si.setClipData(android.content.ClipData.newRawUri("", u));
+                        startActivity(Intent.createChooser(si, "\u05E9\u05DE\u05D5\u05E8 \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4-Access (\u05D1\u05D7\u05E8: \u05E9\u05DE\u05D9\u05E8\u05D4 \u05D1-Drive)"));
+                    }
                     new AlertDialog.Builder(this).setTitle("\u05D4\u05E2\u05D3\u05DB\u05D5\u05DF \u05D4\u05D5\u05E9\u05DC\u05DD").setMessage(msg)
                             .setPositiveButton("\u05D0\u05D9\u05E9\u05D5\u05E8", null).show();
                     refresh();
