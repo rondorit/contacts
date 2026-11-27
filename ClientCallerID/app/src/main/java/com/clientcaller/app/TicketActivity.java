@@ -178,6 +178,39 @@ public class TicketActivity extends Activity {
         history.setOrientation(LinearLayout.VERTICAL);
         showHistory();
         box.addView(history);
+        // ---- photos
+        label(box, "\uD83D\uDCF7 \u05EA\u05DE\u05D5\u05E0\u05D5\u05EA");
+        android.widget.HorizontalScrollView phScroll = new android.widget.HorizontalScrollView(this);
+        photoStrip = new LinearLayout(this);
+        phScroll.addView(photoStrip);
+        box.addView(phScroll);
+        LinearLayout phRow = row(box);
+        rowButton(phRow, "\uD83D\uDCF7 \u05E6\u05DC\u05DD", v -> { readForm(); if (persist()) Media.takePhoto(this, t.id); });
+        rowButton(phRow, "\uD83D\uDDBC\uFE0F \u05DE\u05D4\u05D2\u05DC\u05E8\u05D9\u05D4", v -> { readForm(); if (persist()) Media.pickPhotos(this, t.id); });
+        showPhotos();
+
+        // ---- work time & materials
+        label(box, "\u23F1\uFE0F \u05E9\u05E2\u05D5\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4 \u05D5\u05D7\u05D5\u05DE\u05E8\u05D9\u05DD");
+        itemsBox = new LinearLayout(this);
+        itemsBox.setOrientation(LinearLayout.VERTICAL);
+        box.addView(itemsBox);
+        LinearLayout itRow = row(box);
+        timerBtn = rowButton(itRow, "", v -> toggleTimer());
+        rowButton(itRow, "\u2795 \u05E9\u05E2\u05D5\u05EA", v -> addTime(0));
+        rowButton(itRow, "\u2795 \u05D7\u05D5\u05DE\u05E8", v -> addPart());
+        LinearLayout itRow2 = row(box);
+        rowButton(itRow2, "\uD83E\uDDFE \u05D4\u05E4\u05E7 \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 / \u05D7\u05E9\u05D1\u05D5\u05DF", v -> itemsToQuote());
+        showItems();
+
+        // ---- signature & work report
+        label(box, "\u270D\uFE0F \u05E1\u05D9\u05D5\u05DD \u05E2\u05D1\u05D5\u05D3\u05D4");
+        tSigned = Ui.text(this, "", 14, Ui.MUTED, false);
+        box.addView(tSigned);
+        LinearLayout sgRow = row(box);
+        rowButton(sgRow, "\u270D\uFE0F \u05D7\u05EA\u05D9\u05DE\u05EA \u05DC\u05E7\u05D5\u05D7", v -> { readForm(); if (persist()) Media.sign(this, t, who -> { showSigned(); showHistory(); askSendReport(); }); });
+        rowButton(sgRow, "\uD83D\uDCC4 \u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4", v -> { readForm(); if (persist()) sendReport(); });
+        showSigned();
+
         eNote = field(box, "\u05D4\u05D5\u05E1\u05E3 \u05D4\u05E2\u05E8\u05D4 (\u05DE\u05D4 \u05D1\u05D5\u05E6\u05E2, \u05DE\u05D4 \u05D4\u05DC\u05D0\u05D4)", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         LinearLayout vnRow = row(box);
@@ -564,6 +597,236 @@ public class TicketActivity extends Activity {
         return "";
     }
 
+    // ------------------------------------------------------------------ photos
+
+    private LinearLayout photoStrip, itemsBox;
+    private TextView tSigned;
+    private Button timerBtn;
+
+    private void showPhotos() {
+        photoStrip.removeAllViews();
+        java.util.List<java.io.File> list = t.id > 0 ? Media.photos(this, t.id) : new java.util.ArrayList<>();
+        if (list.isEmpty()) {
+            photoStrip.addView(Ui.text(this, "\u05D0\u05D9\u05DF \u05EA\u05DE\u05D5\u05E0\u05D5\u05EA", 13, Ui.MUTED, false));
+            return;
+        }
+        for (final java.io.File f : list) {
+            android.widget.ImageView iv = new android.widget.ImageView(this);
+            iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            iv.setImageBitmap(Media.thumb(f, 240));
+            iv.setOnClickListener(v -> Media.view(this, f));
+            iv.setOnLongClickListener(v -> {
+                Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05D4\u05EA\u05DE\u05D5\u05E0\u05D4", () -> { f.delete(); showPhotos(); });
+                return true;
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(96), dp(96));
+            lp.setMargins(dp(4), dp(4), dp(4), dp(4));
+            photoStrip.addView(iv, lp);
+        }
+    }
+
+    // ------------------------------------------------------------------ work time & materials
+
+    private static final String KEY_RATE = "hour_rate";
+
+    private void showItems() {
+        itemsBox.removeAllViews();
+        java.util.List<TicketDb.Item> items = t.id > 0 ? db.items(t.id) : new java.util.ArrayList<>();
+        double sum = 0;
+        for (final TicketDb.Item it : items) {
+            TextView tv = Ui.text(this, ("time".equals(it.kind) ? "\u23F1\uFE0F " : "\uD83D\uDD29 ") + it.name + "  \u00D7" + QuoteDb.qty(it.qty)
+                    + (it.price > 0 ? "  =  " + QuoteDb.money(it.total()) : ""), 15, Ui.TEXT, false);
+            tv.setPadding(0, dp(6), 0, dp(6));
+            tv.setOnClickListener(v -> editItem(it));
+            itemsBox.addView(tv);
+            sum += it.total();
+        }
+        if (items.isEmpty()) itemsBox.addView(Ui.text(this, "\u05E2\u05D5\u05D3 \u05DC\u05D0 \u05E0\u05E8\u05E9\u05DE\u05D5 \u05E9\u05E2\u05D5\u05EA \u05D0\u05D5 \u05D7\u05D5\u05DE\u05E8\u05D9\u05DD", 13, Ui.MUTED, false));
+        else itemsBox.addView(Ui.text(this, "\u05E1\u05D4\"\u05DB \u05DC\u05E4\u05E0\u05D9 \u05DE\u05E2\"\u05DE: " + QuoteDb.money(sum), 15, Ui.TEXT, true));
+        long start = CallLogger.prefs(this).getLong("timer_t" + t.id, 0);
+        timerBtn.setText(start > 0 ? "\u23F9\uFE0F \u05E2\u05E6\u05D5\u05E8 \u05D8\u05D9\u05D9\u05DE\u05E8 (" + ((System.currentTimeMillis() - start) / 60000) + " \u05D3')" : "\u25B6\uFE0F \u05D4\u05EA\u05D7\u05DC \u05D8\u05D9\u05D9\u05DE\u05E8");
+    }
+
+    private void toggleTimer() {
+        readForm();
+        if (!persist()) return;
+        String key = "timer_t" + t.id;
+        long start = CallLogger.prefs(this).getLong(key, 0);
+        if (start == 0) {
+            CallLogger.prefs(this).edit().putLong(key, System.currentTimeMillis()).apply();
+            toast("\u05D4\u05D8\u05D9\u05D9\u05DE\u05E8 \u05D4\u05EA\u05D7\u05D9\u05DC");
+        } else {
+            CallLogger.prefs(this).edit().remove(key).apply();
+            double hours = Math.max(0.25, Math.ceil((System.currentTimeMillis() - start) / 900000.0) / 4.0);
+            addTime(hours);
+        }
+        showItems();
+    }
+
+    private void addTime(double hours) {
+        readForm();
+        if (!persist()) return;
+        TicketDb.Item it = new TicketDb.Item();
+        it.ticketId = t.id;
+        it.kind = "time";
+        it.name = "\u05E9\u05E2\u05D5\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4";
+        it.qty = hours > 0 ? hours : 1;
+        it.price = Double.parseDouble(CallLogger.prefs(this).getString(KEY_RATE, "250"));
+        editItem(it);
+    }
+
+    private void addPart() {
+        readForm();
+        if (!persist()) return;
+        final java.util.List<QuoteDb.Item> cat = QuoteDb.get(this).catalog();
+        String[] names = new String[cat.size() + 1];
+        names[0] = "\u270F\uFE0F \u05D4\u05E7\u05DC\u05D3\u05D4 \u05D7\u05D5\u05E4\u05E9\u05D9\u05EA";
+        for (int k = 0; k < cat.size(); k++) names[k + 1] = cat.get(k).name + "  \u2022  " + QuoteDb.money(cat.get(k).price);
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D7\u05D5\u05DE\u05E8 / \u05D7\u05DC\u05E7")
+                .setItems(names, (d, w) -> {
+                    TicketDb.Item it = new TicketDb.Item();
+                    it.ticketId = t.id;
+                    it.kind = "part";
+                    if (w > 0) {
+                        it.name = cat.get(w - 1).name;
+                        it.price = cat.get(w - 1).price;
+                    }
+                    editItem(it);
+                })
+                .show();
+    }
+
+    private void editItem(final TicketDb.Item it) {
+        LinearLayout lay = new LinearLayout(this);
+        lay.setOrientation(LinearLayout.VERTICAL);
+        lay.setPadding(dp(16), dp(8), dp(16), 0);
+        lay.setLayoutDirection(android.view.View.LAYOUT_DIRECTION_RTL);
+        final EditText n = new EditText(this);
+        n.setHint("\u05EA\u05D9\u05D0\u05D5\u05E8");
+        n.setText(it.name);
+        lay.addView(n);
+        final EditText q = new EditText(this);
+        q.setHint("time".equals(it.kind) ? "\u05E9\u05E2\u05D5\u05EA" : "\u05DB\u05DE\u05D5\u05EA");
+        q.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        q.setText(QuoteDb.qty(it.qty));
+        lay.addView(q);
+        final EditText pr = new EditText(this);
+        pr.setHint("time".equals(it.kind) ? "\u05EA\u05E2\u05E8\u05D9\u05E3 \u05DC\u05E9\u05E2\u05D4 (\u20AA, \u05DC\u05E4\u05E0\u05D9 \u05DE\u05E2\"\u05DE)" : "\u05DE\u05D7\u05D9\u05E8 \u05DC\u05D9\u05D7\u05D9\u05D3\u05D4 (\u20AA, \u05DC\u05E4\u05E0\u05D9 \u05DE\u05E2\"\u05DE)");
+        pr.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        if (it.price > 0) pr.setText(QuoteDb.qty(it.price));
+        lay.addView(pr);
+        AlertDialog.Builder b = new AlertDialog.Builder(this)
+                .setTitle("time".equals(it.kind) ? "\u23F1\uFE0F \u05E9\u05E2\u05D5\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4" : "\uD83D\uDD29 \u05D7\u05D5\u05DE\u05E8 / \u05D7\u05DC\u05E7")
+                .setView(lay)
+                .setPositiveButton("\u05E9\u05DE\u05D5\u05E8", (d, w) -> {
+                    it.name = n.getText().toString().trim();
+                    if (it.name.isEmpty()) it.name = "time".equals(it.kind) ? "\u05E9\u05E2\u05D5\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4" : "\u05D7\u05D5\u05DE\u05E8";
+                    try { it.qty = Double.parseDouble(q.getText().toString().trim()); } catch (Exception e) { it.qty = 1; }
+                    try { it.price = Double.parseDouble(pr.getText().toString().trim()); } catch (Exception e) { it.price = 0; }
+                    if ("time".equals(it.kind) && it.price > 0)
+                        CallLogger.prefs(this).edit().putString(KEY_RATE, QuoteDb.qty(it.price)).apply();
+                    db.saveItem(it);
+                    showItems();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null);
+        if (it.id > 0) b.setNeutralButton("\u05DE\u05D7\u05E7", (d, w) -> { db.deleteItem(it.id); showItems(); });
+        b.show();
+    }
+
+    /** Creates a quote from the recorded time and materials, linked to this ticket. */
+    private void itemsToQuote() {
+        readForm();
+        if (!persist()) return;
+        java.util.List<TicketDb.Item> items = db.items(t.id);
+        if (items.isEmpty()) {
+            toast("\u05E7\u05D5\u05D3\u05DD \u05E8\u05E9\u05D5\u05DD \u05E9\u05E2\u05D5\u05EA \u05D0\u05D5 \u05D7\u05D5\u05DE\u05E8\u05D9\u05DD");
+            return;
+        }
+        QuoteDb.Quote q = new QuoteDb.Quote();
+        q.clientName = t.clientName;
+        q.clientPhone = t.clientPhone;
+        q.ticketId = t.id;
+        q.title = "\u05E2\u05D1\u05D5\u05D3\u05D4 \u05D1\u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " - " + t.title;
+        q.issuer = Issuer.defaultId(this);
+        for (TicketDb.Item it : items) {
+            QuoteDb.Line l = new QuoteDb.Line();
+            l.name = it.name;
+            l.qty = it.qty;
+            l.price = it.price;
+            q.lines.add(l);
+        }
+        QuoteDb.get(this).save(q);
+        db.addNote(t.id, "\uD83E\uDDFE \u05E0\u05D5\u05E6\u05E8\u05D4 \u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 / \u05D7\u05E9\u05D1\u05D5\u05DF " + q.id + " \u05DE\u05E9\u05E2\u05D5\u05EA \u05D5\u05D7\u05D5\u05DE\u05E8\u05D9\u05DD");
+        startActivity(new Intent(this, QuoteActivity.class).putExtra(QuoteActivity.EXTRA_QUOTE, q.id));
+    }
+
+    // ------------------------------------------------------------------ signature & work report
+
+    private void showSigned() {
+        java.io.File sig = Media.signature(this, t.id);
+        if (t.id > 0 && sig.exists()) {
+            String who = CallLogger.prefs(this).getString("signer_t" + t.id, "");
+            long when = CallLogger.prefs(this).getLong("signed_t" + t.id, sig.lastModified());
+            tSigned.setText("\u2705 \u05E0\u05D7\u05EA\u05DD" + (who.isEmpty() ? "" : " \u05E2\"\u05D9 " + who) + " \u2022 " + TicketDb.fmt(when));
+        } else {
+            tSigned.setText("\u05E2\u05D5\u05D3 \u05DC\u05D0 \u05E0\u05D7\u05EA\u05DD");
+        }
+    }
+
+    private void askSendReport() {
+        new AlertDialog.Builder(this)
+                .setMessage("\u05D4\u05D7\u05EA\u05D9\u05DE\u05D4 \u05E0\u05E9\u05DE\u05E8\u05D4. \u05DC\u05E9\u05DC\u05D5\u05D7 \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4 \u05D1-PDF?")
+                .setPositiveButton("\uD83D\uDCC4 \u05E9\u05DC\u05D7", (d, w) -> sendReport())
+                .setNegativeButton("\u05DC\u05D0 \u05E2\u05DB\u05E9\u05D9\u05D5", null)
+                .show();
+    }
+
+    private void sendReport() {
+        java.io.File f;
+        try {
+            f = WorkReport.build(this, t);
+        } catch (Exception e) {
+            toast("\u05D9\u05E6\u05D9\u05E8\u05EA \u05D4\u05D3\u05D5\u05D7 \u05E0\u05DB\u05E9\u05DC\u05D4: " + e.getMessage());
+            return;
+        }
+        final android.net.Uri u = FilesProvider.uriFor(f);
+        String[] opts = {"\uD83D\uDCAC \u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05DC\u05E7\u05D5\u05D7", "\u2709\uFE0F \u05DE\u05D9\u05D9\u05DC / \u05E9\u05D9\u05EA\u05D5\u05E3", "\uD83D\uDC40 \u05EA\u05E6\u05D5\u05D2\u05D4"};
+        new AlertDialog.Builder(this)
+                .setTitle("\u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4 \u2013 \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id)
+                .setItems(opts, (d, w) -> {
+                    try {
+                        if (w == 2) {
+                            startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(u, "application/pdf")
+                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                            return;
+                        }
+                        Intent i = new Intent(Intent.ACTION_SEND).setType("application/pdf")
+                                .putExtra(Intent.EXTRA_STREAM, u)
+                                .putExtra(Intent.EXTRA_TEXT, "\u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4 \u2013 \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + " (" + t.title + ")")
+                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        i.setClipData(android.content.ClipData.newRawUri("report", u));
+                        if (w == 0 && !t.clientPhone.isEmpty()) {
+                            i.setPackage("com.whatsapp");
+                            i.putExtra("jid", DetailActivity.whatsAppNumber(t.clientPhone) + "@s.whatsapp.net");
+                            try {
+                                startActivity(i);
+                            } catch (Exception e) {
+                                i.setPackage(null);
+                                startActivity(Intent.createChooser(i, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05D3\u05D5\u05D7"));
+                            }
+                        } else {
+                            startActivity(Intent.createChooser(i, "\u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05D3\u05D5\u05D7"));
+                        }
+                        db.addNote(t.id, "\uD83D\uDCC4 \u05E0\u05E9\u05DC\u05D7 \u05D3\u05D5\u05D7 \u05E2\u05D1\u05D5\u05D3\u05D4 \u05DC\u05DC\u05E7\u05D5\u05D7");
+                        showHistory();
+                    } catch (Exception e) {
+                        toast("\u05D4\u05E9\u05DC\u05D9\u05D7\u05D4 \u05E0\u05DB\u05E9\u05DC\u05D4: " + e.getMessage());
+                    }
+                })
+                .show();
+    }
+
     // ------------------------------------------------------------------ voice dictation
 
     private static final int REQ_VOICE = 71;
@@ -593,7 +856,10 @@ public class TicketActivity extends Activity {
             voiceTarget.setSelection(voiceTarget.getText().length());
             return;
         }
-        Media.onResult(this, requestCode, resultCode, data);
+        if (Media.onResult(this, requestCode, resultCode, data)) {
+            showPhotos();
+            showHistory();
+        }
     }
 
     private void showAssignee() {
@@ -760,12 +1026,13 @@ public class TicketActivity extends Activity {
         return r;
     }
 
-    private void rowButton(LinearLayout r, String text, android.view.View.OnClickListener l) {
+    private Button rowButton(LinearLayout r, String text, android.view.View.OnClickListener l) {
         Button b = new Button(this);
         b.setAllCaps(false);
         b.setText(text);
         b.setOnClickListener(l);
         r.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        return b;
     }
 
     private void open(Intent i) {

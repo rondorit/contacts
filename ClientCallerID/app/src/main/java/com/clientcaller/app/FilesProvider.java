@@ -23,7 +23,7 @@ public class FilesProvider extends ContentProvider {
         String name = uri.getLastPathSegment();
         if (name == null || name.contains("/") || name.contains("..")) throw new FileNotFoundException();
         File f = new File(new File(getContext().getCacheDir(), "share"), name);
-        if (!f.exists()) throw new FileNotFoundException(name);
+        if (!f.exists() && !name.startsWith("cam_")) throw new FileNotFoundException(name);
         return f;
     }
 
@@ -34,7 +34,14 @@ public class FilesProvider extends ContentProvider {
 
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
-        return ParcelFileDescriptor.open(file(uri), ParcelFileDescriptor.MODE_READ_ONLY);
+        File f = file(uri);
+        if (mode != null && mode.contains("w") && f.getName().startsWith("cam_")) {
+            File dir = f.getParentFile();
+            if (dir != null) dir.mkdirs();
+            return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_WRITE | ParcelFileDescriptor.MODE_CREATE
+                    | ParcelFileDescriptor.MODE_TRUNCATE);
+        }
+        return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY);
     }
 
     @Override
@@ -52,7 +59,11 @@ public class FilesProvider extends ContentProvider {
     @Override
     public String getType(Uri uri) {
         String n = uri.getLastPathSegment();
-        return n != null && n.endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+        if (n == null) return "application/octet-stream";
+        if (n.endsWith(".pdf")) return "application/pdf";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".png")) return "image/png";
+        return "application/octet-stream";
     }
 
     @Override

@@ -59,7 +59,7 @@ final class TicketDb extends SQLiteOpenHelper {
     }
 
     private TicketDb(Context c) {
-        super(c, "tickets.db", null, 6);
+        super(c, "tickets.db", null, 7);
     }
 
     @Override
@@ -72,6 +72,7 @@ final class TicketDb extends SQLiteOpenHelper {
                 + " time INTEGER, text TEXT)");
         createProviders(db);
         createSent(db);
+        createItems(db);
     }
 
     private static void createSent(SQLiteDatabase db) {
@@ -91,11 +92,64 @@ final class TicketDb extends SQLiteOpenHelper {
         }
     }
 
+    private static void createItems(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS items (_id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER, kind TEXT,"
+                + " name TEXT, qty REAL, price REAL, created INTEGER)");
+    }
+
+    /** A line of work time or material used in a ticket. */
+    static final class Item {
+        long id, ticketId, created;
+        String kind = "part", name = "";
+        double qty = 1, price;
+
+        double total() {
+            return qty * price;
+        }
+    }
+
+    java.util.List<Item> items(long ticketId) {
+        java.util.List<Item> out = new java.util.ArrayList<>();
+        try (Cursor c = getReadableDatabase().query("items", new String[]{"_id", "kind", "name", "qty", "price", "created"},
+                "ticket_id=?", new String[]{String.valueOf(ticketId)}, null, null, "created")) {
+            while (c.moveToNext()) {
+                Item it = new Item();
+                it.id = c.getLong(0);
+                it.ticketId = ticketId;
+                it.kind = str(c, 1);
+                it.name = str(c, 2);
+                it.qty = c.getDouble(3);
+                it.price = c.getDouble(4);
+                it.created = c.getLong(5);
+                out.add(it);
+            }
+        }
+        return out;
+    }
+
+    void saveItem(Item it) {
+        ContentValues v = new ContentValues();
+        v.put("ticket_id", it.ticketId);
+        v.put("kind", it.kind);
+        v.put("name", it.name);
+        v.put("qty", it.qty);
+        v.put("price", it.price);
+        if (it.created == 0) it.created = System.currentTimeMillis();
+        v.put("created", it.created);
+        if (it.id == 0) it.id = getWritableDatabase().insert("items", null, v);
+        else getWritableDatabase().update("items", v, "_id=?", new String[]{String.valueOf(it.id)});
+    }
+
+    void deleteItem(long id) {
+        getWritableDatabase().delete("items", "_id=?", new String[]{String.valueOf(id)});
+    }
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 4) createSent(db);
         if (oldVersion < 5) db.execSQL("ALTER TABLE tickets ADD COLUMN assignee TEXT");
         if (oldVersion < 6) db.execSQL("ALTER TABLE tickets ADD COLUMN out_status TEXT");
+        if (oldVersion < 7) createItems(db);
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE tickets ADD COLUMN provider TEXT");
             createProviders(db);

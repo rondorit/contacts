@@ -42,6 +42,8 @@ final class Backup {
             addFile(z, DB, c.getDatabasePath(DB));
             addFile(z, "quotes.db", c.getDatabasePath("quotes.db"));
             addFile(z, Data.FILE, new File(c.getFilesDir(), Data.FILE));
+            File[] photos = Media.dir(c).listFiles();
+            if (photos != null) for (File ph : photos) addFile(z, "photos/" + ph.getName(), ph);
             JSONObject j = new JSONObject();
             for (Map.Entry<String, ?> e : p.getAll().entrySet()) {
                 Object v = e.getValue();
@@ -97,6 +99,11 @@ final class Backup {
             writeFile(db, files.get(DB));
         }
         if (files.containsKey(Data.FILE)) writeFile(new File(c.getFilesDir(), Data.FILE), files.get(Data.FILE));
+        for (Map.Entry<String, byte[]> ph : files.entrySet()) {
+            String n = ph.getKey();
+            if (!n.startsWith("photos/") || n.contains("..") || n.substring(7).contains("/")) continue;
+            writeFile(new File(Media.dir(c), n.substring(7)), ph.getValue());
+        }
         if (files.containsKey("settings.json")) {
             JSONObject j = new JSONObject(new String(files.get("settings.json"), StandardCharsets.UTF_8));
             SharedPreferences.Editor ed = CallLogger.prefs(c).edit().clear();
