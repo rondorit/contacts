@@ -79,6 +79,7 @@ public class ClientEditActivity extends Activity {
             del.setOnClickListener(v -> new AlertDialog.Builder(this)
                     .setMessage("\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA " + s.name(row) + " \u05DE\u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA?")
                     .setPositiveButton("\u05DE\u05D7\u05E7", (d, w) -> Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA " + s.name(row), () -> {
+                        Data.recordDelete(this, Data.identity(s, row));
                         s.removeRow(row);
                         if (persist()) {
                             Toast.makeText(this, "\u05D4\u05DC\u05E7\u05D5\u05D7 \u05E0\u05DE\u05D7\u05E7", Toast.LENGTH_SHORT).show();
@@ -110,6 +111,7 @@ public class ClientEditActivity extends Activity {
             return;
         }
         int r = s.setRow(row, values);
+        Data.recordEdit(this, Data.identity(s, r));
         if (!persist()) return;
         Toast.makeText(this, "\u05D4\u05DC\u05E7\u05D5\u05D7 \u05E0\u05E9\u05DE\u05E8", Toast.LENGTH_SHORT).show();
         startActivity(new Intent(this, DetailActivity.class).putExtra(DetailActivity.EXTRA_ROW, r));

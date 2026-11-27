@@ -49,6 +49,56 @@ final class Data {
         CallLogger.prefs(ctx).edit().putString(KEY_HIDDEN, String.join("\t", names)).apply();
     }
 
+    static final String KEY_ACC_TABLE = "access_table";
+    static final String KEY_ACC_URI = "access_uri";
+    static final String KEY_ACC_EDITS = "acc_edits";
+    static final String KEY_ACC_DELETES = "acc_deletes";
+    static final String ACCESS_COPY = "source.accdb";
+    static final String ID_COL = "\u05DE\u05D6\u05D4\u05D4";
+
+    /** "i:<id>" when the client has an ID (\u05DE\u05D6\u05D4\u05D4), otherwise "n:<name>". */
+    static String identity(ClientStore s, int r) {
+        int ic = s.headers.indexOf(ID_COL);
+        String id = ic >= 0 ? s.rows.get(r).get(ic).trim() : "";
+        return id.isEmpty() ? "n:" + s.name(r) : "i:" + AccessExport.norm(id);
+    }
+
+    static java.util.List<String> list(Context ctx, String key) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String x : CallLogger.prefs(ctx).getString(key, "").split("\t")) if (!x.isEmpty()) out.add(x);
+        return out;
+    }
+
+    private static void putList(Context ctx, String key, java.util.List<String> l) {
+        CallLogger.prefs(ctx).edit().putString(key, String.join("\t", l)).apply();
+    }
+
+    static boolean fromAccess(Context ctx) {
+        return !CallLogger.prefs(ctx).getString(KEY_ACC_TABLE, "").isEmpty();
+    }
+
+    static void recordEdit(Context ctx, String ident) {
+        if (!fromAccess(ctx)) return;
+        java.util.List<String> l = list(ctx, KEY_ACC_EDITS);
+        if (!l.contains(ident)) l.add(ident);
+        putList(ctx, KEY_ACC_EDITS, l);
+    }
+
+    static void recordDelete(Context ctx, String ident) {
+        if (!fromAccess(ctx)) return;
+        java.util.List<String> e = list(ctx, KEY_ACC_EDITS);
+        e.remove(ident);
+        putList(ctx, KEY_ACC_EDITS, e);
+        if (ident.startsWith("n:")) return;   // never saved to Access (no ID yet)
+        java.util.List<String> d = list(ctx, KEY_ACC_DELETES);
+        if (!d.contains(ident)) d.add(ident);
+        putList(ctx, KEY_ACC_DELETES, d);
+    }
+
+    static void clearAccessChanges(Context ctx) {
+        CallLogger.prefs(ctx).edit().remove(KEY_ACC_EDITS).remove(KEY_ACC_DELETES).apply();
+    }
+
     static synchronized void reset() {
         cache = null;
     }
