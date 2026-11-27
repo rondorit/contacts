@@ -54,6 +54,8 @@ public class TicketActivity extends Activity {
             if (row >= 0 && row < s.rows.size()) {
                 t.clientName = s.name(row);
                 t.clientPhone = s.firstPhone(row);
+                java.util.List<String> m = excelMacs(t.clientName, t.clientPhone);
+                if (m.size() == 1) t.mac = m.get(0);
             } else {
                 String n = getIntent().getStringExtra(EXTRA_NAME);
                 String ph = getIntent().getStringExtra(EXTRA_PHONE);
@@ -239,10 +241,44 @@ public class TicketActivity extends Activity {
         }
     }
 
+    /** MAC addresses from the client's Excel row, column "Optimac" (or any column with "mac" in its title). */
+    private java.util.List<String> excelMacs(String name, String phone) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        ClientStore s = Data.get(this);
+        int row = phone.isEmpty() ? -1 : s.find(phone);
+        if (row < 0 && !name.isEmpty()) {
+            for (int r = 0; r < s.rows.size(); r++) if (s.name(r).equalsIgnoreCase(name)) { row = r; break; }
+        }
+        if (row < 0) return out;
+        java.util.List<Integer> cols = new java.util.ArrayList<>();
+        for (int c = 0; c < s.headers.size(); c++) {
+            if (s.headers.get(c).toLowerCase(java.util.Locale.ROOT).contains("optimac")) cols.add(c);
+        }
+        if (cols.isEmpty()) {
+            for (int c = 0; c < s.headers.size(); c++) {
+                if (s.headers.get(c).toLowerCase(java.util.Locale.ROOT).contains("mac")) cols.add(c);
+            }
+        }
+        for (int c : cols) {
+            for (String part : s.rows.get(row).get(c).split("[,;/|\\s]+")) {
+                String m = TicketDb.formatMac(part);
+                if (TicketDb.isValidMac(m) && !out.contains(m)) out.add(m);
+            }
+        }
+        return out;
+    }
+
     /** Pick a MAC address already used in this client's earlier tickets. */
     private void chooseMac() {
-        final java.util.List<String[]> macs = db.macsForClient(
-                eClient.getText().toString().trim(), ePhone.getText().toString().trim());
+        final java.util.List<String[]> macs = new java.util.ArrayList<>();
+        for (String m : excelMacs(eClient.getText().toString().trim(), ePhone.getText().toString().trim())) {
+            macs.add(new String[]{m, "\u05DE\u05D4\u05D0\u05E7\u05E1\u05DC (Optimac)"});
+        }
+        for (String[] m : db.macsForClient(eClient.getText().toString().trim(), ePhone.getText().toString().trim())) {
+            boolean dup = false;
+            for (String[] x : macs) if (x[0].equals(m[0])) dup = true;
+            if (!dup) macs.add(m);
+        }
         if (macs.isEmpty()) {
             toast("\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05D5\u05EA MAC \u05E7\u05D5\u05D3\u05DE\u05D5\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7 \u05D6\u05D4 - \u05D4\u05E7\u05DC\u05D3 \u05D9\u05D3\u05E0\u05D9\u05EA");
             return;
