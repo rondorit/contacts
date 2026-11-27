@@ -89,8 +89,7 @@ final class Daily {
             if (tk.isDone()) continue;
             if (tk.isOverdue() || tk.isToday()) {
                 tasksDue++;
-                if (tasksDue <= 4) more.append(tk.isOverdue() ? "⏰ " : "✅ ").append(tk.title).append('
-');
+                if (tasksDue <= 4) more.append(tk.isOverdue() ? "\u23F0 " : "\u2705 ").append(tk.title).append('\n');
             }
         }
         if (quotes > 0) more.append("\uD83E\uDDFE ").append(quotes).append(" \u05D4\u05E6\u05E2\u05D5\u05EA \u05DE\u05D7\u05D9\u05E8 \u05DE\u05DE\u05EA\u05D9\u05E0\u05D5\u05EA \u05DC\u05EA\u05E9\u05D5\u05D1\u05D4\n");
