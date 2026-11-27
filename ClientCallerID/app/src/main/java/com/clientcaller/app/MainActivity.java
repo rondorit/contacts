@@ -222,7 +222,12 @@ public class MainActivity extends Activity {
             search.requestFocus();
         }));
         quick.add(Ui.tile(this, "\uD83D\uDCCA", "\u05D3\u05D5\u05D7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA", "", 0, v -> startActivity(new Intent(this, ReportActivity.class))));
-        Ui.grid(this, p, quick, 4);
+        long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
+        boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
+        quick.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : TicketDb.fmt(lastBk).substring(0, 10),
+                oldBk ? Ui.RED : Ui.GREEN, v -> startBackup()));
+        quick.add(Ui.tile(this, "\u2699\uFE0F", "\u05E0\u05D9\u05D4\u05D5\u05DC \u05D5\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA", "", 0, v -> showTab(3)));
+        Ui.grid(this, p, quick, 3);
 
         p.addView(Ui.sectionTitle(this, "\u05DE\u05E2\u05E7\u05D1\u05D9\u05DD \u05E7\u05E8\u05D5\u05D1\u05D9\u05DD"));
         int shownCount = 0;
