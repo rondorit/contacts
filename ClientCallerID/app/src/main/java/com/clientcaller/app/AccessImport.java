@@ -28,7 +28,7 @@ public final class AccessImport {
 
     /** "mdb" for Access 2000-2003 files, "accdb" for Access 2007 and newer. */
     public static String extension(File f) {
-        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).setEvaluateExpressions(false).open()) {
             String n = db.getFileFormat().name();
             return n.startsWith("V2000") || n.startsWith("V2003") || n.startsWith("V1997") || n.contains("JET") ? "mdb" : "accdb";
         } catch (Exception e) {
@@ -38,7 +38,7 @@ public final class AccessImport {
 
     /** Opens the file and reads every row of the table; throws if the file is damaged. */
     public static int verify(File f, String table) throws IOException {
-        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).setEvaluateExpressions(false).open()) {
             com.healthmarketscience.jackcess.Table t = db.getTable(table);
             if (t == null) throw new IOException("table missing");
             int n = 0;
@@ -48,7 +48,7 @@ public final class AccessImport {
     }
 
     public static List<String> tables(File f) throws IOException {
-        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).setEvaluateExpressions(false).open()) {
             return new ArrayList<>(db.getTableNames());
         }
     }
@@ -56,7 +56,7 @@ public final class AccessImport {
     /** First row = column names, then one row per record. */
     public static List<List<String>> read(File f, String tableName) throws IOException {
         List<List<String>> out = new ArrayList<>();
-        try (Database db = new DatabaseBuilder(f).setReadOnly(true).open()) {
+        try (Database db = new DatabaseBuilder(f).setReadOnly(true).setEvaluateExpressions(false).open()) {
             Table t = db.getTable(tableName);
             if (t == null) throw new IOException("\u05D4\u05D8\u05D1\u05DC\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4: " + tableName);
             List<String> names = new ArrayList<>();

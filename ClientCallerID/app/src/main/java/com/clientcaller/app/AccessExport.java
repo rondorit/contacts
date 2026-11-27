@@ -25,6 +25,11 @@ import java.util.Map;
  * Plain Java (no Android).
  */
 public final class AccessExport {
+    static {
+        // Android has no javax.script: never evaluate Access default values / validation rules.
+        System.setProperty("com.healthmarketscience.jackcess.enableExpressionEvaluation", "false");
+    }
+
     private AccessExport() { }
 
     public static final class Result {
@@ -42,7 +47,7 @@ public final class AccessExport {
     public static Result apply(File f, String tableName, List<String> headers, List<List<String>> changed,
                                List<String> deleted, String keyCol, String nameCol) throws IOException {
         Result res = new Result();
-        try (Database db = new DatabaseBuilder(f).setAutoSync(false).open()) {
+        try (Database db = new DatabaseBuilder(f).setAutoSync(false).setEvaluateExpressions(false).open()) {
             db.setDateTimeType(DateTimeType.DATE);
             Table t = db.getTable(tableName);
             if (t == null) throw new IOException("\u05D4\u05D8\u05D1\u05DC\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4: " + tableName);
