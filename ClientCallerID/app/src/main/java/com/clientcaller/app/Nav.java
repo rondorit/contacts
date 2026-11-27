@@ -35,6 +35,45 @@ final class Nav {
         return suffix.isEmpty() || a.contains(suffix) ? a : a + ", " + suffix;
     }
 
+    /** Lets the user pick the address column and an optional text to add (e.g. the kibbutz name). */
+    static void chooseColumn(final Activity a, final Runnable after) {
+        final ClientStore s = Data.get(a);
+        if (s.headers.isEmpty()) {
+            Toast.makeText(a, "\u05D9\u05D9\u05D1\u05D0 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String[] names = s.headers.toArray(new String[0]);
+        new AlertDialog.Builder(a)
+                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05E2\u05DE\u05D5\u05D3\u05D4 \u05E0\u05DE\u05E6\u05D0\u05EA \u05D4\u05DB\u05EA\u05D5\u05D1\u05EA?")
+                .setSingleChoiceItems(names, column(a, s), (d, which) -> {
+                    d.dismiss();
+                    CallLogger.prefs(a).edit().putString(KEY_COL, names[which]).apply();
+                    final android.widget.EditText suffix = new android.widget.EditText(a);
+                    suffix.setText(CallLogger.prefs(a).getString(KEY_SUFFIX, ""));
+                    suffix.setHint("\u05DC\u05DE\u05E9\u05DC: \u05E7\u05D9\u05D1\u05D5\u05E5 \u05DE\u05E6\u05E8");
+                    android.widget.LinearLayout box = new android.widget.LinearLayout(a);
+                    int p = Ui.dp(a, 20);
+                    box.setPadding(p, Ui.dp(a, 8), p, 0);
+                    box.addView(suffix, new android.widget.LinearLayout.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+                    new AlertDialog.Builder(a)
+                            .setTitle("\u05DC\u05D4\u05D5\u05E1\u05D9\u05E3 \u05DC\u05DB\u05DC \u05DB\u05EA\u05D5\u05D1\u05EA?")
+                            .setMessage("\u05D0\u05DD \u05D1\u05E2\u05DE\u05D5\u05D3\u05D4 \u05D9\u05E9 \u05E8\u05E7 \u05E8\u05D7\u05D5\u05D1 \u05D5\u05DE\u05E1\u05E4\u05E8 \u05D1\u05D9\u05EA, \u05D4\u05D5\u05E1\u05E3 \u05D0\u05EA \u05E9\u05DD \u05D4\u05D9\u05D9\u05E9\u05D5\u05D1 \u05DB\u05D3\u05D9 \u05E9\u05D4\u05E0\u05D9\u05D5\u05D5\u05D8 \u05D9\u05DE\u05E6\u05D0 \u05D0\u05EA \u05D4\u05DE\u05E7\u05D5\u05DD.")
+                            .setView(box)
+                            .setPositiveButton("\u05E9\u05DE\u05D5\u05E8", (d2, w2) -> {
+                                CallLogger.prefs(a).edit().putString(KEY_SUFFIX, suffix.getText().toString().trim()).apply();
+                                if (after != null) after.run();
+                            })
+                            .setNegativeButton("\u05D1\u05DC\u05D9 \u05EA\u05D5\u05E1\u05E4\u05EA", (d2, w2) -> {
+                                CallLogger.prefs(a).edit().putString(KEY_SUFFIX, "").apply();
+                                if (after != null) after.run();
+                            })
+                            .show();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
+                .show();
+    }
+
     static void choose(final Activity a, final String address) {
         if (address.isEmpty()) {
             Toast.makeText(a, "\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05EA \u05DC\u05DC\u05E7\u05D5\u05D7", Toast.LENGTH_SHORT).show();

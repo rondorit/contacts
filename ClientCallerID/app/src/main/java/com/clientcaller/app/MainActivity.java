@@ -1116,42 +1116,8 @@ public class MainActivity extends Activity {
         startActivityForResult(i, REQ_BACKUP);
     }
 
-    /** Which Excel column holds the address for navigation, and text to add (e.g. the kibbutz name). */
     private void chooseNavColumn() {
-        final ClientStore s = Data.get(this);
-        if (s.headers.isEmpty()) {
-            Toast.makeText(this, "\u05D9\u05D9\u05D1\u05D0 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E7\u05D5\u05D1\u05E5 \u05D4\u05D0\u05E7\u05E1\u05DC", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        final String[] names = s.headers.toArray(new String[0]);
-        new AlertDialog.Builder(this)
-                .setTitle("\u05D1\u05D0\u05D9\u05D6\u05D5 \u05E2\u05DE\u05D5\u05D3\u05D4 \u05E0\u05DE\u05E6\u05D0\u05EA \u05D4\u05DB\u05EA\u05D5\u05D1\u05EA?")
-                .setSingleChoiceItems(names, Nav.column(this, s), (d, which) -> {
-                    d.dismiss();
-                    CallLogger.prefs(this).edit().putString(Nav.KEY_COL, names[which]).apply();
-                    final EditText suffix = new EditText(this);
-                    suffix.setText(CallLogger.prefs(this).getString(Nav.KEY_SUFFIX, ""));
-                    suffix.setHint("\u05DC\u05DE\u05E9\u05DC: \u05E7\u05D9\u05D1\u05D5\u05E5 \u05DE\u05E6\u05E8");
-                    LinearLayout box = new LinearLayout(this);
-                    box.setPadding(dp(20), dp(8), dp(20), 0);
-                    box.addView(suffix, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT));
-                    new AlertDialog.Builder(this)
-                            .setTitle("\u05DC\u05D4\u05D5\u05E1\u05D9\u05E3 \u05DC\u05DB\u05DC \u05DB\u05EA\u05D5\u05D1\u05EA?")
-                            .setMessage("\u05D0\u05DD \u05D1\u05E2\u05DE\u05D5\u05D3\u05D4 \u05D9\u05E9 \u05E8\u05E7 \u05E8\u05D7\u05D5\u05D1 \u05D5\u05DE\u05E1\u05E4\u05E8 \u05D1\u05D9\u05EA, \u05D4\u05D5\u05E1\u05E3 \u05D0\u05EA \u05E9\u05DD \u05D4\u05D9\u05D9\u05E9\u05D5\u05D1 \u05DB\u05D3\u05D9 \u05E9\u05D4\u05E0\u05D9\u05D5\u05D5\u05D8 \u05D9\u05DE\u05E6\u05D0 \u05D0\u05EA \u05D4\u05DE\u05E7\u05D5\u05DD.")
-                            .setView(box)
-                            .setPositiveButton("\u05E9\u05DE\u05D5\u05E8", (d2, w2) -> {
-                                CallLogger.prefs(this).edit().putString(Nav.KEY_SUFFIX, suffix.getText().toString().trim()).apply();
-                                refresh();
-                            })
-                            .setNegativeButton("\u05D1\u05DC\u05D9 \u05EA\u05D5\u05E1\u05E4\u05EA", (d2, w2) -> {
-                                CallLogger.prefs(this).edit().putString(Nav.KEY_SUFFIX, "").apply();
-                                refresh();
-                            })
-                            .show();
-                })
-                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null)
-                .show();
+        Nav.chooseColumn(this, this::refresh);
     }
 
     /** Which Excel columns to hide in the client card. */

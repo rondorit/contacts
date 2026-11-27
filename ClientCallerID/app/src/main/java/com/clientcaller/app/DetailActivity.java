@@ -75,8 +75,17 @@ public class DetailActivity extends Activity {
         acts.add(Ui.tile(this, "\uD83C\uDFD8\uFE0F", "\u05D1\u05D0\u05D5\u05EA\u05D4 \u05D7\u05DC\u05E7\u05D4", pc < 0 ? "" : plotVal.isEmpty() ? "\u05D0\u05D9\u05DF \u05D7\u05DC\u05E7\u05D4" : same + " \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA",
                 Ui.MUTED, v -> showSamePlot(clientRow)));
         final String navAddr = Nav.address(this, s, r);
-        acts.add(dim(Ui.tile(this, "\uD83E\uDDED", "\u05E0\u05D9\u05D5\u05D5\u05D8", navAddr.isEmpty() ? "\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05EA" : "", Ui.MUTED,
-                v -> Nav.choose(this, navAddr)), navAddr.isEmpty()));
+        final boolean navColSet = Nav.column(this, s) >= 0;
+        LinearLayout navTile = Ui.tile(this, "\uD83E\uDDED", "\u05E0\u05D9\u05D5\u05D5\u05D8",
+                !navColSet ? "\u05D1\u05D7\u05E8 \u05E2\u05DE\u05D5\u05D3\u05EA \u05DB\u05EA\u05D5\u05D1\u05EA" : navAddr.isEmpty() ? "\u05D0\u05D9\u05DF \u05DB\u05EA\u05D5\u05D1\u05EA" : "\u05DC\u05D7\u05D9\u05E6\u05D4 \u05D0\u05E8\u05D5\u05DB\u05D4: \u05E9\u05D9\u05E0\u05D5\u05D9", Ui.MUTED, v -> {
+                    if (!navColSet) Nav.chooseColumn(this, this::recreate);
+                    else Nav.choose(this, navAddr);
+                });
+        navTile.setOnLongClickListener(v -> {
+            Nav.chooseColumn(this, this::recreate);
+            return true;
+        });
+        acts.add(navTile);
         acts.add(Ui.tile(this, "\uD83D\uDCB0", "\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8", "", 0, v -> startActivity(new Intent(this, QuoteActivity.class)
                 .putExtra(EXTRA_ROW, clientRow))));
         acts.add(Ui.tile(this, "\u270F\uFE0F", "\u05E2\u05E8\u05D9\u05DB\u05D4", "", 0, v -> {
