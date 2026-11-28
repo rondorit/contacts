@@ -17,7 +17,7 @@ service cloud.firestore {
 
     // Team members. You can add yourself only as the founding manager or with an invitation.
     match /users/{uid} {
-      allow read: if member();
+      allow read: if member() || (signedIn() && uid == request.auth.uid);
       allow create: if signedIn() && uid == request.auth.uid && (
         (orgDoc().data.admin == request.auth.uid && request.resource.data.role == 'admin') ||
         (exists(/databases/$(database)/documents/invites/$(myEmail())) &&
