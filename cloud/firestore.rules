@@ -3,63 +3,79 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function myEmail() { return request.auth.token.email.lower(); }
-    function orgDoc() { return get(/databases/$(database)/documents/org/main); }
-    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
-    function member() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
-    function isAdmin() { return member() && me().data.role == 'admin'; }
-
-    // Organisation: created once by the first user, who becomes its manager.
-    match /org/main {
-      allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.admin == request.auth.uid;
-      allow update: if isAdmin();
+    function memberPath(o) { return /databases/$(database)/documents/orgs/$(o)/members/$(request.auth.uid); }
+    function mem(o) { return signedIn() && exists(memberPath(o)); }
+    function admin(o) { return mem(o) && get(memberPath(o)).data.role == 'admin'; }
+    function legacyAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/org/main)
+        && get(/databases/$(database)/documents/org/main).data.admin == request.auth.uid;
     }
 
-    // Team members. You can add yourself only as the founding manager or with an invitation.
-    match /users/{uid} {
-      allow read: if member() || (signedIn() && uid == request.auth.uid);
-      allow create: if signedIn() && uid == request.auth.uid && (
-        (orgDoc().data.admin == request.auth.uid && request.resource.data.role == 'admin') ||
-        (exists(/databases/$(database)/documents/invites/$(myEmail())) &&
-         request.resource.data.role == get(/databases/$(database)/documents/invites/$(myEmail())).data.role));
-      allow update, delete: if isAdmin();
+    // Per-user index: which organisations I belong to.
+    match /users/{u} {
+      allow read: if signedIn() && (u == request.auth.uid || legacyAdmin());
+      allow write: if signedIn() && u == request.auth.uid;
     }
 
-    // Invitations, keyed by the invitee's e-mail (lower case).
+    // Invitations by e-mail (lower case); each names the organisation it is for.
     match /invites/{email} {
-      allow read, delete: if isAdmin() || (signedIn() && email == myEmail());
-      allow create, update: if isAdmin();
+      allow read: if signedIn() && (email == myEmail() || legacyAdmin()
+        || (resource.data.orgId is string && admin(resource.data.orgId)));
+      allow create, update: if signedIn() && (admin(request.resource.data.orgId) || legacyAdmin());
+      allow delete: if signedIn() && (email == myEmail() || admin(resource.data.orgId));
     }
 
-    // Service tickets: the manager sees everything; a technician sees what is assigned to him.
-    match /tickets/{id} {
-      function assignedToMe(d) { return member() && d.data.assigneeUid == request.auth.uid; }
-      allow read: if isAdmin() || assignedToMe(resource);
-      allow create: if member() && request.resource.data.updatedBy == request.auth.uid
-        && (isAdmin() || request.resource.data.assigneeUid == request.auth.uid);
-      allow update: if isAdmin() || (assignedToMe(resource) && request.resource.data.assigneeUid == request.auth.uid);
-      allow delete: if isAdmin();
+    match /orgs/{o} {
+      allow read: if mem(o);
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow update: if admin(o);
 
-      match /notes/{note} {
-        function ticketMine() { return get(/databases/$(database)/documents/tickets/$(id)).data.assigneeUid == request.auth.uid; }
-        allow read: if isAdmin() || (member() && ticketMine());
-        allow create: if member() && request.resource.data.by == request.auth.uid && (isAdmin() || ticketMine());
+      match /members/{m} {
+        allow read: if mem(o);
+        allow create: if admin(o) || (signedIn() && m == request.auth.uid && (
+          (get(/databases/$(database)/documents/orgs/$(o)).data.owner == request.auth.uid
+            && request.resource.data.role == 'admin') ||
+          (exists(/databases/$(database)/documents/invites/$(myEmail()))
+            && get(/databases/$(database)/documents/invites/$(myEmail())).data.orgId == o
+            && request.resource.data.role == get(/databases/$(database)/documents/invites/$(myEmail())).data.role)));
+        allow update, delete: if admin(o);
+      }
+
+      match /tickets/{id} {
+        allow read: if admin(o) || (mem(o) && resource.data.assigneeUid == request.auth.uid);
+        allow create: if mem(o) && request.resource.data.updatedBy == request.auth.uid
+          && (admin(o) || request.resource.data.assigneeUid == request.auth.uid);
+        allow update: if admin(o) || (mem(o) && resource.data.assigneeUid == request.auth.uid
+          && request.resource.data.assigneeUid == request.auth.uid);
+        allow delete: if admin(o);
+        match /notes/{n} {
+          function mine() { return get(/databases/$(database)/documents/orgs/$(o)/tickets/$(id)).data.assigneeUid == request.auth.uid; }
+          allow read: if admin(o) || (mem(o) && mine());
+          allow create: if mem(o) && (request.resource.data.by == request.auth.uid || admin(o)) && (admin(o) || mine());
+        }
+      }
+
+      match /tasks/{id} {
+        allow read: if admin(o) || (mem(o) && resource.data.assigneeUid == request.auth.uid);
+        allow create: if mem(o) && request.resource.data.updatedBy == request.auth.uid
+          && (admin(o) || request.resource.data.assigneeUid == request.auth.uid);
+        allow update: if admin(o) || (mem(o) && resource.data.assigneeUid == request.auth.uid
+          && request.resource.data.assigneeUid == request.auth.uid);
+        allow delete: if admin(o);
       }
     }
 
-    // Tasks: same idea.
-    match /tasks/{id} {
-      allow read: if isAdmin() || (member() && resource.data.assigneeUid == request.auth.uid);
-      allow create: if member() && request.resource.data.updatedBy == request.auth.uid
-        && (isAdmin() || request.resource.data.assigneeUid == request.auth.uid);
-      allow update: if isAdmin() || (member() && resource.data.assigneeUid == request.auth.uid
-        && request.resource.data.assigneeUid == request.auth.uid);
-      allow delete: if isAdmin();
+    // Old single-team data: readable by its manager only, for the one-time move into orgs/beki.
+    match /org/main {
+      allow read: if signedIn();
+      allow update: if legacyAdmin();
     }
+    match /tickets/{id} {
+      allow read, delete: if legacyAdmin();
+      match /notes/{n} { allow read: if legacyAdmin(); }
+    }
+    match /tasks/{id} { allow read, delete: if legacyAdmin(); }
 
-    // Everything else is closed.
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /{document=**} { allow read, write: if false; }
   }
 }

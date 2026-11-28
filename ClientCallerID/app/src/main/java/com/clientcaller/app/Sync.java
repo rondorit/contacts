@@ -38,7 +38,8 @@ final class Sync {
     static boolean on() {
         if (app == null) return false;
         try {
-            return Cloud.user() != null && !p().getString("cloud_role", "").isEmpty() && p().getBoolean("cloud_sync", true);
+            return Cloud.user() != null && !p().getString("cloud_role", "").isEmpty() && !p().getString("cloud_org", "").isEmpty()
+                    && p().getBoolean("cloud_sync", true);
         } catch (Throwable e) {
             return false;
         }
@@ -131,7 +132,7 @@ final class Sync {
         m.put("assigneeName", t.assignee);
         String au = uidOfName(t.assignee);
         if (admin()) m.put("assigneeUid", au.isEmpty() ? "" : au);
-        Cloud.db().collection("tickets").document(doc).set(m, SetOptions.merge());
+        Cloud.col("tickets").document(doc).set(m, SetOptions.merge());
     }
 
     private static String address(TicketDb.Ticket t) {
@@ -154,18 +155,18 @@ final class Sync {
         n.put("time", time);
         n.put("by", uid());
         n.put("byName", myName());
-        Cloud.db().collection("tickets").document(doc).collection("notes").add(n);
+        Cloud.col("tickets").document(doc).collection("notes").add(n);
         Map<String, Object> bump = new HashMap<>();
         bump.put("updated", System.currentTimeMillis());
         bump.put("updatedBy", uid());
         bump.put("lastNote", text.length() > 120 ? text.substring(0, 120) : text);
-        Cloud.db().collection("tickets").document(doc).set(bump, SetOptions.merge());
+        Cloud.col("tickets").document(doc).set(bump, SetOptions.merge());
     }
 
     static void ticketDeleted(long id) {
         if (applying || !on() || !admin()) return;
         String doc = docOf("t", id);
-        if (doc != null) Cloud.db().collection("tickets").document(doc).delete();
+        if (doc != null) Cloud.col("tickets").document(doc).delete();
     }
 
     static void taskChanged(Tasks.Task t) {
@@ -198,13 +199,13 @@ final class Sync {
         m.put("items", items);
         m.put("updated", System.currentTimeMillis());
         m.put("updatedBy", uid());
-        Cloud.db().collection("tasks").document(doc).set(m, SetOptions.merge());
+        Cloud.col("tasks").document(doc).set(m, SetOptions.merge());
     }
 
     static void taskDeleted(long id) {
         if (applying || !on() || !admin()) return;
         String doc = docOf("k", id);
-        if (doc != null) Cloud.db().collection("tasks").document(doc).delete();
+        if (doc != null) Cloud.col("tasks").document(doc).delete();
     }
 
     /** First time: share all existing tickets and tasks (manager only). */
@@ -227,14 +228,14 @@ final class Sync {
         if (!on()) return;
         for (ListenerRegistration r : regs) r.remove();
         regs.clear();
-        Cloud.db().collection("users").get().addOnSuccessListener(q -> {
+        Cloud.col("members").get().addOnSuccessListener(q -> {
             List<String[]> us = new ArrayList<>();
             for (QueryDocumentSnapshot d : q) us.add(new String[]{d.getId(), str(d, "name"), str(d, "email")});
             cacheUsers(us);
             uploadAll(app);
         });
-        Query tq = Cloud.db().collection("tickets");
-        Query kq = Cloud.db().collection("tasks");
+        Query tq = Cloud.col("tickets");
+        Query kq = Cloud.col("tasks");
         if (!admin()) {
             tq = tq.whereEqualTo("assigneeUid", uid());
             kq = kq.whereEqualTo("assigneeUid", uid());
@@ -322,7 +323,7 @@ final class Sync {
     private static void pullNotes(final String doc, final long local) {
         final String key = "nseen_" + doc;
         long since = p().getLong(key, 0);
-        Cloud.db().collection("tickets").document(doc).collection("notes").whereGreaterThan("time", since).get()
+        Cloud.col("tickets").document(doc).collection("notes").whereGreaterThan("time", since).get()
                 .addOnSuccessListener(q -> {
                     long max = p().getLong(key, 0);
                     applying = true;

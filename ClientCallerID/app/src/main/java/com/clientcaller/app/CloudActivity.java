@@ -26,6 +26,7 @@ public class CloudActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Sync.app = getApplicationContext();
         setTitle("\u05E2\u05E0\u05DF \u2013 \u05E6\u05D5\u05D5\u05EA");
         ScrollView sv = new ScrollView(this);
         box = new LinearLayout(this);
@@ -43,24 +44,24 @@ public class CloudActivity extends Activity {
         box.addView(Theme.header(this, "\u2601\uFE0F \u05E2\u05E0\u05DF \u2013 \u05E2\u05D1\u05D5\u05D3\u05EA \u05E6\u05D5\u05D5\u05EA (\u05E0\u05D9\u05E1\u05D9\u05D5\u05E0\u05D9)"));
         FirebaseUser u = Cloud.user();
         if (u == null) {
-            box.addView(Ui.text(this, "\u05DB\u05E0\u05D9\u05E1\u05D4 \u05E2\u05DD \u05D7\u05E9\u05D1\u05D5\u05DF Google \u05DE\u05D7\u05D1\u05E8\u05EA \u05D0\u05D5\u05EA\u05DA \u05DC\u05E6\u05D5\u05D5\u05EA \u05E9\u05DC Beki Projects. \u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05E9\u05D0\u05E8\u05EA \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05E9\u05DC\u05DA \u2013 \u05D1\u05E2\u05E0\u05DF \u05D9\u05D9\u05E9\u05DE\u05E8\u05D5 \u05E8\u05E7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05D5\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA.", 15, Ui.TEXT, false));
+            box.addView(Ui.text(this, "\u05DB\u05E0\u05D9\u05E1\u05D4 \u05E2\u05DD \u05D7\u05E9\u05D1\u05D5\u05DF Google \u05DE\u05D7\u05D1\u05E8\u05EA \u05D0\u05D5\u05EA\u05DA \u05DC\u05E6\u05D5\u05D5\u05EA \u05E9\u05DC\u05DA. \u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05E0\u05E9\u05D0\u05E8\u05EA \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05E9\u05DC\u05DA \u2013 \u05D1\u05E2\u05E0\u05DF \u05D9\u05D9\u05E9\u05DE\u05E8\u05D5 \u05E8\u05E7 \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05D5\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA.", 15, Ui.TEXT, false));
             box.addView(button("\uD83D\uDD11 \u05DB\u05E0\u05D9\u05E1\u05D4 \u05E2\u05DD Google", v -> Cloud.startSignIn(this)));
             return;
         }
         box.addView(Ui.text(this, "\u05DE\u05D7\u05D5\u05D1\u05E8: " + u.getDisplayName() + "\n" + Cloud.email(), 15, Ui.TEXT, true));
         final TextView role = Ui.text(this, "\u05D1\u05D5\u05D3\u05E7 \u05D4\u05E8\u05E9\u05D0\u05D5\u05EA\u2026", 14, Ui.MUTED, false);
         box.addView(role);
-        Cloud.db().collection("users").document(u.getUid()).get().addOnCompleteListener(t -> {
-            DocumentSnapshot d = t.isSuccessful() ? t.getResult() : null;
-            if (d == null || !d.exists()) {
-                role.setText("\u05E2\u05D5\u05D3 \u05DC\u05D0 \u05E9\u05D9\u05D9\u05DA \u05DC\u05E6\u05D5\u05D5\u05EA. \u05DE\u05E0\u05E1\u05D4 \u05DC\u05D4\u05E6\u05D8\u05E8\u05E3\u2026");
-                Cloud.join(err -> { if (err != null) role.setText(err); else refresh(); });
+        Cloud.join(err -> {
+            if (Cloud.NO_ORG.equals(err)) {
+                role.setText("\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4 \u05D4\u05D6\u05DE\u05E0\u05D4 \u05DC\u05D7\u05E9\u05D1\u05D5\u05DF \u05D4\u05D6\u05D4.");
+                box.addView(Ui.text(this, "\u05D0\u05DD \u05D4\u05D5\u05D6\u05DE\u05E0\u05EA \u2013 \u05D1\u05D3\u05D5\u05E7 \u05E9\u05E0\u05DB\u05E0\u05E1\u05EA \u05E2\u05DD \u05D0\u05D5\u05EA\u05D4 \u05DB\u05EA\u05D5\u05D1\u05EA Gmail. \u05D0\u05E4\u05E9\u05E8 \u05D2\u05DD \u05DC\u05E4\u05EA\u05D5\u05D7 \u05D0\u05E8\u05D2\u05D5\u05DF \u05D7\u05D3\u05E9 (\u05EA\u05D4\u05D9\u05D4 \u05D4\u05DE\u05E0\u05D4\u05DC \u05E9\u05DC\u05D5).", 14, Ui.MUTED, false), 3);
+                box.addView(button("\uD83C\uDFE2 \u05E4\u05EA\u05D9\u05D7\u05EA \u05D0\u05E8\u05D2\u05D5\u05DF \u05D7\u05D3\u05E9", v -> newOrgDialog()), 4);
                 return;
             }
-            myRole = d.getString("role");
-            CallLogger.prefs(this).edit().putString("cloud_role", myRole == null ? "" : myRole).apply();
+            if (err != null) { role.setText(err); return; }
+            myRole = CallLogger.prefs(this).getString("cloud_role", "");
             Sync.start(this);
-            role.setText("\u05EA\u05E4\u05E7\u05D9\u05D3: " + Cloud.roleHe(myRole));
+            role.setText("\u05D0\u05E8\u05D2\u05D5\u05DF: " + CallLogger.prefs(this).getString("cloud_org_name", "") + "  \u2022  \u05EA\u05E4\u05E7\u05D9\u05D3: " + Cloud.roleHe(myRole));
             if (Cloud.ROLE_ADMIN.equals(myRole)) adminSection();
         });
         final boolean syncOn = CallLogger.prefs(this).getBoolean("cloud_sync", true);
@@ -71,7 +72,7 @@ public class CloudActivity extends Activity {
         }));
         box.addView(button("\uD83D\uDEAA \u05D4\u05EA\u05E0\u05EA\u05E7\u05D5\u05EA", v -> {
             Sync.stop();
-            CallLogger.prefs(this).edit().remove("cloud_role").apply();
+            CallLogger.prefs(this).edit().remove("cloud_role").remove("cloud_org").apply();
             Cloud.signOut(this, this::refresh);
         }));
     }
@@ -80,7 +81,7 @@ public class CloudActivity extends Activity {
         box.addView(Ui.sectionTitle(this, "\uD83D\uDC65 \u05D0\u05E0\u05E9\u05D9 \u05D4\u05E6\u05D5\u05D5\u05EA \u05D1\u05E2\u05E0\u05DF"));
         final LinearLayout users = Ui.card(this);
         box.addView(users);
-        Cloud.db().collection("users").get().addOnSuccessListener(q -> {
+        Cloud.col("members").get().addOnSuccessListener(q -> {
             java.util.List<String[]> cache = new java.util.ArrayList<>();
             for (QueryDocumentSnapshot d0 : q) cache.add(new String[]{d0.getId(), d0.getString("name"), d0.getString("email")});
             Sync.cacheUsers(cache);
@@ -95,7 +96,7 @@ public class CloudActivity extends Activity {
         box.addView(Ui.sectionTitle(this, "\u2709\uFE0F \u05D4\u05D6\u05DE\u05E0\u05D5\u05EA \u05E9\u05DE\u05DE\u05EA\u05D9\u05E0\u05D5\u05EA"));
         final LinearLayout inv = Ui.card(this);
         box.addView(inv);
-        Cloud.db().collection("invites").get().addOnSuccessListener(q -> {
+        Cloud.db().collection("invites").whereEqualTo("orgId", Cloud.org()).get().addOnSuccessListener(q -> {
             if (q.isEmpty()) inv.addView(Ui.text(this, "\u05D0\u05D9\u05DF \u05D4\u05D6\u05DE\u05E0\u05D5\u05EA \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", 14, Ui.MUTED, false));
             for (QueryDocumentSnapshot d : q) {
                 final String mail = d.getId();
@@ -115,14 +116,29 @@ public class CloudActivity extends Activity {
         String[] opts = {Cloud.ROLE_ADMIN.equals(role) ? "\uD83D\uDC77 \u05D4\u05E4\u05D5\u05DA \u05DC\u05D8\u05DB\u05E0\u05D0\u05D9" : "\u2B50 \u05D4\u05E4\u05D5\u05DA \u05DC\u05DE\u05E0\u05D4\u05DC", "\uD83D\uDDD1\uFE0F \u05D4\u05E1\u05E8 \u05DE\u05D4\u05E6\u05D5\u05D5\u05EA"};
         new AlertDialog.Builder(this).setTitle(name).setItems(opts, (d, w) -> {
             if (w == 0) {
-                Cloud.db().collection("users").document(uid)
+                Cloud.col("members").document(uid)
                         .update("role", Cloud.ROLE_ADMIN.equals(role) ? Cloud.ROLE_TECH : Cloud.ROLE_ADMIN)
                         .addOnSuccessListener(x -> refresh());
             } else {
-                Auth.confirm(this, "\u05D4\u05E1\u05E8\u05EA " + name + " \u05DE\u05D4\u05E6\u05D5\u05D5\u05EA", () -> Cloud.db().collection("users").document(uid).delete()
+                Auth.confirm(this, "\u05D4\u05E1\u05E8\u05EA " + name + " \u05DE\u05D4\u05E6\u05D5\u05D5\u05EA", () -> Cloud.col("members").document(uid).delete()
                         .addOnSuccessListener(x -> refresh()));
             }
         }).show();
+    }
+
+    private void newOrgDialog() {
+        final EditText name = new EditText(this);
+        name.setHint("\u05E9\u05DD \u05D4\u05D0\u05E8\u05D2\u05D5\u05DF / \u05D4\u05E2\u05E1\u05E7");
+        new AlertDialog.Builder(this).setTitle("\u05D0\u05E8\u05D2\u05D5\u05DF \u05D7\u05D3\u05E9").setView(name)
+                .setPositiveButton("\u05E6\u05D5\u05E8", (d, w) -> {
+                    String n = name.getText().toString().trim();
+                    if (n.isEmpty()) return;
+                    Cloud.createOrg(n, err -> {
+                        if (err != null) Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+                        refresh();
+                    });
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null).show();
     }
 
     private void inviteDialog() {
@@ -152,7 +168,7 @@ public class CloudActivity extends Activity {
                     Cloud.invite(e, n, admin.isChecked() ? Cloud.ROLE_ADMIN : Cloud.ROLE_TECH, err -> {
                         if (err != null) { Toast.makeText(this, "\u05E0\u05DB\u05E9\u05DC: " + err, Toast.LENGTH_LONG).show(); return; }
                         refresh();
-                        String msg = "\u05D4\u05D9\u05D9 " + n + ", \u05D4\u05D5\u05D6\u05DE\u05E0\u05EA \u05DC\u05E6\u05D5\u05D5\u05EA \u05E9\u05DC Beki Projects \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 On IT.\n"
+                        String msg = "\u05D4\u05D9\u05D9 " + n + ", \u05D4\u05D5\u05D6\u05DE\u05E0\u05EA \u05DC\u05E6\u05D5\u05D5\u05EA \u05E9\u05DC " + CallLogger.prefs(this).getString("cloud_org_name", "") + " \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4 On IT.\n"
                                 + "\u05DB\u05E0\u05D9\u05E1\u05D4 \u05E2\u05DD \u05D7\u05E9\u05D1\u05D5\u05DF Google: " + e + "\n\n"
                                 + "\uD83D\uDCF1 \u05D0\u05E0\u05D3\u05E8\u05D5\u05D0\u05D9\u05D3:\n1. \u05D4\u05EA\u05E7\u05E0\u05D4: https://github.com/rondorit/contacts/releases/tag/preview\n"
                                 + "2. \u05D1\u05DE\u05E1\u05DA \u05D4\u05E8\u05D0\u05E9\u05D9 \u2190 \u2601\uFE0F \u05E2\u05E0\u05DF \u2013 \u05E6\u05D5\u05D5\u05EA \u2190 \u05DB\u05E0\u05D9\u05E1\u05D4 \u05E2\u05DD Google.\n\n"
