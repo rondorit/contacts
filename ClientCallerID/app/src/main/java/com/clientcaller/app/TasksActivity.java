@@ -339,7 +339,6 @@ public class TasksActivity extends Activity {
         remind.setText("\uD83D\uDD14 \u05EA\u05D6\u05DB\u05D5\u05E8\u05EA \u05D1\u05D6\u05DE\u05DF");
         remind.setChecked(t.remind);
         lay.addView(remind);
-        lay.addView(nag);
 
         final String[] place = {t.place};
         final double[] ll = {t.lat, t.lng};
@@ -390,6 +389,7 @@ public class TasksActivity extends Activity {
         final CheckBox nag = new CheckBox(this);
         nag.setText("\uD83D\uDCE3 \u05DC\u05D4\u05D6\u05DB\u05D9\u05E8 \u05DB\u05DC \u05E9\u05E2\u05D4 \u05E2\u05D3 \u05E9\u05D1\u05D5\u05E6\u05E2");
         nag.setChecked(t.nag);
+        lay.addView(nag);
 
         final String[] pr = {t.priority};
         final TextView prTv = link(lay, "\u05E2\u05D3\u05D9\u05E4\u05D5\u05EA: " + Tasks.priorityHe(pr[0]) + " \u25BE");
