@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   id-token: write
-concurrency: deploy-cloud
+concurrency: deploy-cloud  # one deploy at a time
 jobs:
   deploy:
     runs-on: ubuntu-latest
