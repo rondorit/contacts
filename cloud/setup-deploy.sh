@@ -55,6 +55,18 @@ gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --member="principalSet://iam.googleapis.com/projects/$NUM/locations/global/workloadIdentityPools/$POOL/attribute.repository/$REPO" \
   --quiet >/dev/null
 
+echo "== Service agents for Firestore-triggered functions"
+gcloud beta services identity create --service=pubsub.googleapis.com >/dev/null 2>&1 || true
+gcloud beta services identity create --service=eventarc.googleapis.com >/dev/null 2>&1 || true
+COMPUTE="$NUM-compute@developer.gserviceaccount.com"
+for B in "service-$NUM@gcp-sa-pubsub.iam.gserviceaccount.com roles/iam.serviceAccountTokenCreator" \
+         "$COMPUTE roles/run.invoker" "$COMPUTE roles/eventarc.eventReceiver" \
+         "service-$NUM@gcp-sa-eventarc.iam.gserviceaccount.com roles/eventarc.serviceAgent"; do
+  set -- $B
+  gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$1" --role="$2" \
+    --condition=None --quiet >/dev/null && echo "  $2 -> $1"
+done
+
 echo
 echo "DONE"
 echo "provider: projects/$NUM/locations/global/workloadIdentityPools/$POOL/providers/$PROVIDER"
