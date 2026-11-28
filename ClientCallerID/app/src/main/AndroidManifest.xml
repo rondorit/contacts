@@ -19,7 +19,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:label="לקוחות ושירות"
+        android:label="On IT"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
