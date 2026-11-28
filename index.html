@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="On IT">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg">
+<title>On IT</title>
+<style>
+  :root { --bg:#0D1117; --surface:#161B22; --surface2:#1C2128; --line:#30363D; --text:#E6EDF3; --muted:#8B949E;
+          --mint:#3FB68B; --blue:#58A6FF; --orange:#D29922; --purple:#BC8CFF; --teal:#39C5CF; --red:#FF6B6B; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Open Sans", Arial, sans-serif; font-size: 16px; }
+  header { position: sticky; top: 0; z-index: 5; background: rgba(13,17,23,.95); backdrop-filter: blur(8px);
+    padding: calc(env(safe-area-inset-top) + 10px) 16px 8px; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+  header .who { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  main { padding: 12px 14px calc(env(safe-area-inset-bottom) + 90px); max-width: 760px; margin: 0 auto; }
+  .tabs { display: flex; gap: 6px; margin: 10px 0 4px; overflow-x: auto; }
+  .tab { border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 7px 14px; border-radius: 20px;
+    font-size: 14px; white-space: nowrap; cursor: pointer; }
+  .tab.on { background: var(--mint); color: #0D1117; border-color: var(--mint); font-weight: 700; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 8px 0;
+    display: flex; gap: 10px; cursor: pointer; }
+  .stripe { width: 5px; border-radius: 3px; flex: none; }
+  .card h3 { margin: 0 0 3px; font-size: 16px; }
+  .sub { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .late { color: var(--red); }
+  .btn { display: inline-block; border: none; background: var(--mint); color: #0D1117; font-weight: 700; font-size: 15px;
+    padding: 11px 16px; border-radius: 12px; cursor: pointer; text-decoration: none; text-align: center; }
+  .btn.ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--line); font-weight: 500; }
+  .btn.small { padding: 7px 12px; font-size: 14px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .row > * { flex: 1; min-width: 110px; }
+  .center { text-align: center; padding: 40px 10px; color: var(--muted); }
+  .sheet { position: fixed; inset: 0; background: var(--bg); z-index: 10; overflow-y: auto;
+    padding: calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 30px); display: none; }
+  .sheet.open { display: block; }
+  .sheet .top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sheet .top button { background: none; border: none; color: var(--blue); font-size: 17px; cursor: pointer; }
+  label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 4px; font-weight: 600; }
+  input, textarea, select { width: 100%; background: var(--surface2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 11px 12px; font-size: 16px; font-family: inherit; }
+  textarea { min-height: 80px; resize: vertical; }
+  .field { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 6px 0; }
+  .field b { color: var(--muted); font-weight: 600; font-size: 13px; display: block; }
+  a { color: var(--blue); }
+  .note { border-right: 3px solid var(--line); padding: 4px 10px; margin: 8px 0; }
+  .note .t { color: var(--muted); font-size: 12px; }
+  .check { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 15px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--mint); }
+  .done { text-decoration: line-through; color: var(--muted); }
+  .fab { position: fixed; left: 18px; bottom: calc(env(safe-area-inset-bottom) + 20px); width: 58px; height: 58px; border-radius: 50%;
+    background: var(--mint); color: #0D1117; font-size: 32px; border: none; box-shadow: 0 6px 18px rgba(0,0,0,.4); cursor: pointer; z-index: 6; }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--line);
+    padding: 10px 16px; border-radius: 12px; z-index: 20; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ On IT</h1>
+  <div class="who" id="who">Beki Projects</div>
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab on" data-v="tickets">🎫 קריאות</button>
+    <button class="tab" data-v="tasks">✅ משימות</button>
+    <button class="tab" data-v="me">👤 חשבון</button>
+  </div>
+</header>
+<main id="main"><div class="center">טוען…</div></main>
+<button class="fab" id="fab" style="display:none">+</button>
+
+<div class="sheet" id="sheet"><div class="top"><button id="back">→ חזרה</button><b id="sheetTitle"></b></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBnunFF6hnO7QsvzHJSBqHGMpqLbxs5rG8",
+  authDomain: "bekis-e82cd.firebaseapp.com",
+  projectId: "bekis-e82cd",
+  storageBucket: "bekis-e82cd.firebasestorage.app",
+  messagingSenderId: "1065393018022",
+  appId: "1:1065393018022:web:8a128da0a08b5154919067"
+});
+const auth = getAuth(app), db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const STATUS = { "Open": ["פתוחה", "var(--blue)"], "In progress": ["בטיפול", "var(--orange)"],
+  "Waiting for client": ["ממתין ללקוח", "var(--purple)"], "Waiting for outsourcing": ["ממתין למיקור חוץ", "var(--teal)"],
+  "Closed": ["סגורה", "#6B7280"] };
+const PRIO = { "Low": "נמוכה", "Normal": "רגילה", "High": "גבוהה", "Urgent": "דחופה" };
+const fmt = ms => ms ? new Date(ms).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+
+let me = null, role = "", view = "tickets", tickets = [], tasks = [], users = [], unsub = [], tFilter = "open";
+
+function toast(t) { const e = $("toast"); e.textContent = t; e.style.display = "block"; setTimeout(() => e.style.display = "none", 2500); }
+function myName() { return me.displayName || me.email; }
+function isAdmin() { return role === "admin"; }
+
+// ---------------------------------------------------------------- sign-in and joining the team
+async function signIn() {
+  const p = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, p); }
+  catch (e) { if (String(e.code).includes("popup")) await signInWithRedirect(auth, p); else toast("הכניסה נכשלה: " + e.message); }
+}
+getRedirectResult(auth).catch(() => {});
+
+async function join() {
+  const uref = doc(db, "users", me.uid);
+  const u = await getDoc(uref);
+  if (u.exists()) return u.data().role;
+  const email = (me.email || "").toLowerCase();
+  const org = await getDoc(doc(db, "org", "main"));
+  if (!org.exists()) {
+    await setDoc(doc(db, "org", "main"), { admin: me.uid, adminEmail: email, name: "Beki Projects", created: serverTimestamp() });
+    await setDoc(uref, { email, name: myName(), role: "admin", joined: serverTimestamp() });
+    return "admin";
+  }
+  const inv = await getDoc(doc(db, "invites", email));
+  if (!inv.exists()) return null;
+  const r = inv.data().role || "tech";
+  await setDoc(uref, { email, name: myName(), role: r, joined: serverTimestamp() });
+  await deleteDoc(doc(db, "invites", email)).catch(() => {});
+  return r;
+}
+
+onAuthStateChanged(auth, async user => {
+  unsub.forEach(f => f()); unsub = [];
+  me = user;
+  if (!user) { loginScreen(); return; }
+  $("main").innerHTML = '<div class="center">מתחבר לצוות…</div>';
+  try { role = await join(); } catch (e) { role = null; }
+  if (!role) {
+    $("main").innerHTML = `<div class="center">החשבון <b>${esc(user.email)}</b> עוד לא הוזמן לצוות.<br><br>בקש מהמנהל להזמין את הכתובת הזו.<br><br>
+      <button class="btn ghost" id="out">התנתקות</button></div>`;
+    $("out").onclick = () => signOut(auth);
+    return;
+  }
+  $("who").textContent = `${myName()} • ${role === "admin" ? "מנהל" : "טכנאי"}`;
+  $("tabs").style.display = "flex";
+  listen();
+});
+
+function loginScreen() {
+  $("tabs").style.display = "none"; $("fab").style.display = "none"; $("who").textContent = "Beki Projects";
+  $("main").innerHTML = `<div class="center"><div style="font-size:56px">🛠️</div><h2 style="color:var(--text)">On IT</h2>
+    <p>קריאות שירות ומשימות של הצוות.<br>נכנסים עם חשבון Google שהוזמן.</p><br>
+    <button class="btn" id="login">🔑 כניסה עם Google</button>
+    <p style="margin-top:30px;font-size:13px">באייפון: שתף ← "הוסף למסך הבית" כדי שזה ייפתח כמו אפליקציה.</p></div>`;
+  $("login").onclick = signIn;
+}
+
+// ---------------------------------------------------------------- live data
+function listen() {
+  const tq = isAdmin() ? collection(db, "tickets") : query(collection(db, "tickets"), where("assigneeUid", "==", me.uid));
+  const kq = isAdmin() ? collection(db, "tasks") : query(collection(db, "tasks"), where("assigneeUid", "==", me.uid));
+  unsub.push(onSnapshot(tq, s => { tickets = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה בקריאות: " + e.code)));
+  unsub.push(onSnapshot(kq, s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה במשימות: " + e.code)));
+  unsub.push(onSnapshot(collection(db, "users"), s => { users = s.docs.map(d => ({ uid: d.id, ...d.data() })); }));
+}
+
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("on")); b.classList.add("on"); view = b.dataset.v; render();
+});
+
+function render() {
+  $("fab").style.display = (view === "tickets" && isAdmin()) || view === "tasks" ? "block" : "none";
+  if (view === "tickets") renderTickets(); else if (view === "tasks") renderTasks(); else renderMe();
+}
+
+function renderTickets() {
+  const now = Date.now();
+  const open = tickets.filter(t => t.status !== "Closed");
+  const list = (tFilter === "open" ? open : tFilter === "late" ? open.filter(t => t.followupAt && t.followupAt < now) : tickets.filter(t => t.status === "Closed"))
+    .sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  let h = `<div class="tabs">
+    <button class="tab ${tFilter === "open" ? "on" : ""}" data-f="open">פתוחות (${open.length})</button>
+    <button class="tab ${tFilter === "late" ? "on" : ""}" data-f="late">באיחור (${open.filter(t => t.followupAt && t.followupAt < now).length})</button>
+    <button class="tab ${tFilter === "closed" ? "on" : ""}" data-f="closed">סגורות</button></div>`;
+  if (!list.length) h += `<div class="center">${isAdmin() ? "אין קריאות כאן" : "אין קריאות ששויכו אליך 🎉"}</div>`;
+  for (const t of list) {
+    const [sl, sc] = STATUS[t.status] || [t.status, "var(--blue)"];
+    const late = t.status !== "Closed" && t.followupAt && t.followupAt < now;
+    h += `<div class="card" data-t="${esc(t.id)}"><div class="stripe" style="background:${late ? "var(--red)" : sc}"></div><div style="flex:1">
+      <h3>${esc(t.title || "(ללא נושא)")}</h3>
+      <div class="sub"><span class="chip" style="background:${sc}22;color:${sc}">${sl}</span>
+        ${t.priority === "Urgent" || t.priority === "High" ? " 🔴" : ""} ${esc(t.clientName || "")}
+        ${t.assigneeName ? " • 👷 " + esc(t.assigneeName) : ""}<br>
+        ${t.followupAt ? `<span class="${late ? "late" : ""}">📅 ${fmt(t.followupAt)}</span>` : ""}
+        ${t.lastNote ? "<br>💬 " + esc(t.lastNote) : ""}</div></div></div>`;
+  }
+  $("main").innerHTML = h;
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { tFilter = b.dataset.f; render(); });
+  document.querySelectorAll("[data-t]").forEach(c => c.onclick = () => openTicket(c.dataset.t));
+}
+
+function renderTasks() {
+  const open = tasks.filter(k => !k.doneAt).sort((a, b) => (a.dueAt || 9e15) - (b.dueAt || 9e15));
+  const done = tasks.filter(k => k.doneAt).sort((a, b) => b.doneAt - a.doneAt).slice(0, 20);
+  let h = "";
+  if (!open.length) h += `<div class="center">אין משימות פתוחות 🎉</div>`;
+  for (const k of open.concat(done)) {
+    const late = !k.doneAt && k.dueAt && k.dueAt < Date.now();
+    const items = k.items || [];
+    h += `<div class="card" style="cursor:default"><div style="flex:1">
+      <label class="check" style="margin:0"><input type="checkbox" data-kdone="${esc(k.id)}" ${k.doneAt ? "checked" : ""}>
+      <span class="${k.doneAt ? "done" : ""}" style="font-weight:700">${k.priority === "High" ? "🔴 " : ""}${esc(k.title)}</span></label>
+      <div class="sub">${k.dueAt ? `<span class="${late ? "late" : ""}">📅 ${fmt(k.dueAt)}</span>` : ""}
+        ${k.client ? " • 👤 " + esc(k.client) : ""}${k.assigneeName ? " • 👷 " + esc(k.assigneeName) : ""}
+        ${k.list ? " • 📂 " + esc(k.list) : ""}${k.stage === 1 && !k.doneAt ? " • 🔧 בטיפול" : ""}</div>
+      ${k.notes ? `<div class="sub" style="margin-top:4px">${esc(k.notes).replace(/\n/g, "<br>")}</div>` : ""}
+      ${items.map((it, i) => `<label class="check"><input type="checkbox" data-kitem="${esc(k.id)}" data-i="${i}" ${it.d ? "checked" : ""}>
+        <span class="${it.d ? "done" : ""}">${esc(it.t)}</span></label>`).join("")}
+      ${!k.doneAt ? `<div class="row"><button class="btn ghost small" data-kstage="${esc(k.id)}">${k.stage === 1 ? "📋 החזר לביצוע" : "🔧 בטיפול"}</button>
+        ${k.phone ? `<a class="btn ghost small" href="tel:${esc(k.phone)}">📞 חייג</a>` : ""}</div>` : ""}
+    </div></div>`;
+  }
+  $("main").innerHTML = h;
+  document.querySelectorAll("[data-kdone]").forEach(c => c.onchange = () => saveTask(c.dataset.kdone, { doneAt: c.checked ? Date.now() : 0, stage: 0 }));
+  document.querySelectorAll("[data-kitem]").forEach(c => c.onchange = () => {
+    const k = tasks.find(x => x.id === c.dataset.kitem); const items = (k.items || []).map(x => ({ ...x }));
+    items[+c.dataset.i].d = c.checked; saveTask(k.id, { items });
+  });
+  document.querySelectorAll("[data-kstage]").forEach(b => b.onclick = () => {
+    const k = tasks.find(x => x.id === b.dataset.kstage); saveTask(k.id, { stage: k.stage === 1 ? 0 : 1 });
+  });
+}
+
+async function saveTask(id, patch) {
+  try { await setDoc(doc(db, "tasks", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true }); }
+  catch (e) { toast("השמירה נכשלה: " + e.code); }
+}
+
+function renderMe() {
+  $("main").innerHTML = `<div class="field"><b>מחובר</b>${esc(myName())}<br>${esc(me.email)}</div>
+    <div class="field"><b>תפקיד</b>${isAdmin() ? "מנהל – רואה את כל הקריאות והמשימות" : "טכנאי – רואה מה ששויך אליך"}</div>
+    <div class="field"><b>צוות</b>${users.map(u => `${u.role === "admin" ? "⭐" : "👷"} ${esc(u.name)}`).join("<br>")}</div>
+    <p class="sub">הזמנת אנשי צוות נעשית מאפליקציית האנדרואיד של המנהל: ☁️ ענן – צוות.</p>
+    <p class="sub">באייפון: בספארי ← שתף ← "הוסף למסך הבית".</p>
+    <button class="btn ghost" id="out" style="width:100%">🚪 התנתקות</button>`;
+  $("out").onclick = () => signOut(auth);
+}
+
+// ---------------------------------------------------------------- ticket details
+function sheet(title, html) { $("sheetTitle").textContent = title; $("sheetBody").innerHTML = html; $("sheet").classList.add("open"); window.scrollTo(0, 0); }
+$("back").onclick = () => { $("sheet").classList.remove("open"); if (noteUnsub) { noteUnsub(); noteUnsub = null; } };
+let noteUnsub = null;
+
+function openTicket(id) {
+  const t = tickets.find(x => x.id === id); if (!t) return;
+  const [sl] = STATUS[t.status] || [t.status];
+  const addr = t.clientAddress || "";
+  let h = `<h2 style="margin:4px 0">${esc(t.title || "(ללא נושא)")}</h2>
+    <div class="sub">${sl} • ${PRIO[t.priority] || ""} ${t.followupAt ? "• 📅 " + fmt(t.followupAt) : ""}</div>
+    <div class="field"><b>לקוח</b>${esc(t.clientName || "-")}
+      ${t.clientPhone ? `<br><a href="tel:${esc(t.clientPhone)}">📞 ${esc(t.clientPhone)}</a> · <a href="https://wa.me/972${esc(String(t.clientPhone).replace(/\D/g, "").replace(/^0/, ""))}">💬 וואטסאפ</a>` : ""}
+      ${addr ? `<br>📍 ${esc(addr)}<br><a href="https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes">🧭 ניווט ב-Waze</a> · <a href="https://maps.google.com/?q=${encodeURIComponent(addr)}">Google Maps</a>` : ""}</div>
+    ${t.description ? `<div class="field"><b>תיאור</b>${esc(t.description).replace(/\n/g, "<br>")}</div>` : ""}
+    ${t.equipment || t.mac ? `<div class="field"><b>ציוד</b>${esc(t.equipment)} ${t.mac ? "<br>MAC: " + esc(t.mac) : ""}</div>` : ""}
+    ${t.assigneeName ? `<div class="field"><b>אחראי</b>👷 ${esc(t.assigneeName)}</div>` : ""}
+    <label>סטטוס</label>
+    <select id="st">${Object.entries(STATUS).map(([k, [l]]) => `<option value="${k}" ${k === t.status ? "selected" : ""}>${l}</option>`).join("")}</select>
+    ${isAdmin() ? `<label>שיוך לאיש צוות</label><select id="as"><option value="">ללא</option>${users.map(u => `<option value="${u.uid}" ${u.uid === t.assigneeUid ? "selected" : ""}>${esc(u.name)}</option>`).join("")}</select>` : ""}
+    <div class="row"><button class="btn" id="save">💾 שמור</button></div>
+    <div class="row"><button class="btn ghost" id="working">🔧 בטיפול</button><button class="btn ghost" id="done">✅ בוצע וסגור</button></div>
+    <label>הערות</label><div id="notes"><div class="sub">טוען…</div></div>
+    <textarea id="nt" placeholder="הוסף הערה…"></textarea>
+    <div class="row"><button class="btn" id="addn">➕ הוסף הערה</button></div>`;
+  sheet("קריאה", h);
+  const save = async patch => {
+    try {
+      await setDoc(doc(db, "tickets", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true });
+      toast("נשמר ✓");
+    } catch (e) { toast("השמירה נכשלה: " + e.code); }
+  };
+  $("save").onclick = () => {
+    const p = { status: $("st").value };
+    if (isAdmin()) { const u = users.find(x => x.uid === $("as").value); p.assigneeUid = u ? u.uid : ""; p.assigneeName = u ? u.name : ""; }
+    save(p);
+  };
+  $("working").onclick = () => { $("st").value = "In progress"; save({ status: "In progress" }); };
+  $("done").onclick = async () => { await addNote(id, "✅ בוצע"); save({ status: "Closed" }); };
+  $("addn").onclick = async () => { const v = $("nt").value.trim(); if (!v) return; await addNote(id, v); $("nt").value = ""; };
+  const nq = query(collection(db, "tickets", id, "notes"), orderBy("time", "desc"));
+  noteUnsub = onSnapshot(nq, s => {
+    $("notes").innerHTML = s.empty ? '<div class="sub">אין הערות</div>' : s.docs.map(d => {
+      const n = d.data(); return `<div class="note"><div class="t">${fmt(n.time)} • ${esc(n.byName || "")}</div>${esc(n.text).replace(/\n/g, "<br>")}</div>`;
+    }).join("");
+  }, e => { $("notes").innerHTML = '<div class="sub">אין גישה להערות</div>'; });
+}
+
+async function addNote(id, text) {
+  try {
+    await addDoc(collection(db, "tickets", id, "notes"), { text, time: Date.now(), by: me.uid, byName: myName() });
+    await setDoc(doc(db, "tickets", id), { updated: Date.now(), updatedBy: me.uid, lastNote: text.slice(0, 120) }, { merge: true });
+  } catch (e) { toast("ההערה לא נשמרה: " + e.code); }
+}
+
+// ---------------------------------------------------------------- new ticket / task
+$("fab").onclick = () => view === "tasks" ? newTask() : newTicket();
+
+function newTicket() {
+  sheet("קריאה חדשה", `<label>נושא</label><input id="ti">
+    <label>לקוח</label><input id="cn"><label>טלפון</label><input id="cp" type="tel">
+    <label>כתובת</label><input id="ca"><label>תיאור</label><textarea id="de"></textarea>
+    <label>עדיפות</label><select id="pr">${Object.entries(PRIO).map(([k, v]) => `<option value="${k}" ${k === "Normal" ? "selected" : ""}>${v}</option>`).join("")}</select>
+    <label>שיוך לאיש צוות</label><select id="as"><option value="">ללא</option>${users.map(u => `<option value="${u.uid}">${esc(u.name)}</option>`).join("")}</select>
+    <div class="row"><button class="btn" id="create">פתח קריאה</button></div>`);
+  $("create").onclick = async () => {
+    const title = $("ti").value.trim(); if (!title) { toast("חסר נושא"); return; }
+    const u = users.find(x => x.uid === $("as").value);
+    const d = { title, clientName: $("cn").value.trim(), clientPhone: $("cp").value.trim(), clientAddress: $("ca").value.trim(),
+      description: $("de").value.trim(), priority: $("pr").value, status: "Open", category: "Other",
+      assigneeUid: u ? u.uid : "", assigneeName: u ? u.name : "", created: Date.now(), updated: Date.now(), updatedBy: me.uid, src: "web" };
+    try { await setDoc(doc(collection(db, "tickets")), d); $("back").click(); toast("הקריאה נפתחה ✓"); }
+    catch (e) { toast("נכשל: " + e.code); }
+  };
+}
+
+function newTask() {
+  sheet("משימה חדשה", `<label>מה צריך לעשות?</label><input id="ti">
+    <label>פרטים</label><textarea id="no"></textarea>
+    <label>מועד</label><input id="du" type="datetime-local">
+    <label>עדיפות</label><select id="pr"><option value="Low">נמוכה</option><option value="Normal" selected>רגילה</option><option value="High">גבוהה</option></select>
+    ${isAdmin() ? `<label>שיוך לאיש צוות</label><select id="as"><option value="">ללא</option>${users.map(u => `<option value="${u.uid}">${esc(u.name)}</option>`).join("")}</select>` : ""}
+    <div class="row"><button class="btn" id="create">שמור משימה</button></div>`);
+  $("create").onclick = async () => {
+    const title = $("ti").value.trim(); if (!title) { toast("חסרה כותרת"); return; }
+    const u = isAdmin() ? users.find(x => x.uid === $("as").value) : { uid: me.uid, name: myName() };
+    const d = { title, notes: $("no").value.trim(), dueAt: $("du").value ? new Date($("du").value).getTime() : 0, doneAt: 0, stage: 0,
+      priority: $("pr").value, items: [], assigneeUid: u ? u.uid : "", assigneeName: u ? u.name : "", updated: Date.now(), updatedBy: me.uid, src: "web" };
+    try { await setDoc(doc(collection(db, "tasks")), d); $("back").click(); toast("המשימה נשמרה ✓"); }
+    catch (e) { toast("נכשל: " + e.code); }
+  };
+}
+</script>
+</body>
+</html>
