@@ -89,6 +89,12 @@ public class DetailActivity extends Activity {
             startActivity(new Intent(this, ClientEditActivity.class).putExtra(EXTRA_ROW, clientRow));
             finish();
         }));
+        final String qrName = s.name(r), qrPhone = phone1;
+        acts.add(Ui.tile(this, "\uD83D\uDD33", "QR \u05DC\u05E7\u05E8\u05D9\u05D0\u05D4", "\u05DE\u05D3\u05D1\u05E7\u05D4 \u05DC\u05DC\u05E7\u05D5\u05D7", Ui.MUTED, v -> {
+            String url = Sync.clientLink(qrName, qrPhone);
+            if (url == null) { Toast.makeText(this, "\u05D3\u05D5\u05E8\u05E9 \u05D7\u05D9\u05D1\u05D5\u05E8 \u05DC\u05E2\u05E0\u05DF (\u2601\uFE0F \u05E2\u05E0\u05DF \u2013 \u05E6\u05D5\u05D5\u05EA)", Toast.LENGTH_LONG).show(); return; }
+            open(new Intent(Intent.ACTION_VIEW, Uri.parse(url + "&qr=1")));
+        }));
         Ui.grid(this, box, acts, 3);
 
         // Tickets

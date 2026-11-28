@@ -159,6 +159,9 @@ final class Media {
         File out = new File(dir(c), tid + "_" + System.currentTimeMillis() + ".jpg");
         try (OutputStream os = new FileOutputStream(out)) { b.compress(Bitmap.CompressFormat.JPEG, 82, os); }
         b.recycle();
+        if (tid.startsWith("t")) {
+            try { Sync.photoAdded(Long.parseLong(tid.substring(1)), out); } catch (Throwable ignored) { }
+        }
         return true;
     }
 

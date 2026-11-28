@@ -55,6 +55,12 @@ service cloud.firestore {
         }
       }
 
+      // Team map: latest location only; written by the technician himself, read by managers.
+      match /locations/{u} {
+        allow read: if admin(o) || (mem(o) && u == request.auth.uid);
+        allow write: if mem(o) && u == request.auth.uid;
+      }
+
       match /tasks/{id} {
         allow read: if admin(o) || (mem(o) && resource.data.assigneeUid == request.auth.uid);
         allow create: if mem(o) && request.resource.data.updatedBy == request.auth.uid
@@ -63,6 +69,31 @@ service cloud.firestore {
           && request.resource.data.assigneeUid == request.auth.uid);
         allow delete: if admin(o);
       }
+    }
+
+    // Public pages (link with an unguessable token): ticket status, quote approval, client QR.
+    // Readable one-by-one only (no listing). Ticket pages are written by the server.
+    match /public/{k} {
+      allow get: if true;
+      allow list: if signedIn() && resource.data.by == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid
+        && request.resource.data.type in ['quote', 'client'] && mem(request.resource.data.org);
+      allow delete: if signedIn() && resource.data.by == request.auth.uid;
+      allow update: if (signedIn() && resource.data.by == request.auth.uid && request.resource.data.by == request.auth.uid)
+        || (resource.data.type == 'quote' && resource.data.status == 'Sent'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'answeredAt'])
+            && request.resource.data.status in ['Approved', 'Rejected']
+            && request.resource.data.reply is string && request.resource.data.reply.size() < 500
+            && request.resource.data.answeredAt is number);
+    }
+    // A client's problem report from the QR page; the server turns it into a ticket.
+    match /requests/{r} {
+      allow create: if request.resource.data.keys().hasOnly(['k', 'text', 'name', 'phone', 'at'])
+        && request.resource.data.k is string && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000
+        && request.resource.data.get('name', '').size() < 80 && request.resource.data.get('phone', '').size() < 30
+        && exists(/databases/$(database)/documents/public/$(request.resource.data.k))
+        && get(/databases/$(database)/documents/public/$(request.resource.data.k)).data.type == 'client';
     }
 
     // Old single-team data: readable by its manager only, for the one-time move into orgs/beki.

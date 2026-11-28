@@ -198,6 +198,9 @@ public class TicketActivity extends Activity {
         rowButton(phRow, "\uD83D\uDCF7 \u05E6\u05DC\u05DD", v -> { readForm(); if (persist()) Media.takePhoto(this, t.id); });
         rowButton(phRow, "\uD83D\uDDBC\uFE0F \u05DE\u05D4\u05D2\u05DC\u05E8\u05D9\u05D4", v -> { readForm(); if (persist()) Media.pickPhotos(this, t.id); });
         showPhotos();
+        LinearLayout ptRow = row(box);
+        rowButton(ptRow, "\uD83D\uDD17 \u05E7\u05D9\u05E9\u05D5\u05E8 \u05DE\u05E2\u05E7\u05D1 \u05DC\u05DC\u05E7\u05D5\u05D7", v -> portal(false));
+        rowButton(ptRow, "\uD83D\uDD33 QR", v -> portal(true));
 
         // ---- work time & materials
         label(box, "\u23F1\uFE0F \u05E9\u05E2\u05D5\u05EA \u05E2\u05D1\u05D5\u05D3\u05D4 \u05D5\u05D7\u05D5\u05DE\u05E8\u05D9\u05DD");
@@ -1050,6 +1053,22 @@ public class TicketActivity extends Activity {
         r.setOrientation(LinearLayout.HORIZONTAL);
         box.addView(r);
         return r;
+    }
+
+    /** Client follows the ticket status online (cloud). */
+    private void portal(boolean qr) {
+        readForm();
+        if (!persist()) return;
+        String url = Sync.portalLink(t.id);
+        if (url == null) {
+            Toast.makeText(this, Sync.on() ? "\u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05E2\u05D5\u05D3 \u05DC\u05D0 \u05E2\u05DC\u05EA\u05D4 \u05DC\u05E2\u05E0\u05DF \u2013 \u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1 \u05D1\u05E2\u05D5\u05D3 \u05E8\u05D2\u05E2" : "\u05E7\u05D9\u05E9\u05D5\u05E8 \u05DE\u05E2\u05E7\u05D1 \u05D3\u05D5\u05E8\u05E9 \u05D7\u05D9\u05D1\u05D5\u05E8 \u05DC\u05E2\u05E0\u05DF (\u2601\uFE0F \u05E2\u05E0\u05DF \u2013 \u05E6\u05D5\u05D5\u05EA)", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (qr) { open(new Intent(Intent.ACTION_VIEW, Uri.parse(url + "&qr=1"))); return; }
+        String msg = "\u05E9\u05DC\u05D5\u05DD " + t.clientName + ", \u05D0\u05E4\u05E9\u05E8 \u05DC\u05E2\u05E7\u05D5\u05D1 \u05D0\u05D7\u05E8\u05D9 \u05E7\u05E8\u05D9\u05D0\u05EA \u05D4\u05E9\u05D9\u05E8\u05D5\u05EA \u05E9\u05DC\u05DA \u05DB\u05D0\u05DF:\n" + url;
+        if (!t.clientPhone.isEmpty())
+            open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + DetailActivity.whatsAppNumber(t.clientPhone) + "?text=" + Uri.encode(msg))));
+        else open(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, msg), "\u05E9\u05DC\u05D9\u05D7\u05D4"));
     }
 
     private Button rowButton(LinearLayout r, String text, android.view.View.OnClickListener l) {

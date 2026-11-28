@@ -225,6 +225,14 @@ final class QuoteApprovals {
         nm.notify(nid, nb.setAutoCancel(true).build());
     }
 
+    /** Answer from the online approval page (synced by Sync); the push comes from the server. */
+    static void fromPortal(Context c, long id, String status, String said) {
+        QuoteDb.Quote q = QuoteDb.get(c).load(id);
+        if (q == null || status.equals(q.status)) return;
+        setStatus(c, id, status, false);
+        recordReply(c, id, status, "\uD83D\uDD17 " + (said == null || said.isEmpty() ? (status.equals("Approved") ? "\u05D0\u05D5\u05E9\u05E8 \u05D1\u05E7\u05D9\u05E9\u05D5\u05E8" : "\u05E0\u05D3\u05D7\u05D4 \u05D1\u05E7\u05D9\u05E9\u05D5\u05E8") : said));
+    }
+
     static final String PREFS_REPLIES = "quote_replies";
 
     /** Keeps the client's reply (time, status, channel and words) so the quote screen can show it. */

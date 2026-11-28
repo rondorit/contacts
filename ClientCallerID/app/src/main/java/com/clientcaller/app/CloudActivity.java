@@ -70,8 +70,29 @@ public class CloudActivity extends Activity {
             if (!syncOn) Sync.start(this); else Sync.stop();
             refresh();
         }));
+        box.addView(button("\u2B07\uFE0F \u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D4\u05E2\u05E0\u05DF \u05DC\u05DE\u05DB\u05E9\u05D9\u05E8 \u05D4\u05D6\u05D4", v -> new AlertDialog.Builder(this)
+                .setTitle("\u05E9\u05D7\u05D6\u05D5\u05E8 \u05DE\u05D4\u05E2\u05E0\u05DF")
+                .setMessage("\u05DE\u05D5\u05E8\u05D9\u05D3 \u05DE\u05D4\u05E2\u05E0\u05DF \u05D0\u05EA \u05DB\u05DC \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA, \u05D4\u05D4\u05E2\u05E8\u05D5\u05EA, \u05D4\u05EA\u05DE\u05D5\u05E0\u05D5\u05EA \u05D5\u05D4\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA \u05E9\u05DC\u05D0 \u05E7\u05D9\u05D9\u05DE\u05D5\u05EA \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF (\u05DC\u05DE\u05E9\u05DC \u05D1\u05D8\u05DC\u05E4\u05D5\u05DF \u05D7\u05D3\u05E9). \u05DE\u05D4 \u05E9\u05DB\u05D1\u05E8 \u05E7\u05D9\u05D9\u05DD \u05DC\u05D0 \u05D9\u05E9\u05D5\u05DB\u05E4\u05DC. \u05E8\u05E9\u05D9\u05DE\u05EA \u05D4\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DC\u05D0 \u05D1\u05E2\u05E0\u05DF \u2013 \u05DE\u05E9\u05D7\u05D6\u05E8\u05D9\u05DD \u05D0\u05D5\u05EA\u05D4 \u05DE\u05D2\u05D9\u05D1\u05D5\u05D9.")
+                .setPositiveButton("\u05E9\u05D7\u05D6\u05E8", (d, w) -> {
+                    Sync.restoreAll(this);
+                    Toast.makeText(this, "\u05D4\u05E9\u05D7\u05D6\u05D5\u05E8 \u05D4\u05EA\u05D7\u05D9\u05DC \u2013 \u05D4\u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05D9\u05D5\u05E4\u05D9\u05E2\u05D5 \u05EA\u05D5\u05DA \u05E8\u05D2\u05E2", Toast.LENGTH_LONG).show();
+                })
+                .setNegativeButton("\u05D1\u05D9\u05D8\u05D5\u05DC", null).show()));
+        final boolean sharing = LocationShare.running(this);
+        box.addView(button(sharing ? "\uD83D\uDCCD \u05E9\u05D9\u05EA\u05D5\u05E3 \u05DE\u05D9\u05E7\u05D5\u05DD \u05E2\u05DD \u05D4\u05DE\u05E0\u05D4\u05DC: \u05E4\u05D5\u05E2\u05DC (\u05DC\u05D7\u05E5 \u05DC\u05D4\u05E4\u05E1\u05E7\u05D4)" : "\uD83D\uDCCD \u05E9\u05D9\u05EA\u05D5\u05E3 \u05DE\u05D9\u05E7\u05D5\u05DD \u05E2\u05DD \u05D4\u05DE\u05E0\u05D4\u05DC: \u05DB\u05D1\u05D5\u05D9 (\u05DC\u05D7\u05E5 \u05DC\u05D4\u05E4\u05E2\u05DC\u05D4)", v -> {
+            if (sharing) { LocationShare.stop(this); refresh(); return; }
+            if (!LocationShare.canStart(this)) {
+                requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 61);
+                return;
+            }
+            LocationShare.start(this);
+            refresh();
+        }));
+        if (Cloud.ROLE_ADMIN.equals(CallLogger.prefs(this).getString("cloud_role", "")))
+            box.addView(button("\uD83D\uDDFA\uFE0F \u05DE\u05E4\u05EA \u05E6\u05D5\u05D5\u05EA", v -> startActivity(new Intent(this, TeamMapActivity.class))));
         box.addView(button("\uD83D\uDEAA \u05D4\u05EA\u05E0\u05EA\u05E7\u05D5\u05EA", v -> {
             Sync.stop();
+            LocationShare.stop(this);
             Push.unregister();
             CallLogger.prefs(this).edit().remove("cloud_role").remove("cloud_org").apply();
             Cloud.signOut(this, this::refresh);
@@ -190,6 +211,15 @@ public class CloudActivity extends Activity {
         b.setText(text);
         b.setOnClickListener(l);
         return b;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(req, perms, res);
+        if (req == 61 && LocationShare.canStart(this)) {
+            LocationShare.start(this);
+            refresh();
+        }
     }
 
     @Override

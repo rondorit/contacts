@@ -149,7 +149,7 @@ final class Sync {
         Cloud.col("tickets").document(doc).set(m, SetOptions.merge());
     }
 
-    private static String address(TicketDb.Ticket t) {
+    static String address(TicketDb.Ticket t) {
         try {
             ClientStore s = Data.get(app);
             int row = t.clientPhone.isEmpty() ? -1 : s.find(t.clientPhone);
@@ -175,6 +175,155 @@ final class Sync {
         bump.put("updatedBy", uid());
         bump.put("lastNote", text.length() > 120 ? text.substring(0, 120) : text);
         Cloud.col("tickets").document(doc).set(bump, SetOptions.merge());
+    }
+
+    /** A photo was added to a ticket on this phone: share a small copy with the team (as a note). */
+    static void photoAdded(final long ticketId, final java.io.File f) {
+        if (applying || !on()) return;
+        final String doc = docOf("t", ticketId);
+        if (doc == null) return;
+        new Thread(() -> {
+            try {
+                android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+                o.inSampleSize = 1;
+                android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeFile(f.getPath(), o);
+                if (b == null) return;
+                float sc = Math.min(1f, 1024f / Math.max(b.getWidth(), b.getHeight()));
+                if (sc < 1f) {
+                    android.graphics.Bitmap r = android.graphics.Bitmap.createScaledBitmap(b, Math.round(b.getWidth() * sc), Math.round(b.getHeight() * sc), true);
+                    if (r != b) b.recycle();
+                    b = r;
+                }
+                byte[] out = null;
+                for (int qual = 65; qual >= 30; qual -= 15) {
+                    java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                    b.compress(android.graphics.Bitmap.CompressFormat.JPEG, qual, bo);
+                    out = bo.toByteArray();
+                    if (out.length < 450 * 1024) break;
+                }
+                b.recycle();
+                Map<String, Object> n = new HashMap<>();
+                n.put("text", "\uD83D\uDCF7 \u05EA\u05DE\u05D5\u05E0\u05D4");
+                n.put("img", android.util.Base64.encodeToString(out, android.util.Base64.NO_WRAP));
+                n.put("time", System.currentTimeMillis());
+                n.put("by", uid());
+                n.put("byName", myName());
+                Cloud.col("tickets").document(doc).collection("notes").add(n);
+                Map<String, Object> bump = new HashMap<>();
+                bump.put("updated", System.currentTimeMillis());
+                bump.put("updatedBy", uid());
+                bump.put("lastNote", "\uD83D\uDCF7 \u05EA\u05DE\u05D5\u05E0\u05D4");
+                Cloud.col("tickets").document(doc).set(bump, SetOptions.merge());
+            } catch (Throwable ignored) { }
+        }).start();
+    }
+
+    /** "Restore from the cloud" on a new phone: pull everything again (already-known items are not duplicated). */
+    static void restoreAll(Context c) {
+        SharedPreferences.Editor e = p().edit();
+        for (String k : p().getAll().keySet()) if (k.startsWith("tseen_") || k.startsWith("kseen_")) e.remove(k);
+        e.apply();
+        start(c);
+    }
+
+    /** Link for the client to follow this ticket (status page + QR). Needs the ticket in the cloud. */
+    static String portalLink(long ticketId) {
+        if (!on()) return null;
+        String doc = docOf("t", ticketId);
+        if (doc == null) return null;
+        String k = p().getString("portal_" + doc, null);
+        if (k == null) {
+            k = token();
+            p().edit().putString("portal_" + doc, k).apply();
+            Map<String, Object> m = new HashMap<>();
+            m.put("portalToken", k);
+            m.put("updatedBy", uid());
+            Cloud.col("tickets").document(doc).set(m, SetOptions.merge());
+        }
+        return PORTAL + "?k=" + k;
+    }
+
+    static final String PORTAL = "https://rondorit.github.io/contacts/p.html";
+
+    /** QR sticker for a client: scanning it opens a page where the client reports a problem. */
+    static String clientLink(String name, String phone) {
+        if (!on()) return null;
+        String key = "cpub_" + ClientStore.key(phone) + "_" + name;
+        String k = p().getString(key, null);
+        if (k == null) {
+            k = token();
+            p().edit().putString(key, k).apply();
+            Map<String, Object> m = new HashMap<>();
+            m.put("type", "client");
+            m.put("org", Cloud.org());
+            m.put("by", uid());
+            m.put("client", name);
+            m.put("phone", phone == null ? "" : phone);
+            m.put("orgName", p().getString("cloud_org_name", ""));
+            m.put("created", System.currentTimeMillis());
+            Cloud.db().collection("public").document(k).set(m);
+        }
+        return PORTAL + "?k=" + k;
+    }
+
+    /** Public approval page for a quote (public/{token}); re-publishing updates the same link. */
+    static String quoteLink(Context c, QuoteDb.Quote q) {
+        String k = p().getString("qpub_" + q.id, null);
+        if (k == null) {
+            k = token();
+            p().edit().putString("qpub_" + q.id, k).apply();
+        }
+        Issuer.Profile iss = Issuer.forQuote(c, q);
+        Map<String, Object> m = new HashMap<>();
+        m.put("type", "quote");
+        m.put("org", Cloud.org());
+        m.put("by", uid());
+        m.put("quoteId", q.id);
+        m.put("title", q.title);
+        m.put("client", q.clientName);
+        m.put("issuer", iss.v[2].isEmpty() ? iss.v[0] : iss.v[2]);
+        m.put("issuerPhone", iss.v[3]);
+        List<Map<String, Object>> lines = new ArrayList<>();
+        for (QuoteDb.Line l : q.lines) {
+            Map<String, Object> lm = new HashMap<>();
+            lm.put("n", l.name);
+            lm.put("q", l.qty);
+            lm.put("p", l.price);
+            lines.add(lm);
+        }
+        m.put("lines", lines);
+        m.put("subtotal", q.subtotal());
+        m.put("discount", q.discount());
+        m.put("vat", q.vat());
+        m.put("total", q.total());
+        m.put("notes", q.notes);
+        m.put("validUntil", q.created + q.validDays * 86400000L);
+        m.put("status", "Sent");
+        m.put("reply", "");
+        m.put("answeredAt", 0L);
+        m.put("created", System.currentTimeMillis());
+        Cloud.db().collection("public").document(k).set(m);
+        return PORTAL + "?k=" + k;
+    }
+
+    static String token() {
+        java.security.SecureRandom r = new java.security.SecureRandom();
+        String abc = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < 22; i++) b.append(abc.charAt(r.nextInt(abc.length())));
+        return b.toString();
+    }
+
+    /** Technician reached the client's address (LocationShare). */
+    static void arrived(long ticketId) {
+        if (!on()) return;
+        String doc = docOf("t", ticketId);
+        if (doc == null) return;
+        Map<String, Object> m = new HashMap<>();
+        m.put("arrivedAt", System.currentTimeMillis());
+        m.put("arrivedBy", uid());
+        m.put("updatedBy", uid());
+        Cloud.col("tickets").document(doc).set(m, SetOptions.merge());
     }
 
     static void ticketDeleted(long id) {
@@ -255,6 +404,18 @@ final class Sync {
             tq = tq.whereEqualTo("assigneeUid", uid());
             kq = kq.whereEqualTo("assigneeUid", uid());
         }
+        regs.add(Cloud.db().collection("public").whereEqualTo("by", uid()).whereEqualTo("type", "quote")
+                .addSnapshotListener((snap, err) -> {
+                    if (snap == null) return;
+                    for (QueryDocumentSnapshot d : snap) {
+                        String st = str(d, "status");
+                        if (!"Approved".equals(st) && !"Rejected".equals(st)) continue;
+                        long ans = num(d, "answeredAt");
+                        if (p().getLong("qans_" + d.getId(), 0) == ans) continue;
+                        p().edit().putLong("qans_" + d.getId(), ans).apply();
+                        try { QuoteApprovals.fromPortal(app, num(d, "quoteId"), st, str(d, "reply")); } catch (Exception ignored) { }
+                    }
+                }));
         regs.add(tq.addSnapshotListener((snap, err) -> {
             if (snap == null) return;
             for (DocumentChange ch : snap.getDocumentChanges()) {
@@ -347,6 +508,14 @@ final class Sync {
                             long time = num(n, "time");
                             max = Math.max(max, time);
                             if (uid().equals(str(n, "by"))) continue;
+                            String img = n.getString("img");
+                            if (img != null && !img.isEmpty()) {
+                                try {
+                                    byte[] bytes = android.util.Base64.decode(img, android.util.Base64.DEFAULT);
+                                    java.io.File f = new java.io.File(Media.dir(app), "t" + local + "_" + time + "_c.jpg");
+                                    try (java.io.FileOutputStream os = new java.io.FileOutputStream(f)) { os.write(bytes); }
+                                } catch (Exception ignored) { }
+                            }
                             TicketDb.get(app).addNote(local, "\u2601\uFE0F " + str(n, "byName") + ": " + str(n, "text"));
                         }
                     } finally {

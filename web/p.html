@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>On IT</title>
+<link rel="icon" href="icon.svg">
+<style>
+  :root { --bg:#F6F8FA; --card:#fff; --line:#D0D7DE; --text:#1F2328; --muted:#656D76; --mint:#1F883D; --red:#CF222E; --blue:#0969DA; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Arial, sans-serif; font-size: 16px; }
+  main { max-width: 640px; margin: 0 auto; padding: 18px 14px 40px; }
+  .brand { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+  .sub { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .status { display: inline-block; padding: 4px 12px; border-radius: 14px; font-weight: 700; background: #DDF4FF; color: var(--blue); }
+  .status.ok { background: #DAFBE1; color: var(--mint); } .status.no { background: #FFEBE9; color: var(--red); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  td, th { padding: 8px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .tot td { font-weight: 800; border-bottom: none; font-size: 17px; }
+  .btn { display: block; width: 100%; border: none; border-radius: 12px; padding: 14px; font-size: 17px; font-weight: 700; cursor: pointer; margin: 8px 0; }
+  .yes { background: var(--mint); color: #fff; } .no { background: #fff; color: var(--red); border: 1px solid var(--red); }
+  textarea, input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px; font-size: 16px; font-family: inherit; margin: 4px 0; }
+  textarea { min-height: 100px; }
+  .steps { display: flex; gap: 4px; margin: 12px 0 4px; }
+  .steps div { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .steps div.on { background: var(--mint); }
+  #qr svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
+  @media print { .noprint { display: none; } body { background: #fff; } .card { border: none; } }
+</style>
+</head>
+<body>
+<main id="main"><div class="sub">טוען…</div></main>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBnunFF6hnO7QsvzHJSBqHGMpqLbxs5rG8",
+  authDomain: "bekis-e82cd.firebaseapp.com",
+  projectId: "bekis-e82cd",
+  messagingSenderId: "1065393018022",
+  appId: "1:1065393018022:web:8a128da0a08b5154919067"
+});
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = v => "₪" + Number(v || 0).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const date = ms => ms ? new Date(ms).toLocaleDateString("he-IL") : "";
+const time = ms => ms ? new Date(ms).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+const prm = new URLSearchParams(location.search);
+const K = prm.get("k") || "";
+const link = location.origin + location.pathname + "?k=" + encodeURIComponent(K);
+
+function fail(t) { $("main").innerHTML = `<div class="card"><h1>הקישור לא נמצא</h1><div class="sub">${t}</div></div>`; }
+
+async function load() {
+  if (!/^[A-Za-z0-9]{16,40}$/.test(K)) return fail("הקישור לא תקין.");
+  let d;
+  try { d = await getDoc(doc(db, "public", K)); } catch (e) { return fail("לא ניתן לטעון כרגע. נסה שוב."); }
+  if (!d.exists()) return fail("ייתכן שהקישור בוטל. פנה לנותן השירות.");
+  const p = d.data();
+  if (prm.get("qr") === "1") return showQr(p);
+  if (p.type === "ticket") ticket(p);
+  else if (p.type === "quote") quote(p);
+  else if (p.type === "client") report(p);
+  else fail("");
+}
+
+// ---- QR to print / show (link without the qr flag)
+function showQr(p) {
+  const q = qrcode(0, "M"); q.addData(link); q.make();
+  const what = p.type === "client" ? "סרקו לדיווח על תקלה" : p.type === "ticket" ? "סרקו למעקב אחרי הקריאה" : "סרקו לצפייה בהצעת המחיר";
+  $("main").innerHTML = `<div class="card" style="text-align:center">
+    <div class="brand">${esc(p.orgName || p.issuer || "On IT")}</div>
+    <h1>${what}</h1><div class="sub">${esc(p.client || "")}</div>
+    <div id="qr" style="margin:14px 0">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
+    <div class="sub" style="direction:ltr;word-break:break-all">${esc(link)}</div></div>
+    <button class="btn yes noprint" onclick="print()">🖨️ הדפסה / שמירה כ-PDF</button>
+    <button class="btn no noprint" style="color:var(--blue);border-color:var(--blue)" id="sh">📤 שיתוף הקישור</button>`;
+  $("sh").onclick = () => navigator.share ? navigator.share({ url: link }).catch(() => {}) : navigator.clipboard.writeText(link);
+}
+
+// ---- ticket status
+const ST = { "Open": ["התקבלה", 1], "In progress": ["בטיפול", 2], "Waiting for client": ["ממתינה לתשובתך", 2],
+  "Waiting for outsourcing": ["ממתינה לספק", 2], "Closed": ["טופלה ונסגרה", 3] };
+function ticket(p) {
+  const [label, step] = ST[p.status] || [p.statusHe || p.status, 1];
+  $("main").innerHTML = `<div class="brand">${esc(p.orgName || "On IT")} · קריאת שירות</div>
+    <h1>${esc(p.title || "קריאת שירות")}</h1><div class="sub">${esc(p.client || "")}</div>
+    <div class="card"><span class="status ${step === 3 ? "ok" : ""}">${esc(label)}</span>
+      <div class="steps"><div class="on"></div><div class="${step >= 2 ? "on" : ""}"></div><div class="${step >= 3 ? "on" : ""}"></div></div>
+      <div class="sub">התקבלה · בטיפול · טופלה</div></div>
+    <div class="card sub">
+      ${p.created ? `נפתחה: ${time(p.created)}<br>` : ""}
+      ${p.tech ? `טכנאי: ${esc(p.tech)}<br>` : ""}
+      ${p.followupAt && p.status !== "Closed" ? `מועד מתוכנן: ${time(p.followupAt)}<br>` : ""}
+      ${p.arrivedAt ? `הטכנאי הגיע: ${time(p.arrivedAt)}<br>` : ""}
+      עודכן: ${time(p.updated)}</div>
+    <div class="sub">הדף מתעדכן אוטומטית. <a href="" onclick="location.reload();return false">רענון</a></div>`;
+  setTimeout(load, 60000);
+}
+
+// ---- quote approval
+function quote(p) {
+  const lines = p.lines || [];
+  const st = p.status === "Approved" ? `<span class="status ok">✅ אושרה ${date(p.answeredAt)}</span>`
+    : p.status === "Rejected" ? `<span class="status no">נדחתה ${date(p.answeredAt)}</span>` : "";
+  const expired = p.validUntil && Date.now() > p.validUntil && p.status === "Sent";
+  $("main").innerHTML = `<div class="brand">${esc(p.issuer || "")}${p.issuerPhone ? " · " + esc(p.issuerPhone) : ""}</div>
+    <h1>הצעת מחיר #${esc(p.quoteId)}${p.title ? " – " + esc(p.title) : ""}</h1><div class="sub">עבור: ${esc(p.client || "")}${p.validUntil ? " · בתוקף עד " + date(p.validUntil) : ""}</div>
+    <div class="card"><table><tr><th>פריט</th><th>כמות</th><th>מחיר</th><th>סה"כ</th></tr>
+      ${lines.map(l => `<tr><td>${esc(l.n)}</td><td>${l.q}</td><td>${money(l.p)}</td><td>${money(l.q * l.p)}</td></tr>`).join("")}
+      <tr><td colspan="3">סכום ביניים</td><td>${money(p.subtotal)}</td></tr>
+      ${p.discount ? `<tr><td colspan="3">הנחה</td><td>-${money(p.discount)}</td></tr>` : ""}
+      <tr><td colspan="3">מע"מ</td><td>${money(p.vat)}</td></tr>
+      <tr class="tot"><td colspan="3">סה"כ לתשלום</td><td>${money(p.total)}</td></tr></table></div>
+    ${p.notes ? `<div class="card sub">${esc(p.notes).replace(/\n/g, "<br>")}</div>` : ""}
+    <div id="act">${st ? `<div class="card">${st}${p.reply ? `<div class="sub" style="margin-top:6px">${esc(p.reply)}</div>` : ""}</div>`
+      : expired ? `<div class="card sub">תוקף ההצעה פג. פנה לנותן השירות לעדכון.</div>`
+      : `<textarea id="rp" placeholder="הערה (לא חובה)"></textarea>
+         <button class="btn yes" id="ok">✅ אני מאשר/ת את ההצעה</button>
+         <button class="btn no" id="no">דחייה</button>`}</div>`;
+  if ($("ok")) {
+    const answer = async status => {
+      $("ok").disabled = $("no").disabled = true;
+      try {
+        await updateDoc(doc(db, "public", K), { status, reply: $("rp").value.trim().slice(0, 450), answeredAt: Date.now() });
+        load();
+      } catch (e) { alert("השליחה נכשלה, נסה שוב."); $("ok").disabled = $("no").disabled = false; }
+    };
+    $("ok").onclick = () => confirm("לאשר את הצעת המחיר?") && answer("Approved");
+    $("no").onclick = () => confirm("לדחות את הצעת המחיר?") && answer("Rejected");
+  }
+}
+
+// ---- client QR sticker: report a problem
+function report(p) {
+  $("main").innerHTML = `<div class="brand">${esc(p.orgName || "On IT")}</div>
+    <h1>דיווח על תקלה</h1><div class="sub">${esc(p.client || "")}</div>
+    <div class="card"><textarea id="tx" placeholder="מה קרה? (למשל: המדפסת לא מדפיסה)"></textarea>
+      <input id="nm" placeholder="שם (לא חובה)"><input id="ph" type="tel" placeholder="טלפון לחזרה (לא חובה)">
+      <button class="btn yes" id="go">שליחה</button></div>`;
+  $("go").onclick = async () => {
+    const text = $("tx").value.trim();
+    if (!text) { $("tx").focus(); return; }
+    $("go").disabled = true;
+    try {
+      await addDoc(collection(db, "requests"), { k: K, text: text.slice(0, 990), name: $("nm").value.trim().slice(0, 70),
+        phone: $("ph").value.trim().slice(0, 25), at: Date.now() });
+      $("main").innerHTML = `<div class="card"><h1>✅ התקלה התקבלה</h1><div class="sub">נפתחה קריאת שירות ונחזור אליך בהקדם.</div></div>`;
+    } catch (e) { alert("השליחה נכשלה, נסה שוב."); $("go").disabled = false; }
+  };
+}
+
+load();
+</script>
+</body>
+</html>

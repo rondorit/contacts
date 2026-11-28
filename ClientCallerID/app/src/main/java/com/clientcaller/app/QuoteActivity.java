@@ -190,6 +190,10 @@ public class QuoteActivity extends Activity {
         rowButton(s2, "\uD83D\uDCAC \u05D8\u05E7\u05E1\u05D8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> send(false, true));
         rowButton(s2, "\u2709\uFE0F \u05D8\u05E7\u05E1\u05D8 \u05D1\u05DE\u05D9\u05D9\u05DC", v -> send(false, false));
         box.addView(s2);
+        LinearLayout s4 = new LinearLayout(this);
+        rowButton(s4, "\uD83D\uDD17 \u05E7\u05D9\u05E9\u05D5\u05E8 \u05DC\u05D0\u05D9\u05E9\u05D5\u05E8 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4", v -> approvalLink(true));
+        rowButton(s4, "\uD83D\uDD17 \u05D4\u05E2\u05EA\u05E7 \u05E7\u05D9\u05E9\u05D5\u05E8", v -> approvalLink(false));
+        box.addView(s4);
         LinearLayout s3 = new LinearLayout(this);
         rowButton(s3, "\uD83D\uDC41\uFE0F \u05EA\u05E6\u05D5\u05D2\u05EA PDF", v -> previewPdf());
         if (q.id > 0) rowButton(s3, "\uD83D\uDDD1\uFE0F \u05DE\u05D7\u05E7 \u05D4\u05E6\u05E2\u05D4", v -> new AlertDialog.Builder(this)
@@ -692,6 +696,28 @@ public class QuoteActivity extends Activity {
         e.setText(value);
         box.addView(e);
         return e;
+    }
+
+    /** Online approval: the client opens the link and taps "approve" / "decline"; the status updates here. */
+    private void approvalLink(boolean whatsapp) {
+        if (!persist()) return;
+        if (q.lines.isEmpty()) { toast("\u05D0\u05D9\u05DF \u05E4\u05E8\u05D9\u05D8\u05D9\u05DD \u05D1\u05D4\u05E6\u05E2\u05D4"); return; }
+        if (!Sync.on()) { toast("\u05E7\u05D9\u05E9\u05D5\u05E8 \u05DC\u05D0\u05D9\u05E9\u05D5\u05E8 \u05D3\u05D5\u05E8\u05E9 \u05D7\u05D9\u05D1\u05D5\u05E8 \u05DC\u05E2\u05E0\u05DF (\u2601\uFE0F \u05E2\u05E0\u05DF \u2013 \u05E6\u05D5\u05D5\u05EA)"); return; }
+        if ("Draft".equals(q.status)) {
+            q.status = "Sent";
+            sStatus.setSelection(1);
+            if (q.followupAt == 0) followIn(7);
+            persist();
+        }
+        String url = Sync.quoteLink(this, q);
+        String msg = "\u05E9\u05DC\u05D5\u05DD " + q.clientName + ",\n\u05D4\u05E6\u05E2\u05EA \u05DE\u05D7\u05D9\u05E8 #" + q.id + (q.title.isEmpty() ? "" : " \u2013 " + q.title)
+                + "\n\u05E1\u05D4\"\u05DB " + QuoteDb.money(q.total()) + "\n\u05DC\u05E6\u05E4\u05D9\u05D9\u05D4 \u05D5\u05DC\u05D0\u05D9\u05E9\u05D5\u05E8: " + url;
+        if (whatsapp && !q.clientPhone.isEmpty()) {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + DetailActivity.whatsAppNumber(q.clientPhone) + "?text=" + Uri.encode(msg))));
+        } else {
+            ((android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("quote", msg));
+            toast("\u05D4\u05E7\u05D9\u05E9\u05D5\u05E8 \u05D4\u05D5\u05E2\u05EA\u05E7");
+        }
     }
 
     private void rowButton(LinearLayout row, String text, View.OnClickListener l) {
