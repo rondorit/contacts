@@ -33,6 +33,7 @@ public class TicketsWidget extends AppWidgetProvider {
             int flags = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
             Intent list = new Intent(c, TicketsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             v.setOnClickPendingIntent(R.id.w_counts, PendingIntent.getActivity(c, 9980, list, flags));
+            v.setOnClickPendingIntent(R.id.w_title, PendingIntent.getActivity(c, 9980, list, flags));
             Intent late = new Intent(c, TicketsActivity.class).putExtra(TicketsActivity.EXTRA_FILTER, TicketsActivity.OVERDUE)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             v.setOnClickPendingIntent(R.id.w_late_box, PendingIntent.getActivity(c, 9981, late, flags));
