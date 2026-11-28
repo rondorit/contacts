@@ -48,6 +48,7 @@ public class TasksWidget extends AppWidgetProvider {
                 v.setTextViewText(TITLE[k], ("High".equals(t.priority) ? "\uD83D\uDD34 " : "") + t.title);
                 StringBuilder sub = new StringBuilder();
                 if (t.dueAt > 0) sub.append(t.isOverdue() ? "\u23F0 " : "").append(TicketDb.fmt(t.dueAt));
+                if (!t.items.isEmpty()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append(t.progress());
                 if (t.hasPlace()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83D\uDCCD ").append(t.place);
                 if (!t.client.isEmpty()) sub.append(sub.length() > 0 ? "  \u2022  " : "").append(t.client);
                 v.setTextViewText(SUB[k], sub.toString());

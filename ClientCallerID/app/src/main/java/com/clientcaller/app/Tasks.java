@@ -31,6 +31,39 @@ final class Tasks {
         double lat, lng;
         int radius;
 
+        /** To-do list items inside the task. */
+        final List<Check> items = new ArrayList<>();
+
+        int checkedCount() {
+            int n = 0;
+            for (Check k : items) if (k.done) n++;
+            return n;
+        }
+
+        String progress() {
+            return items.isEmpty() ? "" : "\u2611\uFE0F " + checkedCount() + "/" + items.size();
+        }
+
+        String checklistJson() {
+            org.json.JSONArray a = new org.json.JSONArray();
+            try {
+                for (Check k : items) a.put(new org.json.JSONObject().put("t", k.text).put("d", k.done));
+            } catch (Exception ignored) { }
+            return a.toString();
+        }
+
+        void setChecklist(String json) {
+            items.clear();
+            if (json == null || json.isEmpty()) return;
+            try {
+                org.json.JSONArray a = new org.json.JSONArray(json);
+                for (int i = 0; i < a.length(); i++) {
+                    org.json.JSONObject o = a.getJSONObject(i);
+                    items.add(new Check(o.optString("t"), o.optBoolean("d")));
+                }
+            } catch (Exception ignored) { }
+        }
+
         boolean hasPlace() {
             return !place.isEmpty() && (lat != 0 || lng != 0);
         }
@@ -51,12 +84,22 @@ final class Tasks {
         }
     }
 
+    static final class Check {
+        String text;
+        boolean done;
+
+        Check(String text, boolean done) {
+            this.text = text;
+            this.done = done;
+        }
+    }
+
     private Tasks() { }
 
     static void create(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS tasks (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, notes TEXT, priority TEXT,"
                 + " due_at INTEGER, remind INTEGER, client TEXT, phone TEXT, assignee TEXT, ticket_id INTEGER,"
-                + " created INTEGER, done_at INTEGER, place TEXT, lat REAL, lng REAL, radius INTEGER)");
+                + " created INTEGER, done_at INTEGER, place TEXT, lat REAL, lng REAL, radius INTEGER, checklist TEXT)");
     }
 
     static void addPlace(SQLiteDatabase db) {
@@ -67,7 +110,7 @@ final class Tasks {
     }
 
     private static final String[] COLS = {"_id", "title", "notes", "priority", "due_at", "remind", "client", "phone", "assignee",
-            "ticket_id", "created", "done_at", "place", "lat", "lng", "radius"};
+            "ticket_id", "created", "done_at", "place", "lat", "lng", "radius", "checklist"};
 
     private static Task read(Cursor c) {
         Task t = new Task();
@@ -87,6 +130,7 @@ final class Tasks {
         t.lat = c.getDouble(13);
         t.lng = c.getDouble(14);
         t.radius = c.getInt(15);
+        t.setChecklist(s(c, 16));
         return t;
     }
 
@@ -144,6 +188,7 @@ final class Tasks {
         v.put("lat", t.lat);
         v.put("lng", t.lng);
         v.put("radius", t.radius);
+        v.put("checklist", t.checklistJson());
         if (t.id == 0) t.id = TicketDb.get(c).getWritableDatabase().insert("tasks", null, v);
         else TicketDb.get(c).getWritableDatabase().update("tasks", v, "_id=?", new String[]{String.valueOf(t.id)});
         schedule(c, t);

@@ -169,6 +169,30 @@ public class TasksActivity extends Activity {
         if (t.ticketId > 0) sub.append(sub.length() > 0 ? "  \u2022  " : "").append("\uD83C\uDFAB #").append(t.ticketId);
         if (sub.length() > 0) txt.addView(Ui.text(this, sub.toString(), 13, t.isOverdue() ? Ui.RED : Ui.MUTED, false));
         if (!t.notes.isEmpty()) txt.addView(Ui.text(this, t.notes, 13, Ui.MUTED, false));
+        if (!t.items.isEmpty()) {
+            txt.addView(Ui.text(this, t.progress(), 13, t.checkedCount() == t.items.size() ? Ui.PRIMARY : Ui.MUTED, true));
+            for (final Tasks.Check k : t.items) {
+                CheckBox ib = new CheckBox(this);
+                ib.setText(k.text);
+                ib.setTextSize(14);
+                ib.setChecked(k.done);
+                if (k.done) ib.setPaintFlags(ib.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                ib.setOnClickListener(v -> {
+                    k.done = ib.isChecked();
+                    Tasks.save(this, t);
+                    if (!t.isDone() && t.checkedCount() == t.items.size()) {
+                        new AlertDialog.Builder(this)
+                                .setMessage("\u05DB\u05DC \u05D4\u05E4\u05E8\u05D9\u05D8\u05D9\u05DD \u05E1\u05D5\u05DE\u05E0\u05D5. \u05DC\u05E1\u05DE\u05DF \u05D0\u05EA \u05D4\u05DE\u05E9\u05D9\u05DE\u05D4 \u05DB\u05D1\u05D5\u05E6\u05E2\u05D4?")
+                                .setPositiveButton("\u2714 \u05DB\u05DF", (d, w) -> { Tasks.setDone(this, t.id, true); refresh(); })
+                                .setNegativeButton("\u05DC\u05D0", (d, w) -> refresh())
+                                .show();
+                    } else {
+                        refresh();
+                    }
+                });
+                txt.addView(ib);
+            }
+        }
         card.addView(txt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         card.setOnClickListener(v -> edit(t));
         return card;
@@ -191,6 +215,54 @@ public class TasksActivity extends Activity {
         notes.setText(t.notes);
         notes.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         lay.addView(notes);
+
+        // ---- to-do list
+        final List<Tasks.Check> work = new java.util.ArrayList<>();
+        for (Tasks.Check k : t.items) work.add(new Tasks.Check(k.text, k.done));
+        lay.addView(Ui.text(this, "\u2611\uFE0F \u05E8\u05E9\u05D9\u05DE\u05EA \u05E4\u05E8\u05D9\u05D8\u05D9\u05DD (Todo)", 13, Ui.MUTED, true));
+        final LinearLayout checks = new LinearLayout(this);
+        checks.setOrientation(LinearLayout.VERTICAL);
+        lay.addView(checks);
+        LinearLayout addRow = new LinearLayout(this);
+        addRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        final EditText newItem = new EditText(this);
+        newItem.setHint("\u05E4\u05E8\u05D9\u05D8 \u05D7\u05D3\u05E9\u2026");
+        newItem.setSingleLine(true);
+        newItem.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        addRow.addView(newItem, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        Button plus = new Button(this);
+        plus.setText("\u2795");
+        addRow.addView(plus);
+        lay.addView(addRow);
+        final Runnable[] draw = new Runnable[1];
+        draw[0] = () -> {
+            checks.removeAllViews();
+            for (final Tasks.Check k : work) {
+                LinearLayout r = new LinearLayout(this);
+                r.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                CheckBox cb = new CheckBox(this);
+                cb.setText(k.text);
+                cb.setChecked(k.done);
+                cb.setOnCheckedChangeListener((b, on) -> k.done = on);
+                r.addView(cb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                TextView x = Ui.text(this, "\u2716", 16, Ui.MUTED, false);
+                x.setPadding(Ui.dp(this, 10), Ui.dp(this, 6), Ui.dp(this, 10), Ui.dp(this, 6));
+                x.setOnClickListener(v -> { work.remove(k); draw[0].run(); });
+                r.addView(x);
+                checks.addView(r);
+            }
+        };
+        draw[0].run();
+        final Runnable addIt = () -> {
+            String txt = newItem.getText().toString().trim();
+            if (txt.isEmpty()) return;
+            // Several lines pasted at once become several items.
+            for (String line : txt.split("\n")) if (!line.trim().isEmpty()) work.add(new Tasks.Check(line.trim(), false));
+            newItem.setText("");
+            draw[0].run();
+        };
+        plus.setOnClickListener(v -> addIt.run());
+        newItem.setOnEditorActionListener((v, id, ev) -> { addIt.run(); return true; });
 
         final long[] due = {t.dueAt};
         final TextView dueTv = link(lay, due[0] > 0 ? "\uD83D\uDCC5 " + TicketDb.fmt(due[0]) + " \u25BE" : "\uD83D\uDCC5 \u05EA\u05D0\u05E8\u05D9\u05DA \u05D5\u05E9\u05E2\u05D4 \u25BE");
@@ -237,8 +309,13 @@ public class TasksActivity extends Activity {
                 .setView(sv)
                 .setPositiveButton("\u05E9\u05DE\u05D5\u05E8", (d, w) -> {
                     t.title = title.getText().toString().trim();
+                    if (t.title.isEmpty() && !work.isEmpty()) t.title = work.get(0).text;
                     if (t.title.isEmpty()) return;
                     t.notes = notes.getText().toString().trim();
+                    String pending = newItem.getText().toString().trim();
+                    if (!pending.isEmpty()) work.add(new Tasks.Check(pending, false));
+                    t.items.clear();
+                    t.items.addAll(work);
                     t.dueAt = due[0];
                     t.remind = remind.isChecked();
                     t.priority = pr[0];
@@ -358,6 +435,7 @@ public class TasksActivity extends Activity {
     private void send(Tasks.Task t) {
         StringBuilder sb = new StringBuilder("\u2705 \u05DE\u05E9\u05D9\u05DE\u05D4: ").append(t.title);
         if (!t.notes.isEmpty()) sb.append('\n').append(t.notes);
+        for (Tasks.Check k : t.items) sb.append('\n').append(k.done ? "\u2611 " : "\u2610 ").append(k.text);
         if (!t.client.isEmpty()) sb.append("\n\u05DC\u05E7\u05D5\u05D7: ").append(t.client);
         if (t.dueAt > 0) sb.append("\n\u05E2\u05D3: ").append(TicketDb.fmt(t.dueAt));
         String num = "";
