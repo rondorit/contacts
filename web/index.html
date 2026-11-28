@@ -83,8 +83,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp, arrayUnion }
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp, arrayUnion, arrayRemove }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyBnunFF6hnO7QsvzHJSBqHGMpqLbxs5rG8",
@@ -202,6 +203,7 @@ function listen() {
   unsub.push(onSnapshot(tq, s => { tickets = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה בקריאות: " + e.code)));
   unsub.push(onSnapshot(kq, s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה במשימות: " + e.code)));
   unsub.push(onSnapshot(col("members"), s => { users = s.docs.map(d => ({ uid: d.id, ...d.data() })); render(); }));
+  enablePush(false);   // already allowed on this device -> refresh the token silently
 }
 
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
@@ -211,6 +213,14 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
 function render() {
   $("fab").style.display = (view === "tickets" && isAdmin()) || view === "tasks" ? "block" : "none";
   if (view === "tickets") renderTickets(); else if (view === "tasks") renderTasks(); else renderMe();
+  const ps = pushState();
+  if (view !== "me" && (ps === "default" || ps === "home")) {
+    const b = document.createElement("div");
+    b.className = "field"; b.style.cursor = "pointer";
+    b.innerHTML = "🔔 <b>לא תקבל התראות על קריאות חדשות</b> – לחץ כאן להפעלה";
+    b.onclick = () => document.querySelector('.tab[data-v="me"]').click();
+    $("main").prepend(b);
+  }
 }
 
 function renderTickets() {
@@ -276,8 +286,43 @@ async function saveTask(id, patch) {
   catch (e) { toast("השמירה נכשלה: " + e.code); }
 }
 
+// ---------------------------------------------------------------- push notifications
+const VAPID = "BE20fxLrGOe-P5ZXI5wUGQHjrHtWQ8NUiFFCkCYn-kuz5hLF4hqwbYW0TPjc0fdHArtVpaKDV57bsfeieNuX1bE";
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+let pushToken = "";
+function pushState() {
+  if (isIOS && !standalone) return "home";          // iPhone: push only from the Home Screen app
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) return "none";
+  return Notification.permission;                   // granted / denied / default
+}
+async function enablePush(ask) {
+  try {
+    if (!(await isSupported())) return false;
+    if (Notification.permission !== "granted") {
+      if (!ask) return false;
+      if ((await Notification.requestPermission()) !== "granted") return false;
+    }
+    const reg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+    const m = getMessaging(app);
+    pushToken = await getToken(m, { vapidKey: VAPID, serviceWorkerRegistration: reg });
+    if (!pushToken) return false;
+    await setDoc(doc(db, "users", me.uid), { fcmTokens: arrayUnion(pushToken) }, { merge: true });
+    onMessage(m, p => toast((p.notification?.title || "") + " – " + (p.notification?.body || "")));
+    return true;
+  } catch (e) { console.warn("push", e); if (ask) toast("הפעלת התראות נכשלה: " + (e.code || e.message)); return false; }
+}
+function pushBox() {
+  const s = pushState();
+  if (s === "granted") return `<div class="field"><b>🔔 התראות</b>פעילות במכשיר הזה</div>`;
+  if (s === "home") return `<div class="field"><b>🔔 התראות</b>באייפון ההתראות עובדות רק מהאפליקציה שבמסך הבית:<br>ספארי ← שתף ← "הוסף למסך הבית" ← פותחים את On IT מהאייקון ← 👤 חשבון ← הפעל התראות.</div>`;
+  if (s === "denied") return `<div class="field"><b>🔔 התראות</b>חסומות. באייפון: הגדרות ← התראות ← On IT ← אפשר התראות.</div>`;
+  if (s === "none") return `<div class="field"><b>🔔 התראות</b>הדפדפן הזה לא תומך בהתראות (צריך iOS 16.4 ומעלה).</div>`;
+  return `<button class="btn" id="push" style="width:100%;margin-bottom:10px">🔔 הפעל התראות</button>`;
+}
+
 function renderMe() {
-  $("main").innerHTML = `<div class="field"><b>מחובר</b>${esc(myName())}<br>${esc(me.email)}</div>
+  $("main").innerHTML = pushBox() + `<div class="field"><b>מחובר</b>${esc(myName())}<br>${esc(me.email)}</div>
     <div class="field"><b>תפקיד</b>${isAdmin() ? "מנהל – רואה את כל הקריאות והמשימות" : "טכנאי – רואה מה ששויך אליך"}</div>
     <div class="field"><b>צוות</b>${users.map(u => `${u.role === "admin" ? "⭐" : "👷"} ${esc(u.name)}`).join("<br>")}</div>
     ${isAdmin() ? `<div class="field"><b>➕ הזמנת איש צוות</b>
@@ -286,7 +331,11 @@ function renderMe() {
       <div id="pend" class="sub" style="margin-top:8px"></div></div>` : ""}
     <p class="sub">באייפון: בספארי ← שתף ← "הוסף למסך הבית".</p>
     <button class="btn ghost" id="out" style="width:100%">🚪 התנתקות</button>`;
-  $("out").onclick = () => signOut(auth);
+  $("out").onclick = async () => {
+    if (pushToken) await setDoc(doc(db, "users", me.uid), { fcmTokens: arrayRemove(pushToken) }, { merge: true }).catch(() => {});
+    signOut(auth);
+  };
+  if ($("push")) $("push").onclick = async () => { if (await enablePush(true)) toast("🔔 ההתראות הופעלו"); renderMe(); };
   if (!isAdmin()) return;
   getDocs(query(collection(db, "invites"), where("orgId", "==", ORG))).then(q => {
     $("pend").innerHTML = q.empty ? "אין הזמנות שממתינות" : "ממתינות: " + q.docs.map(d => esc(d.data().name) + " (" + esc(d.id) + ")").join(", ");
