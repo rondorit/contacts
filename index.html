@@ -83,7 +83,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp, arrayUnion }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -104,7 +104,7 @@ const STATUS = { "Open": ["פתוחה", "var(--blue)"], "In progress": ["בטי�
 const PRIO = { "Low": "נמוכה", "Normal": "רגילה", "High": "גבוהה", "Urgent": "דחופה" };
 const fmt = ms => ms ? new Date(ms).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
-let me = null, role = "", view = "tickets", tickets = [], tasks = [], users = [], unsub = [], tFilter = "open";
+let me = null, role = "", ORG = "", orgName = "", view = "tickets", tickets = [], tasks = [], users = [], unsub = [], tFilter = "open";
 
 function toast(t) { const e = $("toast"); e.textContent = t; e.style.display = "block"; setTimeout(() => e.style.display = "none", 2500); }
 function myName() { return me.displayName || me.email; }
@@ -118,23 +118,39 @@ async function signIn() {
 }
 getRedirectResult(auth).catch(() => {});
 
+const col = (...p) => collection(db, "orgs", ORG, ...p);
+const dref = (...p) => doc(db, "orgs", ORG, ...p);
+
+async function useOrg(o) {
+  const m = await getDoc(doc(db, "orgs", o, "members", me.uid)).catch(() => null);
+  if (!m || !m.exists()) return null;
+  const od = await getDoc(doc(db, "orgs", o)).catch(() => null);
+  ORG = o; orgName = od && od.exists() ? od.data().name : "";
+  await setDoc(doc(db, "users", me.uid), { currentOrg: o, orgs: arrayUnion(o), email: (me.email || "").toLowerCase() }, { merge: true });
+  return m.data().role;
+}
+
+/** Returns the role, null when there is nothing to join, or "LEGACY" when the manager must first open the Android app. */
 async function join() {
-  const uref = doc(db, "users", me.uid);
-  const u = await getDoc(uref).catch(() => null);
-  if (u && u.exists()) return u.data().role;
   const email = (me.email || "").toLowerCase();
-  const org = await getDoc(doc(db, "org", "main"));
-  if (!org.exists()) {
-    await setDoc(doc(db, "org", "main"), { admin: me.uid, adminEmail: email, name: "Beki Projects", created: serverTimestamp() });
-    await setDoc(uref, { email, name: myName(), role: "admin", joined: serverTimestamp() });
-    return "admin";
-  }
-  const inv = await getDoc(doc(db, "invites", email));
-  if (!inv.exists()) return null;
-  const r = inv.data().role || "tech";
-  await setDoc(uref, { email, name: myName(), role: r, joined: serverTimestamp() });
+  const u = await getDoc(doc(db, "users", me.uid)).catch(() => null);
+  if (u && u.exists() && u.data().currentOrg) { const r = await useOrg(u.data().currentOrg); if (r) return r; }
+  const old = await getDoc(doc(db, "org", "main")).catch(() => null);
+  if (old && old.exists() && old.data().admin === me.uid && !old.data().migratedTo) return "LEGACY";
+  const r = await useOrg("beki").catch(() => null); if (r) return r;
+  const inv = await getDoc(doc(db, "invites", email)).catch(() => null);
+  if (!inv || !inv.exists() || !inv.data().orgId) return null;
+  const o = inv.data().orgId, role = inv.data().role || "tech";
+  await setDoc(doc(db, "orgs", o, "members", me.uid), { email, name: myName(), role, joined: serverTimestamp() });
   await deleteDoc(doc(db, "invites", email)).catch(() => {});
-  return r;
+  return await useOrg(o);
+}
+
+async function createOrg(name) {
+  const ref = doc(collection(db, "orgs"));
+  await setDoc(ref, { name, owner: me.uid, created: serverTimestamp() });
+  await setDoc(doc(db, "orgs", ref.id, "members", me.uid), { email: (me.email || "").toLowerCase(), name: myName(), role: "admin", joined: serverTimestamp() });
+  return await useOrg(ref.id);
 }
 
 onAuthStateChanged(auth, async user => {
@@ -151,13 +167,21 @@ onAuthStateChanged(auth, async user => {
     $("out").onclick = () => signOut(auth);
     return;
   }
-  if (!role) {
-    $("main").innerHTML = `<div class="center">החשבון <b>${esc(user.email)}</b> עוד לא הוזמן לצוות.<br><br>בקש מהמנהל להזמין את הכתובת הזו.<br><br>
-      <button class="btn ghost" id="out">התנתקות</button></div>`;
-    $("out").onclick = () => signOut(auth);
+  if (role === "LEGACY") {
+    $("main").innerHTML = `<div class="center">כדי לעבור למבנה החדש, פתח פעם אחת באנדרואיד: ☁️ ענן – צוות.<br><br><button class="btn" id="retry">רענן</button></div>`;
+    $("retry").onclick = () => location.reload();
     return;
   }
-  $("who").textContent = `${myName()} • ${role === "admin" ? "מנהל" : "טכנאי"}`;
+  if (!role) {
+    $("main").innerHTML = `<div class="center">החשבון <b>${esc(user.email)}</b> עוד לא הוזמן לצוות.<br><br>בקש מהמנהל להזמין את הכתובת הזו.<br><br>
+      <button class="btn ghost" id="out">התנתקות</button>
+      <br><br><hr style="border-color:var(--line)"><br>מנהל עסק? אפשר לפתוח ארגון חדש:<br><br>
+      <input id="on" placeholder="שם הארגון / העסק"><br><br><button class="btn" id="mk">🏢 פתיחת ארגון</button></div>`;
+    $("out").onclick = () => signOut(auth);
+    $("mk").onclick = async () => { const n = $("on").value.trim(); if (!n) return; try { await createOrg(n); location.reload(); } catch (e) { toast("נכשל: " + e.code); } };
+    return;
+  }
+  $("who").textContent = `${orgName} • ${myName()} • ${role === "admin" ? "מנהל" : "טכנאי"}`;
   $("tabs").style.display = "flex";
   listen();
 });
@@ -173,11 +197,11 @@ function loginScreen() {
 
 // ---------------------------------------------------------------- live data
 function listen() {
-  const tq = isAdmin() ? collection(db, "tickets") : query(collection(db, "tickets"), where("assigneeUid", "==", me.uid));
-  const kq = isAdmin() ? collection(db, "tasks") : query(collection(db, "tasks"), where("assigneeUid", "==", me.uid));
+  const tq = isAdmin() ? col("tickets") : query(col("tickets"), where("assigneeUid", "==", me.uid));
+  const kq = isAdmin() ? col("tasks") : query(col("tasks"), where("assigneeUid", "==", me.uid));
   unsub.push(onSnapshot(tq, s => { tickets = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה בקריאות: " + e.code)));
   unsub.push(onSnapshot(kq, s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה במשימות: " + e.code)));
-  unsub.push(onSnapshot(collection(db, "users"), s => { users = s.docs.map(d => ({ uid: d.id, ...d.data() })); }));
+  unsub.push(onSnapshot(col("members"), s => { users = s.docs.map(d => ({ uid: d.id, ...d.data() })); render(); }));
 }
 
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
@@ -248,7 +272,7 @@ function renderTasks() {
 }
 
 async function saveTask(id, patch) {
-  try { await setDoc(doc(db, "tasks", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true }); }
+  try { await setDoc(dref("tasks", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true }); }
   catch (e) { toast("השמירה נכשלה: " + e.code); }
 }
 
@@ -256,10 +280,28 @@ function renderMe() {
   $("main").innerHTML = `<div class="field"><b>מחובר</b>${esc(myName())}<br>${esc(me.email)}</div>
     <div class="field"><b>תפקיד</b>${isAdmin() ? "מנהל – רואה את כל הקריאות והמשימות" : "טכנאי – רואה מה ששויך אליך"}</div>
     <div class="field"><b>צוות</b>${users.map(u => `${u.role === "admin" ? "⭐" : "👷"} ${esc(u.name)}`).join("<br>")}</div>
-    <p class="sub">הזמנת אנשי צוות נעשית מאפליקציית האנדרואיד של המנהל: ☁️ ענן – צוות.</p>
+    ${isAdmin() ? `<div class="field"><b>➕ הזמנת איש צוות</b>
+      <input id="iname" placeholder="שם" style="margin-top:6px"><input id="imail" type="email" placeholder="כתובת Gmail" style="margin-top:6px">
+      <label class="check"><input type="checkbox" id="iadm"> מנהל</label><button class="btn small" id="inv">שלח הזמנה</button>
+      <div id="pend" class="sub" style="margin-top:8px"></div></div>` : ""}
     <p class="sub">באייפון: בספארי ← שתף ← "הוסף למסך הבית".</p>
     <button class="btn ghost" id="out" style="width:100%">🚪 התנתקות</button>`;
   $("out").onclick = () => signOut(auth);
+  if (!isAdmin()) return;
+  getDocs(query(collection(db, "invites"), where("orgId", "==", ORG))).then(q => {
+    $("pend").innerHTML = q.empty ? "אין הזמנות שממתינות" : "ממתינות: " + q.docs.map(d => esc(d.data().name) + " (" + esc(d.id) + ")").join(", ");
+  }).catch(() => {});
+  $("inv").onclick = async () => {
+    const e = $("imail").value.trim().toLowerCase(), n = $("iname").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(e)) { toast("כתובת לא תקינה"); return; }
+    if (/@(gmai|gmial|gamil|gnail)\./.test(e) || e.endsWith("@gmail.co")) { toast("נראה שיש טעות בכתובת (gmail.com?)"); return; }
+    try {
+      await setDoc(doc(db, "invites", e), { name: n, role: $("iadm").checked ? "admin" : "tech", orgId: ORG, orgName, by: me.email, created: serverTimestamp() });
+      const msg = `היי ${n}, הוזמנת לצוות של ${orgName} באפליקציה On IT.\nכניסה עם Google: ${e}\n\n🍎 אייפון / מחשב: https://rondorit.github.io/contacts\n📱 אנדרואיד: https://github.com/rondorit/contacts/releases/tag/preview`;
+      if (navigator.share) navigator.share({ text: msg }).catch(() => {}); else { await navigator.clipboard.writeText(msg); toast("ההודעה הועתקה – הדבק בוואטסאפ"); }
+      renderMe();
+    } catch (err) { toast("נכשל: " + err.code); }
+  };
 }
 
 // ---------------------------------------------------------------- ticket details
@@ -290,7 +332,7 @@ function openTicket(id) {
   sheet("קריאה", h);
   const save = async patch => {
     try {
-      await setDoc(doc(db, "tickets", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true });
+      await setDoc(dref("tickets", id), { ...patch, updated: Date.now(), updatedBy: me.uid }, { merge: true });
       toast("נשמר ✓");
     } catch (e) { toast("השמירה נכשלה: " + e.code); }
   };
@@ -302,7 +344,7 @@ function openTicket(id) {
   $("working").onclick = () => { $("st").value = "In progress"; save({ status: "In progress" }); };
   $("done").onclick = async () => { await addNote(id, "✅ בוצע"); save({ status: "Closed" }); };
   $("addn").onclick = async () => { const v = $("nt").value.trim(); if (!v) return; await addNote(id, v); $("nt").value = ""; };
-  const nq = query(collection(db, "tickets", id, "notes"), orderBy("time", "desc"));
+  const nq = query(col("tickets", id, "notes"), orderBy("time", "desc"));
   noteUnsub = onSnapshot(nq, s => {
     $("notes").innerHTML = s.empty ? '<div class="sub">אין הערות</div>' : s.docs.map(d => {
       const n = d.data(); return `<div class="note"><div class="t">${fmt(n.time)} • ${esc(n.byName || "")}</div>${esc(n.text).replace(/\n/g, "<br>")}</div>`;
@@ -312,8 +354,8 @@ function openTicket(id) {
 
 async function addNote(id, text) {
   try {
-    await addDoc(collection(db, "tickets", id, "notes"), { text, time: Date.now(), by: me.uid, byName: myName() });
-    await setDoc(doc(db, "tickets", id), { updated: Date.now(), updatedBy: me.uid, lastNote: text.slice(0, 120) }, { merge: true });
+    await addDoc(col("tickets", id, "notes"), { text, time: Date.now(), by: me.uid, byName: myName() });
+    await setDoc(dref("tickets", id), { updated: Date.now(), updatedBy: me.uid, lastNote: text.slice(0, 120) }, { merge: true });
   } catch (e) { toast("ההערה לא נשמרה: " + e.code); }
 }
 
@@ -333,7 +375,7 @@ function newTicket() {
     const d = { title, clientName: $("cn").value.trim(), clientPhone: $("cp").value.trim(), clientAddress: $("ca").value.trim(),
       description: $("de").value.trim(), priority: $("pr").value, status: "Open", category: "Other",
       assigneeUid: u ? u.uid : "", assigneeName: u ? u.name : "", created: Date.now(), updated: Date.now(), updatedBy: me.uid, src: "web" };
-    try { await setDoc(doc(collection(db, "tickets")), d); $("back").click(); toast("הקריאה נפתחה ✓"); }
+    try { await setDoc(doc(col("tickets")), d); $("back").click(); toast("הקריאה נפתחה ✓"); }
     catch (e) { toast("נכשל: " + e.code); }
   };
 }
@@ -350,7 +392,7 @@ function newTask() {
     const u = isAdmin() ? users.find(x => x.uid === $("as").value) : { uid: me.uid, name: myName() };
     const d = { title, notes: $("no").value.trim(), dueAt: $("du").value ? new Date($("du").value).getTime() : 0, doneAt: 0, stage: 0,
       priority: $("pr").value, items: [], assigneeUid: u ? u.uid : "", assigneeName: u ? u.name : "", updated: Date.now(), updatedBy: me.uid, src: "web" };
-    try { await setDoc(doc(collection(db, "tasks")), d); $("back").click(); toast("המשימה נשמרה ✓"); }
+    try { await setDoc(doc(col("tasks")), d); $("back").click(); toast("המשימה נשמרה ✓"); }
     catch (e) { toast("נכשל: " + e.code); }
   };
 }
