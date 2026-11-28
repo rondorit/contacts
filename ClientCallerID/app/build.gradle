@@ -18,8 +18,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 91
-        versionName '8.1-cloud-preview'
+        versionCode 92
+        versionName '8.2-cloud-preview'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).
