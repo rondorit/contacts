@@ -1,6 +1,7 @@
 package com.clientcaller.app;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import com.google.firebase.auth.FirebaseUser;
@@ -67,6 +68,19 @@ final class Sync {
 
     private static long localOf(String kind, String doc) {
         return p().getLong("c2l_" + kind + doc, 0);
+    }
+
+    /** Screen to open for a push about cloud doc {@code doc} ("ticket" or "task"). */
+    static Intent openIntent(Context c, String kind, String doc) {
+        if ("task".equals(kind)) {
+            long id = localOf("k", doc);
+            Intent i = new Intent(c, TasksActivity.class);
+            if (id > 0) i.putExtra(Tasks.EXTRA_ID, id);
+            return i;
+        }
+        long id = localOf("t", doc);
+        if (id > 0) return new Intent(c, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, id);
+        return new Intent(c, TicketsActivity.class);
     }
 
     private static void map(String kind, long localId, String doc) {
@@ -226,6 +240,7 @@ final class Sync {
     static synchronized void start(Context c) {
         app = c.getApplicationContext();
         if (!on()) return;
+        Push.register(app);
         for (ListenerRegistration r : regs) r.remove();
         regs.clear();
         Cloud.col("members").get().addOnSuccessListener(q -> {

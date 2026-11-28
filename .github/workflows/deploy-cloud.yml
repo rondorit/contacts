@@ -1,0 +1,31 @@
+name: Deploy cloud (Firebase)
+on:
+  push:
+    branches: [cloud, main]
+    paths: ['functions/**', 'cloud/firestore.rules', 'firebase.json', '.github/workflows/deploy-cloud.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency: deploy-cloud
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Keyless login: GitHub's identity token is exchanged for the github-deploy service account
+      # (allowed only for this repository - see cloud/setup-deploy.sh).
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1065393018022/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deploy@bekis-e82cd.iam.gserviceaccount.com
+      - name: Install
+        run: cd functions && npm install --no-audit --no-fund
+      - name: Deploy
+        run: |
+          npx -y firebase-tools@13 deploy --only functions,firestore:rules --project bekis-e82cd --non-interactive --force > deploy.log 2>&1 \
+            || { tail -40 deploy.log | sed 's/^/::error::/'; exit 1; }
+          tail -15 deploy.log

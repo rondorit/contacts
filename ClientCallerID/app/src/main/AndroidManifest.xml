@@ -85,6 +85,14 @@
             android:exported="false" />
 
         <service
+            android:name=".Push"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".TaskTileService"
             android:exported="true"
             android:icon="@android:drawable/ic_menu_add"

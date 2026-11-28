@@ -18,8 +18,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 94
-        versionName '9.0-cloud-preview'
+        versionCode 95
+        versionName '9.1-cloud-preview'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).
@@ -64,5 +64,6 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.android.gms:play-services-auth:21.2.0'
 }

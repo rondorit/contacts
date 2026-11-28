@@ -72,6 +72,7 @@ public class CloudActivity extends Activity {
         }));
         box.addView(button("\uD83D\uDEAA \u05D4\u05EA\u05E0\u05EA\u05E7\u05D5\u05EA", v -> {
             Sync.stop();
+            Push.unregister();
             CallLogger.prefs(this).edit().remove("cloud_role").remove("cloud_org").apply();
             Cloud.signOut(this, this::refresh);
         }));
