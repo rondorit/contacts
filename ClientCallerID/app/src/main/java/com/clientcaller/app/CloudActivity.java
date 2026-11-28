@@ -143,7 +143,12 @@ public class CloudActivity extends Activity {
                 .setPositiveButton("\u05D4\u05D6\u05DE\u05DF", (d, w) -> {
                     final String e = mail.getText().toString().trim();
                     final String n = name.getText().toString().trim();
-                    if (!e.contains("@")) { Toast.makeText(this, "\u05DB\u05EA\u05D5\u05D1\u05EA \u05DE\u05D9\u05D9\u05DC \u05DC\u05D0 \u05EA\u05E7\u05D9\u05E0\u05D4", Toast.LENGTH_SHORT).show(); return; }
+                    if (!e.matches("[^@\\s]+@[^@\\s]+\\.[a-zA-Z]{2,}")) { Toast.makeText(this, "\u05DB\u05EA\u05D5\u05D1\u05EA \u05DE\u05D9\u05D9\u05DC \u05DC\u05D0 \u05EA\u05E7\u05D9\u05E0\u05D4", Toast.LENGTH_SHORT).show(); return; }
+                    String dom = e.substring(e.indexOf('@') + 1).toLowerCase(java.util.Locale.ROOT);
+                    if (!dom.equals("gmail.com") && (dom.startsWith("gmai") || dom.startsWith("gmial") || dom.startsWith("gamil") || dom.startsWith("gnail") || dom.equals("gmail.co"))) {
+                        Toast.makeText(this, "\u05E0\u05E8\u05D0\u05D4 \u05E9\u05D9\u05E9 \u05D8\u05E2\u05D5\u05EA \u05D1\u05DB\u05EA\u05D5\u05D1\u05EA: " + dom + " (\u05D4\u05EA\u05DB\u05D5\u05D5\u05E0\u05EA \u05DC-gmail.com?)", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     Cloud.invite(e, n, admin.isChecked() ? Cloud.ROLE_ADMIN : Cloud.ROLE_TECH, err -> {
                         if (err != null) { Toast.makeText(this, "\u05E0\u05DB\u05E9\u05DC: " + err, Toast.LENGTH_LONG).show(); return; }
                         refresh();
