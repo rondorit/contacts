@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -17,8 +18,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 87
-        versionName '7.3'
+        versionCode 88
+        versionName '8.0-cloud-preview'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).
@@ -59,4 +60,9 @@ dependencies {
     implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
     // Geofencing for location-based task reminders
     implementation 'com.google.android.gms:play-services-location:21.3.0'
+    // Cloud (multi-user): Firebase sign-in with Google + Firestore
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.android.gms:play-services-auth:21.2.0'
 }

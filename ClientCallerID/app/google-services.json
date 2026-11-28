@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1065393018022",
+    "project_id": "bekis-e82cd",
+    "storage_bucket": "bekis-e82cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065393018022:android:ec2516b2125fb244919067",
+        "android_client_info": {
+          "package_name": "com.clientcaller.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1065393018022-sdqtmgcvg902v3dr9t3knrmgsiupidnn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2KH1vV2tt40Rob7VMdp2FEdc81-aJMAc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1065393018022-sdqtmgcvg902v3dr9t3knrmgsiupidnn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

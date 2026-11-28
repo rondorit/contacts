@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function orgDoc() { return get(/databases/$(database)/documents/org/main); }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function member() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return member() && me().data.role == 'admin'; }
+
+    // Organisation: created once by the first user, who becomes its manager.
+    match /org/main {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.admin == request.auth.uid;
+      allow update: if isAdmin();
+    }
+
+    // Team members. You can add yourself only as the founding manager or with an invitation.
+    match /users/{uid} {
+      allow read: if member();
+      allow create: if signedIn() && uid == request.auth.uid && (
+        (orgDoc().data.admin == request.auth.uid && request.resource.data.role == 'admin') ||
+        (exists(/databases/$(database)/documents/invites/$(myEmail())) &&
+         request.resource.data.role == get(/databases/$(database)/documents/invites/$(myEmail())).data.role));
+      allow update, delete: if isAdmin();
+    }
+
+    // Invitations, keyed by the invitee's e-mail (lower case).
+    match /invites/{email} {
+      allow read, delete: if isAdmin() || (signedIn() && email == myEmail());
+      allow create, update: if isAdmin();
+    }
+
+    // Everything else is closed until the next stages add tickets and tasks.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -107,6 +107,10 @@
             android:name=".GuideActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".CloudActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".Geo$Receiver"
             android:exported="false" />
