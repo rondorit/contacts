@@ -1,6 +1,6 @@
 # Project notes
 
-Android app "לקוחות ושירות" (ClientCallerID). Java, no AndroidX in app code, programmatic UI.
+Android app "On IT" (formerly "לקוחות ושירות"; project ClientCallerID). Java, no AndroidX in app code, programmatic UI.
 Source files are ASCII only: write Hebrew as \uXXXX escapes (helper: esc.py-style conversion).
 
 ## User guide — keep it current
