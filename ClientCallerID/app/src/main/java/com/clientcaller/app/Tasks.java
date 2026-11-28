@@ -237,6 +237,9 @@ final class Tasks {
                 .addAction(new Notification.Action.Builder(null, "\u2714 \u05D1\u05D5\u05E6\u05E2", PendingIntent.getBroadcast(c, nid + 1, done, flags)).build())
                 .addAction(new Notification.Action.Builder(null, "\u23F0 \u05E2\u05D5\u05D3 \u05E9\u05E2\u05D4", PendingIntent.getBroadcast(c, nid + 2, snooze, flags)).build())
                 .setAutoCancel(true)
+                .addAction(t.phone.isEmpty() ? null : new Notification.Action.Builder(null, "\uD83D\uDCDE \u05D7\u05D9\u05D9\u05D2",
+                        PendingIntent.getActivity(c, nid + 3, new Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:" + t.phone))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), flags)).build())
                 .build());
     }
 }

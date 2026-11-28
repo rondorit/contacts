@@ -10,8 +10,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 80
-        versionName '6.3'
+        versionCode 81
+        versionName '6.4'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).

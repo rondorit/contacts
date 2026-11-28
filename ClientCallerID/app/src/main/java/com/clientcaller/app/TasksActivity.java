@@ -314,7 +314,8 @@ public class TasksActivity extends Activity {
 
     private void more(final Tasks.Task t) {
         String[] opts = {t.isDone() ? "\u21A9 \u05D4\u05D7\u05D6\u05E8 \u05DC\u05E4\u05EA\u05D5\u05D7\u05D4" : "\u2714 \u05E1\u05DE\u05DF \u05DB\u05D1\u05D5\u05E6\u05E2\u05D4", "\uD83C\uDFAB \u05E4\u05EA\u05D7 \u05E7\u05E8\u05D9\u05D0\u05EA \u05E9\u05D9\u05E8\u05D5\u05EA \u05DE\u05D4\u05DE\u05E9\u05D9\u05DE\u05D4",
-                t.assignee.isEmpty() ? "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC" + t.assignee, "\uD83D\uDDD1\uFE0F \u05DE\u05D7\u05E7"};
+                t.assignee.isEmpty() ? "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4" : "\uD83D\uDCAC \u05E9\u05DC\u05D7 \u05DC" + t.assignee, "\uD83D\uDDD1\uFE0F \u05DE\u05D7\u05E7",
+                t.phone.isEmpty() ? "\uD83D\uDCDE \u05D0\u05D9\u05DF \u05D8\u05DC\u05E4\u05D5\u05DF" : "\uD83D\uDCDE \u05D4\u05EA\u05E7\u05E9\u05E8 " + t.phone};
         new AlertDialog.Builder(this).setItems(opts, (d, w) -> {
             if (w == 0) {
                 Tasks.setDone(this, t.id, !t.isDone());
@@ -338,6 +339,8 @@ public class TasksActivity extends Activity {
                 startActivity(new Intent(this, TicketActivity.class).putExtra(TicketActivity.EXTRA_TICKET, k.id));
             } else if (w == 2) {
                 send(t);
+            } else if (w == 4) {
+                if (!t.phone.isEmpty()) startActivity(new Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:" + t.phone)));
             } else {
                 Auth.confirm(this, "\u05DE\u05D7\u05D9\u05E7\u05EA \u05D4\u05DE\u05E9\u05D9\u05DE\u05D4", () -> { Tasks.delete(this, t.id); refresh(); });
             }

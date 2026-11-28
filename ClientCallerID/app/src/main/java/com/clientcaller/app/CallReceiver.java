@@ -24,6 +24,7 @@ public class CallReceiver extends BroadcastReceiver {
             final Context app = context.getApplicationContext();
             new Handler(Looper.getMainLooper()).postDelayed(() -> new Thread(() -> {
                 try {
+                    try { MissedCalls.check(app); } catch (Throwable ignored) { }
                     CallLogger.logLatestCall(app);
                 } finally {
                     pending.finish();

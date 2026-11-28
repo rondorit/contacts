@@ -67,7 +67,10 @@ public class WaCallListener extends NotificationListenerService {
                 for (String c : new String[]{person, title, bigTitle, conv}) {
                     if (!c.isEmpty() && !names.contains(c)) names.add(c);
                 }
-                result = names.isEmpty() ? "\u05D0\u05D9\u05DF \u05E9\u05DD \u05D1\u05D4\u05EA\u05E8\u05D0\u05D4" : CallPopup.onWhatsApp(this, names);
+                boolean missed = "missed_call".equals(n.category) || low.contains("missed")
+                        || low.contains("\u05E9\u05DC\u05D0 \u05E0\u05E2\u05E0\u05EA\u05D4") || low.contains("\u05E9\u05D4\u05D7\u05DE\u05E6\u05EA");
+                if (missed) result = MissedCalls.fromWhatsApp(this, names);
+                else result = names.isEmpty() ? "\u05D0\u05D9\u05DF \u05E9\u05DD \u05D1\u05D4\u05EA\u05E8\u05D0\u05D4" : CallPopup.onWhatsApp(this, names);
             }
             log("\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D4=" + n.category + " | \u05E1\u05D5\u05D2=" + callType + " | \u05D0\u05D3\u05DD=" + person + " | \u05DB\u05D5\u05EA\u05E8\u05EA=" + title
                     + " | \u05D8\u05E7\u05E1\u05D8=" + (text.length() > 40 ? text.substring(0, 40) : text) + "\n\u2192 " + result);

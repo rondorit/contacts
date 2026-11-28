@@ -405,6 +405,9 @@ public class MainActivity extends Activity {
         boolean contacts = sp.getBoolean(PhoneContacts.KEY_ENABLED, true);
         List<View> calls = new ArrayList<>();
         calls.add(Ui.tile(this, "\uD83D\uDCC5", "\u05D9\u05D5\u05DE\u05DF \u05DC\u05E9\u05D9\u05D7\u05D5\u05EA", calText, calId < 0 ? info : ok, v -> chooseCalendar()));
+        int missedMode = MissedCalls.mode(this);
+        calls.add(Ui.tile(this, "\uD83D\uDCF5", "\u05E9\u05D9\u05D7\u05D4 \u05E9\u05DC\u05D0 \u05E0\u05E2\u05E0\u05EA\u05D4 \u2190 \u05DE\u05E9\u05D9\u05DE\u05D4", missedMode == 0 ? "\u05DB\u05D1\u05D5\u05D9" : missedMode == 1 ? "\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D5\u05D0\u05E0\u05E9\u05D9 \u05E7\u05E9\u05E8" : "\u05DB\u05DC \u05DE\u05E1\u05E4\u05E8",
+                missedMode == 0 ? info : ok, v -> MissedCalls.settings(this, this::refresh)));
         final boolean allDay = CallLogger.allDay(this);
         calls.add(Ui.tile(this, "\uD83D\uDDD3\uFE0F", "\u05E1\u05D5\u05D2 \u05E8\u05D9\u05E9\u05D5\u05DD \u05D1\u05D9\u05D5\u05DE\u05DF", allDay ? "\u05D9\u05D5\u05DD \u05E9\u05DC\u05DD" : "\u05D0\u05D9\u05E8\u05D5\u05E2 \u05E2\u05DD \u05E9\u05E2\u05D4", info, v ->
                 new AlertDialog.Builder(this)
