@@ -120,8 +120,8 @@ getRedirectResult(auth).catch(() => {});
 
 async function join() {
   const uref = doc(db, "users", me.uid);
-  const u = await getDoc(uref);
-  if (u.exists()) return u.data().role;
+  const u = await getDoc(uref).catch(() => null);
+  if (u && u.exists()) return u.data().role;
   const email = (me.email || "").toLowerCase();
   const org = await getDoc(doc(db, "org", "main"));
   if (!org.exists()) {
@@ -142,7 +142,15 @@ onAuthStateChanged(auth, async user => {
   me = user;
   if (!user) { loginScreen(); return; }
   $("main").innerHTML = '<div class="center">מתחבר לצוות…</div>';
-  try { role = await join(); } catch (e) { role = null; }
+  let err = "";
+  try { role = await join(); } catch (e) { role = null; err = e.code || e.message; }
+  if (err) {
+    $("main").innerHTML = `<div class="center">ההצטרפות לצוות נכשלה (${esc(err)}).<br><br><button class="btn" id="retry">נסה שוב</button>
+      <br><br><button class="btn ghost" id="out">התנתקות</button></div>`;
+    $("retry").onclick = () => location.reload();
+    $("out").onclick = () => signOut(auth);
+    return;
+  }
   if (!role) {
     $("main").innerHTML = `<div class="center">החשבון <b>${esc(user.email)}</b> עוד לא הוזמן לצוות.<br><br>בקש מהמנהל להזמין את הכתובת הזו.<br><br>
       <button class="btn ghost" id="out">התנתקות</button></div>`;
