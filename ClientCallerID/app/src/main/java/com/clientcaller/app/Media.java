@@ -48,10 +48,15 @@ final class Media {
 
     /** Photos of a ticket, oldest first. */
     static List<File> photos(Context c, long ticketId) {
+        return photos(c, "t" + ticketId);
+    }
+
+    /** Photos whose name starts with prefix + "_" (t12 = ticket 12, k5 = task 5). */
+    static List<File> photos(Context c, String prefix) {
         List<File> out = new ArrayList<>();
         File[] all = dir(c).listFiles();
         if (all == null) return out;
-        String pre = "t" + ticketId + "_";
+        String pre = prefix + "_";
         for (File f : all) if (f.getName().startsWith(pre)) out.add(f);
         java.util.Collections.sort(out, (a, b) -> a.getName().compareTo(b.getName()));
         return out;
@@ -62,10 +67,14 @@ final class Media {
     }
 
     static void takePhoto(Activity a, long ticketId) {
+        takePhoto(a, "t" + ticketId);
+    }
+
+    static void takePhoto(Activity a, String prefix) {
         File share = new File(a.getCacheDir(), "share");
         share.mkdirs();
         File target = new File(share, "cam_" + System.currentTimeMillis() + ".jpg");
-        CallLogger.prefs(a).edit().putString(KEY_PENDING, ticketId + "|" + target.getName()).apply();
+        CallLogger.prefs(a).edit().putString(KEY_PENDING, prefix + "|" + target.getName()).apply();
         Uri u = FilesProvider.uriFor(target);
         Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, u)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -78,7 +87,11 @@ final class Media {
     }
 
     static void pickPhotos(Activity a, long ticketId) {
-        CallLogger.prefs(a).edit().putString(KEY_PENDING, ticketId + "|").apply();
+        pickPhotos(a, "t" + ticketId);
+    }
+
+    static void pickPhotos(Activity a, String prefix) {
+        CallLogger.prefs(a).edit().putString(KEY_PENDING, prefix + "|").apply();
         Intent i = new Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
                 .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         a.startActivityForResult(Intent.createChooser(i, "\u05D1\u05D7\u05E8 \u05EA\u05DE\u05D5\u05E0\u05D5\u05EA"), REQ_GALLERY);
@@ -90,12 +103,9 @@ final class Media {
         String pending = CallLogger.prefs(a).getString(KEY_PENDING, "");
         CallLogger.prefs(a).edit().remove(KEY_PENDING).apply();
         if (res != Activity.RESULT_OK || pending.isEmpty()) return true;
-        long tid;
-        try {
-            tid = Long.parseLong(pending.substring(0, pending.indexOf('|')));
-        } catch (Exception e) {
-            return true;
-        }
+        String tid = pending.substring(0, Math.max(0, pending.indexOf('|')));
+        if (tid.isEmpty()) return true;
+        if (Character.isDigit(tid.charAt(0))) tid = "t" + tid;
         int added = 0;
         try {
             if (req == REQ_CAMERA) {
@@ -114,12 +124,12 @@ final class Media {
         } catch (Exception e) {
             Toast.makeText(a, "\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05EA\u05DE\u05D5\u05E0\u05D4 \u05E0\u05DB\u05E9\u05DC\u05D4: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
-        if (added > 0) TicketDb.get(a).addNote(tid, "\uD83D\uDCF7 \u05E0\u05D5\u05E1\u05E4\u05D5 " + added + " \u05EA\u05DE\u05D5\u05E0\u05D5\u05EA");
+        if (added > 0 && tid.startsWith("t")) TicketDb.get(a).addNote(Long.parseLong(tid.substring(1)), "\uD83D\uDCF7 \u05E0\u05D5\u05E1\u05E4\u05D5 " + added + " \u05EA\u05DE\u05D5\u05E0\u05D5\u05EA");
         return true;
     }
 
     /** Scales the picture down to MAX px, fixes the rotation and saves it as JPEG. */
-    private static boolean store(Context c, Uri u, File raw, long tid) throws Exception {
+    private static boolean store(Context c, Uri u, File raw, String tid) throws Exception {
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inJustDecodeBounds = true;
         try (InputStream in = open(c, u, raw)) { BitmapFactory.decodeStream(in, null, o); }
@@ -146,7 +156,7 @@ final class Media {
             if (r != b) b.recycle();
             b = r;
         }
-        File out = new File(dir(c), "t" + tid + "_" + System.currentTimeMillis() + ".jpg");
+        File out = new File(dir(c), tid + "_" + System.currentTimeMillis() + ".jpg");
         try (OutputStream os = new FileOutputStream(out)) { b.compress(Bitmap.CompressFormat.JPEG, 82, os); }
         b.recycle();
         return true;

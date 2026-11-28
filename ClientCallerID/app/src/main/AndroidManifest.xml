@@ -84,6 +84,25 @@
             android:name=".TasksActivity"
             android:exported="false" />
 
+        <service
+            android:name=".TaskTileService"
+            android:exported="true"
+            android:icon="@android:drawable/ic_menu_add"
+            android:label="משימה חדשה"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name=".TasksBoardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TodayActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".Geo$Receiver"
             android:exported="false" />

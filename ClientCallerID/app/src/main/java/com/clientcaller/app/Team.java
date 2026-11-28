@@ -185,6 +185,7 @@ final class Team {
         try {
             a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + DetailActivity.whatsAppNumber(m.phone)
                     + "?text=" + Uri.encode(message(a, t)))));
+            CallLogger.prefs(a).edit().putString("team_last_" + m.name, "t:" + t.id).apply();
             TicketDb.get(a).addNote(t.id, "\u05E0\u05E9\u05DC\u05D7 \u05DC\u05D0\u05D9\u05E9 \u05D4\u05E6\u05D5\u05D5\u05EA " + m.name + " \u05D1\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4");
         } catch (Exception e) {
             Toast.makeText(a, "\u05D5\u05D5\u05D0\u05D8\u05E1\u05D0\u05E4 \u05DC\u05D0 \u05E0\u05E4\u05EA\u05D7: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -234,6 +235,9 @@ final class Team {
         text = text.trim();
         if (text.isEmpty()) return "\u05D4\u05D5\u05D3\u05E2\u05D4 \u05E8\u05D9\u05E7\u05D4 \u05DE\u05D0\u05D9\u05E9 \u05D4\u05E6\u05D5\u05D5\u05EA " + m.name;
 
+        String taskReply = taskReply(c, m, text);
+        if (taskReply != null) return taskReply;
+
         TicketDb db = TicketDb.get(c);
         TicketDb.Ticket t = null;
         Matcher mt = TICKET_NO.matcher(text);
@@ -267,6 +271,49 @@ final class Team {
         }
         notify(c, t, m, text, prev, to);
         return "\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA " + m.name + " \u2192 \u05E7\u05E8\u05D9\u05D0\u05D4 #" + t.id + (to == null ? ": \u05E0\u05D5\u05E1\u05E4\u05D4 \u05D4\u05E2\u05E8\u05D4" : ": " + He.status(to));
+    }
+
+    private static final Pattern TASK_NO = Pattern.compile("\u05DE\u05E9\u05D9\u05DE\u05D4\\s*#?\\s*(\\d{1,6})");
+
+    /** A reply about a task: "\u05DE\u05E9\u05D9\u05DE\u05D4 #5 \u05D1\u05D5\u05E6\u05E2", or "\u05D1\u05D5\u05E6\u05E2" when the last thing sent to this member was a task. */
+    private static String taskReply(Context c, Member m, String text) {
+        Tasks.Task k = null;
+        Matcher mk = TASK_NO.matcher(text);
+        if (mk.find()) {
+            k = Tasks.load(c, Long.parseLong(mk.group(1)));
+        } else if (!TICKET_NO.matcher(text).find()) {
+            String last = CallLogger.prefs(c).getString("team_last_" + m.name, "");
+            if (last.startsWith("k:")) k = Tasks.load(c, Long.parseLong(last.substring(2)));
+        }
+        if (k == null || k.isDone()) return null;
+        String low = QuoteApprovals.norm(text).replaceAll("[\\uFE0F]", "");
+        boolean notDone = false;
+        for (String w : NOT_DONE) if (low.contains(w)) { notDone = true; break; }
+        boolean done = false;
+        if (!notDone) for (String w : DONE) if (low.contains(w)) { done = true; break; }
+        boolean working = false;
+        if (!done && !notDone && low.length() <= 80) for (String w : WORKING) if (low.contains(w)) { working = true; break; }
+        k.notes = (k.notes.isEmpty() ? "" : k.notes + "\n") + "\uD83D\uDC77 " + m.name + ": " + text;
+        if (working) k.stage = 1;
+        Tasks.save(c, k);
+        if (done) {
+            Tasks.setDone(c, k.id, true);
+            CallLogger.prefs(c).edit().remove("team_last_" + m.name).apply();
+        }
+        try {
+            NotificationManager nm = c.getSystemService(NotificationManager.class);
+            nm.createNotificationChannel(new NotificationChannel("team_replies", "\u05E2\u05D3\u05DB\u05D5\u05E0\u05D9\u05DD \u05DE\u05D0\u05E0\u05E9\u05D9 \u05D4\u05E6\u05D5\u05D5\u05EA", NotificationManager.IMPORTANCE_HIGH));
+            Intent open = new Intent(c, TasksActivity.class).putExtra(Tasks.EXTRA_ID, k.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            nm.notify(830000 + (int) k.id, new Notification.Builder(c, "team_replies")
+                    .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                    .setContentTitle((done ? "\u2705 " : working ? "\uD83D\uDD27 " : "\uD83D\uDC77 ") + m.name + ": \u05DE\u05E9\u05D9\u05DE\u05D4 " + (done ? "\u05D1\u05D5\u05E6\u05E2\u05D4" : working ? "\u05D1\u05D8\u05D9\u05E4\u05D5\u05DC" : "\u2013 \u05D4\u05E2\u05E8\u05D4"))
+                    .setContentText(k.title + " \u2013 \u201E" + text + "\u201C")
+                    .setContentIntent(PendingIntent.getActivity(c, 830000 + (int) k.id, open,
+                            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT))
+                    .setAutoCancel(true)
+                    .build());
+        } catch (Exception ignored) { }
+        return "\u05D0\u05D9\u05E9 \u05E6\u05D5\u05D5\u05EA " + m.name + " \u2192 \u05DE\u05E9\u05D9\u05DE\u05D4 #" + k.id + (done ? ": \u05D1\u05D5\u05E6\u05E2\u05D4" : working ? ": \u05D1\u05D8\u05D9\u05E4\u05D5\u05DC" : ": \u05D4\u05E2\u05E8\u05D4");
     }
 
     private static void notify(Context c, TicketDb.Ticket t, Member m, String text, String prev, String to) {

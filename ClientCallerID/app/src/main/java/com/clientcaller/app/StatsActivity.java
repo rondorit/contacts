@@ -109,6 +109,33 @@ public class StatsActivity extends Activity {
             for (int k = 5; k >= 1; k--) bar(c5, k + " \u2B50", dist[k], 0, ratings.size());
         }
 
+        // ---- tasks
+        List<Tasks.Task> tasks = Tasks.all(this);
+        if (!tasks.isEmpty()) {
+            int tOpen = 0, tLate = 0, doneLate = 0, doneTotal = 0;
+            int[] weeks = new int[4];
+            for (Tasks.Task t : tasks) {
+                if (!t.isDone()) {
+                    tOpen++;
+                    if (t.isOverdue()) tLate++;
+                    continue;
+                }
+                doneTotal++;
+                if (t.dueAt > 0 && t.doneAt > t.dueAt) doneLate++;
+                int w = (int) ((now - t.doneAt) / (7 * DAY));
+                if (w >= 0 && w < 4) weeks[w]++;
+            }
+            LinearLayout ct = card(box, "\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA");
+            line(ct, "\u05E4\u05EA\u05D5\u05D7\u05D5\u05EA", String.valueOf(tOpen));
+            line(ct, "\u05D1\u05D0\u05D9\u05D7\u05D5\u05E8", String.valueOf(tLate));
+            line(ct, "\u05D4\u05D5\u05E9\u05DC\u05DE\u05D5 (\u05E1\u05D4\"\u05DB)", String.valueOf(doneTotal));
+            if (doneTotal > 0) line(ct, "\u05D4\u05D5\u05E9\u05DC\u05DE\u05D5 \u05D1\u05D0\u05D9\u05D7\u05D5\u05E8", Math.round(100.0 * doneLate / doneTotal) + "%");
+            int wmax = 1;
+            for (int w : weeks) wmax = Math.max(wmax, w);
+            String[] wl = {"\u05D4\u05E9\u05D1\u05D5\u05E2", "\u05DC\u05E4\u05E0\u05D9 \u05E9\u05D1\u05D5\u05E2", "\u05DC\u05E4\u05E0\u05D9 \u05E9\u05D1\u05D5\u05E2\u05D9\u05D9\u05DD", "\u05DC\u05E4\u05E0\u05D9 3 \u05E9\u05D1\u05D5\u05E2\u05D5\u05EA"};
+            for (int i = 0; i < 4; i++) bar(ct, wl[i], weeks[i], 0, wmax);
+        }
+
         int sent = 0, appr = 0, rej = 0;
         double apprSum = 0;
         for (QuoteDb.Quote q : QuoteDb.get(this).all()) {

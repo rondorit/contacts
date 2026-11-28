@@ -31,6 +31,11 @@ final class Tasks {
         double lat, lng;
         int radius;
 
+        /** List / project name, repeat rule ("" none, d, wd, w, w2, m, y), board stage (0 to do, 1 in progress), hourly nag. */
+        String list = "", repeat = "";
+        int stage;
+        boolean nag;
+
         /** To-do list items inside the task. */
         final List<Check> items = new ArrayList<>();
 
@@ -99,7 +104,14 @@ final class Tasks {
     static void create(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS tasks (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, notes TEXT, priority TEXT,"
                 + " due_at INTEGER, remind INTEGER, client TEXT, phone TEXT, assignee TEXT, ticket_id INTEGER,"
-                + " created INTEGER, done_at INTEGER, place TEXT, lat REAL, lng REAL, radius INTEGER, checklist TEXT)");
+                + " created INTEGER, done_at INTEGER, place TEXT, lat REAL, lng REAL, radius INTEGER, checklist TEXT, list_name TEXT, repeat_rule TEXT, stage INTEGER, nag INTEGER)");
+    }
+
+    static void addV12(SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE tasks ADD COLUMN list_name TEXT");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN repeat_rule TEXT");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN stage INTEGER");
+        db.execSQL("ALTER TABLE tasks ADD COLUMN nag INTEGER");
     }
 
     static void addPlace(SQLiteDatabase db) {
@@ -110,7 +122,7 @@ final class Tasks {
     }
 
     private static final String[] COLS = {"_id", "title", "notes", "priority", "due_at", "remind", "client", "phone", "assignee",
-            "ticket_id", "created", "done_at", "place", "lat", "lng", "radius", "checklist"};
+            "ticket_id", "created", "done_at", "place", "lat", "lng", "radius", "checklist", "list_name", "repeat_rule", "stage", "nag"};
 
     private static Task read(Cursor c) {
         Task t = new Task();
@@ -131,6 +143,10 @@ final class Tasks {
         t.lng = c.getDouble(14);
         t.radius = c.getInt(15);
         t.setChecklist(s(c, 16));
+        t.list = s(c, 17);
+        t.repeat = s(c, 18);
+        t.stage = c.getInt(19);
+        t.nag = c.getInt(20) != 0;
         return t;
     }
 
@@ -189,6 +205,10 @@ final class Tasks {
         v.put("lng", t.lng);
         v.put("radius", t.radius);
         v.put("checklist", t.checklistJson());
+        v.put("list_name", t.list);
+        v.put("repeat_rule", t.repeat);
+        v.put("stage", t.stage);
+        v.put("nag", t.nag ? 1 : 0);
         if (t.id == 0) t.id = TicketDb.get(c).getWritableDatabase().insert("tasks", null, v);
         else TicketDb.get(c).getWritableDatabase().update("tasks", v, "_id=?", new String[]{String.valueOf(t.id)});
         schedule(c, t);
@@ -203,11 +223,56 @@ final class Tasks {
         TicketDb.get(c).getWritableDatabase().delete("tasks", "_id=?", new String[]{String.valueOf(id)});
     }
 
+    static final String[] REPEAT_KEYS = {"", "d", "wd", "w", "w2", "m", "y"};
+    static final String[] REPEAT_HE = {"\u05DC\u05DC\u05D0 \u05D7\u05D6\u05E8\u05D4", "\u05DB\u05DC \u05D9\u05D5\u05DD", "\u05DB\u05DC \u05D9\u05D5\u05DD \u05E2\u05D1\u05D5\u05D3\u05D4 (\u05D0'\u2013\u05D4')", "\u05DB\u05DC \u05E9\u05D1\u05D5\u05E2", "\u05DB\u05DC \u05E9\u05D1\u05D5\u05E2\u05D9\u05D9\u05DD", "\u05DB\u05DC \u05D7\u05D5\u05D3\u05E9", "\u05DB\u05DC \u05E9\u05E0\u05D4"};
+
+    static String repeatHe(String r) {
+        for (int i = 0; i < REPEAT_KEYS.length; i++) if (REPEAT_KEYS[i].equals(r)) return REPEAT_HE[i];
+        return "";
+    }
+
+    /** Next due time after "from" for a repeat rule. */
+    static long nextDue(String rule, long from) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(from);
+        long now = System.currentTimeMillis();
+        do {
+            switch (rule) {
+                case "d": c.add(Calendar.DAY_OF_MONTH, 1); break;
+                case "wd":
+                    do { c.add(Calendar.DAY_OF_MONTH, 1); }
+                    while (c.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY);
+                    break;
+                case "w": c.add(Calendar.WEEK_OF_YEAR, 1); break;
+                case "w2": c.add(Calendar.WEEK_OF_YEAR, 2); break;
+                case "m": c.add(Calendar.MONTH, 1); break;
+                case "y": c.add(Calendar.YEAR, 1); break;
+                default: return 0;
+            }
+        } while (c.getTimeInMillis() < now);
+        return c.getTimeInMillis();
+    }
+
     static void setDone(Context c, long id, boolean done) {
         Task t = load(c, id);
         if (t == null) return;
+        boolean wasDone = t.isDone();
         t.doneAt = done ? System.currentTimeMillis() : 0;
+        if (done) t.stage = 0;
         save(c, t);
+        if (done && !wasDone && !t.repeat.isEmpty()) {
+            // A repeating task: open the next one.
+            Task n = load(c, id);
+            n.id = 0;
+            n.doneAt = 0;
+            n.created = 0;
+            n.ticketId = 0;
+            n.dueAt = nextDue(t.repeat, t.dueAt > 0 ? t.dueAt : System.currentTimeMillis());
+            for (Check k : n.items) k.done = false;
+            save(c, n);
+            t.repeat = "";
+            save(c, t);
+        }
         try { c.getSystemService(NotificationManager.class).cancel(800000 + (int) id); } catch (Exception ignored) { }
     }
 
@@ -256,12 +321,20 @@ final class Tasks {
         Task t = load(c, id);
         if (t == null || t.isDone()) return;
         if (ACTION_SNOOZE.equals(a)) {
-            t.dueAt = System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR;
+            long ms = intent.getLongExtra("ms", AlarmManager.INTERVAL_HOUR);
+            t.dueAt = System.currentTimeMillis() + ms;
             save(c, t);
             try { c.getSystemService(NotificationManager.class).cancel(800000 + (int) id); } catch (Exception ignored) { }
             return;
         }
         notify(c, t);
+        if (t.nag) {
+            // Keep reminding every hour until it is done.
+            try {
+                c.getSystemService(AlarmManager.class).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR, remindIntent(c, t.id));
+            } catch (Exception ignored) { }
+        }
     }
 
     static void notify(Context c, Task t) {
@@ -280,7 +353,9 @@ final class Tasks {
                 .setStyle(new Notification.BigTextStyle().bigText(sub.isEmpty() ? "\u05EA\u05D6\u05DB\u05D5\u05E8\u05EA \u05DE\u05E9\u05D9\u05DE\u05D4" : sub))
                 .setContentIntent(PendingIntent.getActivity(c, nid, open, flags))
                 .addAction(new Notification.Action.Builder(null, "\u2714 \u05D1\u05D5\u05E6\u05E2", PendingIntent.getBroadcast(c, nid + 1, done, flags)).build())
-                .addAction(new Notification.Action.Builder(null, "\u23F0 \u05E2\u05D5\u05D3 \u05E9\u05E2\u05D4", PendingIntent.getBroadcast(c, nid + 2, snooze, flags)).build())
+                .addAction(!t.phone.isEmpty() ? null : new Notification.Action.Builder(null, "\u23F0 \u05E2\u05D5\u05D3 \u05E9\u05E2\u05D4", PendingIntent.getBroadcast(c, nid + 2, snooze, flags)).build())
+                .addAction(new Notification.Action.Builder(null, "\uD83D\uDCC6 \u05D3\u05D7\u05D4\u2026", PendingIntent.getActivity(c, nid + 4,
+                        new Intent(c, TasksActivity.class).putExtra("snooze", t.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), flags)).build())
                 .setAutoCancel(true)
                 .addAction(t.phone.isEmpty() ? null : new Notification.Action.Builder(null, "\uD83D\uDCDE \u05D7\u05D9\u05D9\u05D2",
                         PendingIntent.getActivity(c, nid + 3, new Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:" + t.phone))
