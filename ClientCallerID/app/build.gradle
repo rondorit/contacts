@@ -3,6 +3,13 @@ plugins {
 }
 
 android {
+    // The user guide (docs/guide/user-guide.html) is bundled so it opens inside the app.
+    sourceSets {
+        main {
+            assets.srcDirs += ['../../docs/guide']
+        }
+    }
+
     namespace 'com.clientcaller.app'
     compileSdk 34
 
@@ -10,8 +17,8 @@ android {
         applicationId 'com.clientcaller.app'
         minSdk 26
         targetSdk 34
-        versionCode 84
-        versionName '7.0'
+        versionCode 85
+        versionName '7.1'
     }
 
     // Fixed signing key so new versions install over old ones (your imported data is kept).

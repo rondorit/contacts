@@ -103,6 +103,10 @@
             android:name=".TodayActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".GuideActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".Geo$Receiver"
             android:exported="false" />

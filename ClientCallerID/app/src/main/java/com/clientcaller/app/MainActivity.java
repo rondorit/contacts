@@ -241,6 +241,7 @@ public class MainActivity extends Activity {
         quick.add(Ui.tile(this, "\uD83D\uDCC8", "\u05DC\u05D5\u05D7 \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD", "", 0, v -> startActivity(new Intent(this, StatsActivity.class))));
         long lastBk = CallLogger.prefs(this).getLong(Backup.KEY_LAST, 0);
         boolean oldBk = System.currentTimeMillis() - lastBk > 7L * 24 * 3600 * 1000;
+        quick.add(Ui.tile(this, "\uD83D\uDCD6", "\u05DE\u05D3\u05E8\u05D9\u05DA \u05DC\u05DE\u05E9\u05EA\u05DE\u05E9", "", 0, v -> startActivity(new Intent(this, GuideActivity.class))));
         quick.add(Ui.tile(this, "\uD83D\uDCBE", "\u05D2\u05D9\u05D1\u05D5\u05D9", lastBk == 0 ? "\u05DC\u05D0 \u05D1\u05D5\u05E6\u05E2" : TicketDb.fmt(lastBk).substring(0, 10),
                 oldBk ? Ui.RED : Ui.GREEN, v -> startBackup()));
         quick.add(Ui.tile(this, "\u2699\uFE0F", "\u05E0\u05D9\u05D4\u05D5\u05DC \u05D5\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA", "", 0, v -> showTab(3)));
@@ -455,6 +456,7 @@ public class MainActivity extends Activity {
         p.addView(Ui.sectionTitle(this, "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA"));
         List<View> perms = new ArrayList<>();
         boolean hp = hasPermissions();
+        perms.add(Ui.tile(this, "\uD83D\uDCD6", "\u05DE\u05D3\u05E8\u05D9\u05DA \u05DC\u05DE\u05E9\u05EA\u05DE\u05E9", "", 0, v -> startActivity(new Intent(this, GuideActivity.class))));
         perms.add(Ui.tile(this, "\uD83D\uDD10", "\u05D4\u05E8\u05E9\u05D0\u05D5\u05EA", hp ? "\u2713 \u05D0\u05D5\u05E9\u05E8\u05D5" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", hp ? ok : need, v -> askPermissions()));
         boolean ov = Settings.canDrawOverlays(this);
         perms.add(Ui.tile(this, "\uD83E\uDE9F", "\u05D4\u05E6\u05D2\u05D4 \u05DE\u05E2\u05DC \u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D5\u05EA", ov ? "\u2713 \u05DE\u05D0\u05D5\u05E9\u05E8" : "\u05E0\u05D3\u05E8\u05E9 \u05D0\u05D9\u05E9\u05D5\u05E8", ov ? ok : need,
