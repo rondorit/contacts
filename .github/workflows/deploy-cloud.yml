@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       # Keyless login: GitHub's identity token is exchanged for the github-deploy service account
       # (allowed only for this repository - see cloud/setup-deploy.sh).
       - uses: google-github-actions/auth@v2
@@ -26,6 +26,6 @@ jobs:
         run: cd functions && npm install --no-audit --no-fund
       - name: Deploy
         run: |
-          npx -y firebase-tools@13 deploy --only functions,firestore:rules --project bekis-e82cd --non-interactive --force > deploy.log 2>&1 \
-            || { tail -40 deploy.log | sed 's/^/::error::/'; exit 1; }
+          npx -y firebase-tools@latest deploy --only functions,firestore:rules --project bekis-e82cd --non-interactive --force > deploy.log 2>&1 \
+            || { echo "::error::$(grep -v 'npm warn' deploy.log | sed 's/\x1b\[[0-9;]*m//g' | tail -30 | tr '\n' '|')"; exit 1; }
           tail -15 deploy.log
