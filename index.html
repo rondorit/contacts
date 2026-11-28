@@ -61,7 +61,18 @@
   .chip { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 700; }
   .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--line);
     padding: 10px 16px; border-radius: 12px; z-index: 20; display: none; }
+  .note img { max-width: 100%; border-radius: 10px; margin-top: 6px; display: block; cursor: zoom-in; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 8px 0; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .stat .n { font-size: 26px; font-weight: 800; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.t td, table.t th { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: right; }
+  table.t th { color: var(--muted); font-weight: 600; }
+  #map { height: 340px; border-radius: 14px; border: 1px solid var(--line); margin: 8px 0; }
+  @media (min-width: 1000px) { main.wide { max-width: 1200px; } .dash { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } #map { height: 460px; } }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 <body>
 <header>
@@ -70,6 +81,7 @@
   <div class="tabs" id="tabs" style="display:none">
     <button class="tab on" data-v="tickets">🎫 קריאות</button>
     <button class="tab" data-v="tasks">✅ משימות</button>
+    <button class="tab" data-v="dash" id="dashTab" style="display:none">📊 לוח ומפה</button>
     <button class="tab" data-v="me">👤 חשבון</button>
   </div>
 </header>
@@ -105,6 +117,7 @@ const STATUS = { "Open": ["פתוחה", "var(--blue)"], "In progress": ["בטי�
 const PRIO = { "Low": "נמוכה", "Normal": "רגילה", "High": "גבוהה", "Urgent": "דחופה" };
 const fmt = ms => ms ? new Date(ms).toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
+let locs = [], lmap = null, llayer = null, watchId = null;
 let me = null, role = "", ORG = "", orgName = "", view = "tickets", tickets = [], tasks = [], users = [], unsub = [], tFilter = "open";
 
 function toast(t) { const e = $("toast"); e.textContent = t; e.style.display = "block"; setTimeout(() => e.style.display = "none", 2500); }
@@ -203,6 +216,9 @@ function listen() {
   unsub.push(onSnapshot(tq, s => { tickets = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה בקריאות: " + e.code)));
   unsub.push(onSnapshot(kq, s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, e => toast("שגיאה במשימות: " + e.code)));
   unsub.push(onSnapshot(col("members"), s => { users = s.docs.map(d => ({ uid: d.id, ...d.data() })); render(); }));
+  if (isAdmin()) unsub.push(onSnapshot(query(col("locations"), where("active", "==", true)), s => {
+    locs = s.docs.map(d => ({ uid: d.id, ...d.data() })); if (view === "dash") drawMap();
+  }, () => {}));
   enablePush(false);   // already allowed on this device -> refresh the token silently
 }
 
@@ -212,9 +228,11 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
 
 function render() {
   $("fab").style.display = (view === "tickets" && isAdmin()) || view === "tasks" ? "block" : "none";
-  if (view === "tickets") renderTickets(); else if (view === "tasks") renderTasks(); else renderMe();
+  $("dashTab").style.display = isAdmin() ? "" : "none";
+  $("main").classList.toggle("wide", view === "dash");
+  if (view === "tickets") renderTickets(); else if (view === "tasks") renderTasks(); else if (view === "dash") renderDash(); else renderMe();
   const ps = pushState();
-  if (view !== "me" && (ps === "default" || ps === "home")) {
+  if (view !== "me" && view !== "dash" && (ps === "default" || ps === "home")) {
     const b = document.createElement("div");
     b.className = "field"; b.style.cursor = "pointer";
     b.innerHTML = "🔔 <b>לא תקבל התראות על קריאות חדשות</b> – לחץ כאן להפעלה";
@@ -329,12 +347,17 @@ function renderMe() {
       <input id="iname" placeholder="שם" style="margin-top:6px"><input id="imail" type="email" placeholder="כתובת Gmail" style="margin-top:6px">
       <label class="check"><input type="checkbox" id="iadm"> מנהל</label><button class="btn small" id="inv">שלח הזמנה</button>
       <div id="pend" class="sub" style="margin-top:8px"></div></div>` : ""}
+    <div class="field"><b>📍 שיתוף מיקום עם המנהל</b>${watchId !== null ? "פועל – כל עוד האפליקציה פתוחה" : "כבוי"}
+      <div class="row"><button class="btn small ${watchId !== null ? "ghost" : ""}" id="loc">${watchId !== null ? "⏹ הפסק שיתוף" : "▶️ שתף מיקום"}</button></div>
+      <div class="sub">באייפון המיקום נשלח רק כשהאפליקציה פתוחה על המסך. נשמר רק המיקום האחרון.</div></div>
     <p class="sub">באייפון: בספארי ← שתף ← "הוסף למסך הבית".</p>
     <button class="btn ghost" id="out" style="width:100%">🚪 התנתקות</button>`;
   $("out").onclick = async () => {
     if (pushToken) await setDoc(doc(db, "users", me.uid), { fcmTokens: arrayRemove(pushToken) }, { merge: true }).catch(() => {});
+    if (watchId !== null) await stopShare();
     signOut(auth);
   };
+  $("loc").onclick = () => { if (watchId !== null) stopShare(); else startShare(); renderMe(); };
   if ($("push")) $("push").onclick = async () => { if (await enablePush(true)) toast("🔔 ההתראות הופעלו"); renderMe(); };
   if (!isAdmin()) return;
   getDocs(query(collection(db, "invites"), where("orgId", "==", ORG))).then(q => {
@@ -377,7 +400,8 @@ function openTicket(id) {
     <div class="row"><button class="btn ghost" id="working">🔧 בטיפול</button><button class="btn ghost" id="done">✅ בוצע וסגור</button></div>
     <label>הערות</label><div id="notes"><div class="sub">טוען…</div></div>
     <textarea id="nt" placeholder="הוסף הערה…"></textarea>
-    <div class="row"><button class="btn" id="addn">➕ הוסף הערה</button></div>`;
+    <div class="row"><button class="btn" id="addn">➕ הוסף הערה</button><button class="btn ghost" id="addp">📷 תמונה</button></div>
+    <input type="file" id="pf" accept="image/*" style="display:none">`;
   sheet("קריאה", h);
   const save = async patch => {
     try {
@@ -392,20 +416,109 @@ function openTicket(id) {
   };
   $("working").onclick = () => { $("st").value = "In progress"; save({ status: "In progress" }); };
   $("done").onclick = async () => { await addNote(id, "✅ בוצע"); save({ status: "Closed" }); };
+  $("addp").onclick = () => $("pf").click();
+  $("pf").onchange = async () => {
+    const f = $("pf").files[0]; if (!f) return;
+    toast("מעלה תמונה…");
+    try { const img = await shrink(f); await addNote(id, "📷 תמונה", img); toast("התמונה נוספה ✓"); }
+    catch (e) { toast("התמונה לא נשמרה"); }
+    $("pf").value = "";
+  };
   $("addn").onclick = async () => { const v = $("nt").value.trim(); if (!v) return; await addNote(id, v); $("nt").value = ""; };
   const nq = query(col("tickets", id, "notes"), orderBy("time", "desc"));
   noteUnsub = onSnapshot(nq, s => {
     $("notes").innerHTML = s.empty ? '<div class="sub">אין הערות</div>' : s.docs.map(d => {
-      const n = d.data(); return `<div class="note"><div class="t">${fmt(n.time)} • ${esc(n.byName || "")}</div>${esc(n.text).replace(/\n/g, "<br>")}</div>`;
+      const n = d.data(); return `<div class="note"><div class="t">${fmt(n.time)} • ${esc(n.byName || "")}</div>${esc(n.text).replace(/\n/g, "<br>")}${n.img ? `<img src="data:image/jpeg;base64,${n.img}" onclick="window.open(this.src)">` : ""}</div>`;
     }).join("");
   }, e => { $("notes").innerHTML = '<div class="sub">אין גישה להערות</div>'; });
 }
 
-async function addNote(id, text) {
+async function addNote(id, text, img) {
   try {
-    await addDoc(col("tickets", id, "notes"), { text, time: Date.now(), by: me.uid, byName: myName() });
+    const n = { text, time: Date.now(), by: me.uid, byName: myName() };
+    if (img) n.img = img;
+    await addDoc(col("tickets", id, "notes"), n);
     await setDoc(dref("tickets", id), { updated: Date.now(), updatedBy: me.uid, lastNote: text.slice(0, 120) }, { merge: true });
   } catch (e) { toast("ההערה לא נשמרה: " + e.code); }
+}
+
+// Photo -> JPEG max 1024px, < ~450KB, base64 (stored inside the note).
+function shrink(file) {
+  return new Promise((ok, bad) => {
+    const im = new Image(), url = URL.createObjectURL(file);
+    im.onload = () => {
+      const sc = Math.min(1, 1024 / Math.max(im.width, im.height));
+      const c = document.createElement("canvas"); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      let q = 0.65, d = c.toDataURL("image/jpeg", q);
+      while (d.length > 600000 && q > 0.3) { q -= 0.15; d = c.toDataURL("image/jpeg", q); }
+      ok(d.split(",")[1]);
+    };
+    im.onerror = bad; im.src = url;
+  });
+}
+
+// ---------------------------------------------------------------- location sharing (while the app is open)
+let lastSent = 0;
+function startShare() {
+  if (!navigator.geolocation) { toast("המכשיר לא תומך במיקום"); return; }
+  watchId = navigator.geolocation.watchPosition(p => {
+    if (Date.now() - lastSent < 60000) return;
+    lastSent = Date.now();
+    setDoc(dref("locations", me.uid), { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy,
+      at: Date.now(), active: true, name: myName() }, { merge: true }).catch(() => {});
+  }, e => { toast("אין הרשאת מיקום: " + e.message); stopShare(); renderMe(); }, { enableHighAccuracy: false, maximumAge: 60000 });
+}
+async function stopShare() {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  await setDoc(dref("locations", me.uid), { active: false, at: Date.now() }, { merge: true }).catch(() => {});
+}
+
+// ---------------------------------------------------------------- manager dashboard + team map
+function renderDash() {
+  const now = Date.now(), week = now - 7 * 86400000;
+  const open = tickets.filter(t => t.status !== "Closed");
+  const late = open.filter(t => t.followupAt && t.followupAt < now);
+  const closedW = tickets.filter(t => t.status === "Closed" && (t.updated || 0) > week);
+  const kOpen = tasks.filter(k => !k.doneAt), kDoneW = tasks.filter(k => k.doneAt && k.doneAt > week);
+  const per = users.map(u => ({ u, o: open.filter(t => t.assigneeUid === u.uid).length,
+    c: closedW.filter(t => t.assigneeUid === u.uid).length, k: kOpen.filter(k => k.assigneeUid === u.uid).length,
+    loc: locs.find(l => l.uid === u.uid) }));
+  const stat = (n, l, cls = "") => `<div class="stat"><div class="n ${cls}">${n}</div><div class="sub">${l}</div></div>`;
+  $("main").innerHTML = `<div class="stats">${stat(open.length, "קריאות פתוחות")}${stat(late.length, "באיחור", late.length ? "late" : "")}
+      ${stat(open.filter(t => !t.assigneeUid).length, "לא משויכות")}${stat(closedW.length, "נסגרו השבוע")}
+      ${stat(kOpen.length, "משימות פתוחות")}${stat(kDoneW.length, "משימות שבוצעו השבוע")}</div>
+    <div class="dash"><div><h3 style="margin:10px 0 4px">🗺️ מפת צוות</h3><div id="map"></div>
+      <div class="sub">כחול = עדכני, אפור = לפני יותר מ-30 דקות. הטכנאי מפעיל שיתוף בעצמו.</div></div>
+    <div><h3 style="margin:10px 0 4px">👷 צוות</h3><table class="t"><tr><th>שם</th><th>פתוחות</th><th>נסגרו השבוע</th><th>משימות</th><th>מיקום</th></tr>
+      ${per.map(x => `<tr><td>${x.u.role === "admin" ? "⭐" : "👷"} ${esc(x.u.name)}</td><td>${x.o}</td><td>${x.c}</td><td>${x.k}</td>
+        <td class="sub">${x.loc && x.loc.lat ? ago(x.loc.at) : "—"}</td></tr>`).join("")}</table>
+      <h3 style="margin:14px 0 4px">⏰ באיחור / לא משויכות</h3><table class="t"><tr><th>קריאה</th><th>לקוח</th><th>אחראי</th><th>מעקב</th></tr>
+      ${open.filter(t => !t.assigneeUid || (t.followupAt && t.followupAt < now)).slice(0, 30).map(t =>
+        `<tr style="cursor:pointer" data-open="${esc(t.id)}"><td>${esc(t.title || "")}</td><td>${esc(t.clientName || "")}</td>
+         <td>${esc(t.assigneeName || "—")}</td><td class="${t.followupAt && t.followupAt < now ? "late" : "sub"}">${fmt(t.followupAt)}</td></tr>`).join("")}</table></div></div>`;
+  document.querySelectorAll("[data-open]").forEach(r => r.onclick = () => openTicket(r.dataset.open));
+  lmap = null; drawMap();
+}
+function ago(t) { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "עכשיו" : m < 60 ? `לפני ${m} דק׳` : `לפני ${Math.round(m / 60)} שע׳`; }
+function drawMap() {
+  const el = $("map"); if (!el || !window.L) { if (el) setTimeout(drawMap, 400); return; }
+  if (!lmap) {
+    lmap = L.map(el).setView([32.08, 34.85], 9);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" }).addTo(lmap);
+    llayer = L.layerGroup().addTo(lmap); lmap._fit = false;
+  }
+  llayer.clearLayers();
+  const pts = [];
+  locs.filter(l => l.lat && Date.now() - l.at < 12 * 3600000).forEach(l => {
+    const old = Date.now() - l.at > 30 * 60000;
+    L.circleMarker([l.lat, l.lng], { radius: 10, color: old ? "#888" : "#58A6FF", fillOpacity: .8 }).addTo(llayer)
+      .bindTooltip(esc(l.name || ""), { permanent: true, direction: "top", offset: [0, -8] })
+      .bindPopup(`<b>${esc(l.name || "")}</b><br>${ago(l.at)}<br><a href="https://waze.com/ul?ll=${l.lat},${l.lng}&navigate=yes">ניווט</a>`);
+    pts.push([l.lat, l.lng]);
+  });
+  if (pts.length && !lmap._fit) { lmap.fitBounds(pts, { padding: [40, 40], maxZoom: 14 }); lmap._fit = true; }
 }
 
 // ---------------------------------------------------------------- new ticket / task
