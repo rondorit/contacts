@@ -129,6 +129,16 @@ final class Team {
 
     static void choose(final Activity a, String current, final Picked cb) {
         final List<Member> all = list(a);
+        // Cloud team members (who use the app themselves) can be picked too.
+        for (String[] u : Sync.users(a)) {
+            boolean have = false;
+            for (Member m : all) if (m.name.equalsIgnoreCase(u[1])) { have = true; break; }
+            if (!have && !u[1].isEmpty()) {
+                Member m = new Member();
+                m.name = u[1];
+                all.add(m);
+            }
+        }
         if (all.isEmpty()) {
             new AlertDialog.Builder(a)
                     .setMessage("\u05E2\u05D5\u05D3 \u05D0\u05D9\u05DF \u05D0\u05E0\u05E9\u05D9 \u05E6\u05D5\u05D5\u05EA. \u05DC\u05D4\u05D5\u05E1\u05D9\u05E3 \u05E2\u05DB\u05E9\u05D9\u05D5?")
@@ -178,6 +188,12 @@ final class Team {
 
     static void send(Activity a, TicketDb.Ticket t) {
         Member m = byName(a, t.assignee);
+        if ((m == null || m.phone.trim().isEmpty()) && Sync.on()) {
+            for (String[] u : Sync.users(a)) if (u[1].equalsIgnoreCase(t.assignee)) {
+                Toast.makeText(a, "\u2601\uFE0F \u05D4\u05E7\u05E8\u05D9\u05D0\u05D4 \u05EA\u05D5\u05E4\u05D9\u05E2 \u05D0\u05E6\u05DC " + t.assignee + " \u05D1\u05D0\u05E4\u05DC\u05D9\u05E7\u05E6\u05D9\u05D4", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
         if (m == null || m.phone.trim().isEmpty()) {
             Toast.makeText(a, "\u05D0\u05D9\u05DF \u05DE\u05E1\u05E4\u05E8 \u05D8\u05DC\u05E4\u05D5\u05DF \u05DC\u05D0\u05D9\u05E9 \u05D4\u05E6\u05D5\u05D5\u05EA", Toast.LENGTH_SHORT).show();
             return;

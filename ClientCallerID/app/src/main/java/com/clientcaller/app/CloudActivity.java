@@ -58,10 +58,22 @@ public class CloudActivity extends Activity {
                 return;
             }
             myRole = d.getString("role");
+            CallLogger.prefs(this).edit().putString("cloud_role", myRole == null ? "" : myRole).apply();
+            Sync.start(this);
             role.setText("\u05EA\u05E4\u05E7\u05D9\u05D3: " + Cloud.roleHe(myRole));
             if (Cloud.ROLE_ADMIN.equals(myRole)) adminSection();
         });
-        box.addView(button("\uD83D\uDEAA \u05D4\u05EA\u05E0\u05EA\u05E7\u05D5\u05EA", v -> Cloud.signOut(this, this::refresh)));
+        final boolean syncOn = CallLogger.prefs(this).getBoolean("cloud_sync", true);
+        box.addView(button(syncOn ? "\uD83D\uDD04 \u05E1\u05E0\u05DB\u05E8\u05D5\u05DF \u05E7\u05E8\u05D9\u05D0\u05D5\u05EA \u05D5\u05DE\u05E9\u05D9\u05DE\u05D5\u05EA: \u05E4\u05D5\u05E2\u05DC (\u05DC\u05D7\u05E5 \u05DC\u05DB\u05D9\u05D1\u05D5\u05D9)" : "\u23F8\uFE0F \u05E1\u05E0\u05DB\u05E8\u05D5\u05DF \u05DB\u05D1\u05D5\u05D9 (\u05DC\u05D7\u05E5 \u05DC\u05D4\u05E4\u05E2\u05DC\u05D4)", v -> {
+            CallLogger.prefs(this).edit().putBoolean("cloud_sync", !syncOn).apply();
+            if (!syncOn) Sync.start(this); else Sync.stop();
+            refresh();
+        }));
+        box.addView(button("\uD83D\uDEAA \u05D4\u05EA\u05E0\u05EA\u05E7\u05D5\u05EA", v -> {
+            Sync.stop();
+            CallLogger.prefs(this).edit().remove("cloud_role").apply();
+            Cloud.signOut(this, this::refresh);
+        }));
     }
 
     private void adminSection() {
@@ -69,6 +81,9 @@ public class CloudActivity extends Activity {
         final LinearLayout users = Ui.card(this);
         box.addView(users);
         Cloud.db().collection("users").get().addOnSuccessListener(q -> {
+            java.util.List<String[]> cache = new java.util.ArrayList<>();
+            for (QueryDocumentSnapshot d0 : q) cache.add(new String[]{d0.getId(), d0.getString("name"), d0.getString("email")});
+            Sync.cacheUsers(cache);
             for (QueryDocumentSnapshot d : q) {
                 final String uid = d.getId(), name = d.getString("name"), mail = d.getString("email"), r = d.getString("role");
                 TextView tv = Ui.text(this, (Cloud.ROLE_ADMIN.equals(r) ? "\u2B50 " : "\uD83D\uDC77 ") + name + "\n" + mail + " \u2022 " + Cloud.roleHe(r), 15, Ui.TEXT, false);

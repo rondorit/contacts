@@ -55,6 +55,7 @@ final class TicketDb extends SQLiteOpenHelper {
 
     static synchronized TicketDb get(Context c) {
         if (instance == null) instance = new TicketDb(c.getApplicationContext());
+        if (Sync.app == null) Sync.app = c.getApplicationContext();
         return instance;
     }
 
@@ -235,6 +236,7 @@ final class TicketDb extends SQLiteOpenHelper {
         } else {
             db.update("tickets", v, "_id=?", new String[]{String.valueOf(t.id)});
         }
+        try { Sync.ticketChanged(t); } catch (Throwable ignored) { }
         return t.id;
     }
 
@@ -258,6 +260,7 @@ final class TicketDb extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         db.delete("notes", "ticket_id=?", new String[]{String.valueOf(id)});
         db.delete("tickets", "_id=?", new String[]{String.valueOf(id)});
+        try { Sync.ticketDeleted(id); } catch (Throwable ignored) { }
     }
 
     void deleteNote(long noteId) {
@@ -270,6 +273,7 @@ final class TicketDb extends SQLiteOpenHelper {
         v.put("time", System.currentTimeMillis());
         v.put("text", text);
         getWritableDatabase().insert("notes", null, v);
+        try { Sync.noteAdded(ticketId, text, v.getAsLong("time")); } catch (Throwable ignored) { }
     }
 
     List<Note> notes(long ticketId) {

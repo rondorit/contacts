@@ -31,7 +31,33 @@ service cloud.firestore {
       allow create, update: if isAdmin();
     }
 
-    // Everything else is closed until the next stages add tickets and tasks.
+    // Service tickets: the manager sees everything; a technician sees what is assigned to him.
+    match /tickets/{id} {
+      function assignedToMe(d) { return member() && d.data.assigneeUid == request.auth.uid; }
+      allow read: if isAdmin() || assignedToMe(resource);
+      allow create: if member() && request.resource.data.updatedBy == request.auth.uid
+        && (isAdmin() || request.resource.data.assigneeUid == request.auth.uid);
+      allow update: if isAdmin() || (assignedToMe(resource) && request.resource.data.assigneeUid == request.auth.uid);
+      allow delete: if isAdmin();
+
+      match /notes/{note} {
+        function ticketMine() { return get(/databases/$(database)/documents/tickets/$(id)).data.assigneeUid == request.auth.uid; }
+        allow read: if isAdmin() || (member() && ticketMine());
+        allow create: if member() && request.resource.data.by == request.auth.uid && (isAdmin() || ticketMine());
+      }
+    }
+
+    // Tasks: same idea.
+    match /tasks/{id} {
+      allow read: if isAdmin() || (member() && resource.data.assigneeUid == request.auth.uid);
+      allow create: if member() && request.resource.data.updatedBy == request.auth.uid
+        && (isAdmin() || request.resource.data.assigneeUid == request.auth.uid);
+      allow update: if isAdmin() || (member() && resource.data.assigneeUid == request.auth.uid
+        && request.resource.data.assigneeUid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Everything else is closed.
     match /{document=**} {
       allow read, write: if false;
     }

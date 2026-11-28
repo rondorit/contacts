@@ -213,6 +213,7 @@ final class Tasks {
         else TicketDb.get(c).getWritableDatabase().update("tasks", v, "_id=?", new String[]{String.valueOf(t.id)});
         schedule(c, t);
         Geo.sync(c, t);
+        try { Sync.taskChanged(t); } catch (Throwable ignored) { }
         TicketsWidget.updateAll(c);
         TasksWidget.updateAll(c);
     }
@@ -221,6 +222,7 @@ final class Tasks {
         cancel(c, id);
         Geo.remove(c, id);
         TicketDb.get(c).getWritableDatabase().delete("tasks", "_id=?", new String[]{String.valueOf(id)});
+        try { Sync.taskDeleted(id); } catch (Throwable ignored) { }
     }
 
     static final String[] REPEAT_KEYS = {"", "d", "wd", "w", "w2", "m", "y"};

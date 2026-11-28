@@ -148,6 +148,7 @@ public class MainActivity extends Activity {
         }
         Backup.scheduleReminder(this);
         Daily.schedule(this);
+        try { Sync.start(this); } catch (Throwable ignored) { }
         new Thread(() -> { try { Recurring.runDue(this); } catch (Throwable ignored) { } }).start();
         showTab(0);
         if (getIntent().getBooleanExtra(Backup.EXTRA_BACKUP, false)) startBackup();
