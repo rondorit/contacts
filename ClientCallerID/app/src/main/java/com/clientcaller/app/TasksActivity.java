@@ -93,6 +93,12 @@ public class TasksActivity extends Activity {
         refresh();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        TasksWidget.updateAll(this);
+    }
+
     private boolean matches(Tasks.Task t, int f) {
         switch (f) {
             case 0: return !t.isDone();

@@ -149,6 +149,7 @@ final class Tasks {
         schedule(c, t);
         Geo.sync(c, t);
         TicketsWidget.updateAll(c);
+        TasksWidget.updateAll(c);
     }
 
     static void delete(Context c, long id) {

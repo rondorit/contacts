@@ -50,6 +50,7 @@ final class Daily {
             try { if (CallLogger.prefs(c).getBoolean(KEY_SUMMARY, true)) summary(c); } catch (Throwable ignored) { }
             try { autoBackupIfDue(c); } catch (Throwable ignored) { }
             try { TicketsWidget.updateAll(c); } catch (Throwable ignored) { }
+            try { TasksWidget.updateAll(c); } catch (Throwable ignored) { }
         }).start();
     }
 
